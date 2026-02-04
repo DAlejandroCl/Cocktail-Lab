@@ -8,6 +8,13 @@ import {
 import type { SearchFilters } from "../types";
 import { z } from "zod";
 
+type RawDrinkFromAPI = {
+  idDrink: string;
+  strDrink: string;
+  strDrinkThumb: string;
+  strCategory?: string;
+};
+
 const CATEGORIES_API_URL =
   "https://www.thecocktaildb.com/api/json/v1/1/list.php?c=list";
 
@@ -16,6 +23,9 @@ const FILTER_API_BASE =
 
 const SEARCH_API_BASE = 
   "https://www.thecocktaildb.com/api/json/v1/1/search.php";
+
+const LOOKUP_API_BASE = 
+  "https://www.thecocktaildb.com/api/json/v1/1/lookup.php";
 
 export async function getCategories() {
   const response = await axios.get(CATEGORIES_API_URL);
@@ -41,23 +51,56 @@ export async function getRecipes(filters: SearchFilters) {
   }
   else if (filters.category && !filters.ingredient) {
     results = await searchByCategory(filters.category);
+    results = results.map(drink => ({
+      ...drink,
+      strCategory: filters.category
+    }));
   }
   else if (filters.ingredient && filters.category) {
-    const categoryResults = await searchByCategory(filters.category);
-    
     const byName = await searchByName(filters.ingredient);
     const byIngredient = await searchByIngredient(filters.ingredient);
     
     const ingredientResults = [...byName, ...byIngredient];
     const uniqueIngredientMap = new Map<string, z.infer<typeof DrinkAPIResponse>>();
     ingredientResults.forEach(drink => uniqueIngredientMap.set(drink.idDrink, drink));
-    const uniqueIngredientResults = Array.from(uniqueIngredientMap.values());
+    let allIngredientResults = Array.from(uniqueIngredientMap.values());
     
-    const categoryIds = new Set(categoryResults.map(d => d.idDrink));
-    results = uniqueIngredientResults.filter(drink => categoryIds.has(drink.idDrink));
+    allIngredientResults = await enrichWithCategories(allIngredientResults);
+    
+    results = allIngredientResults.filter(drink => 
+      drink.strCategory?.toLowerCase() === filters.category?.toLowerCase()
+    );
+  }
+
+  const needsEnrichment = results.some(drink => !drink.strCategory);
+  if (needsEnrichment) {
+    results = await enrichWithCategories(results);
   }
 
   return results;
+}
+
+async function enrichWithCategories(drinks: z.infer<typeof DrinkAPIResponse>[]) {
+  const enrichedDrinks = await Promise.all(
+    drinks.map(async (drink) => {
+      if (drink.strCategory) {
+        return drink;
+      }
+      
+      try {
+        const details = await getRecipeById(drink.idDrink);
+        return {
+          ...drink,
+          strCategory: details.strCategory
+        };
+      } catch (error) {
+        console.error(`Error fetching category for drink ${drink.idDrink}:`, error);
+        return drink;
+      }
+    })
+  );
+  
+  return enrichedDrinks;
 }
 
 async function searchByName(name: string): Promise<z.infer<typeof DrinkAPIResponse>[]> {
@@ -67,8 +110,12 @@ async function searchByName(name: string): Promise<z.infer<typeof DrinkAPIRespon
     
     if (!response.data.drinks) return [];
     
-    const parsed = DrinksAPIResponse.safeParse(response.data);
-    return parsed.success ? parsed.data.drinks : [];
+    return response.data.drinks.map((drink: RawDrinkFromAPI) => ({
+      idDrink: drink.idDrink,
+      strDrink: drink.strDrink,
+      strDrinkThumb: drink.strDrinkThumb,
+      strCategory: drink.strCategory
+    }));
   } catch (error) {
     console.error("Error searching by name:", error);
     return [];
@@ -106,8 +153,13 @@ async function searchByCategory(category: string): Promise<z.infer<typeof DrinkA
 }
 
 export async function getRecipeById(id: string) {
-  const url = `https://www.thecocktaildb.com/api/json/v1/1/lookup.php?i=${id}`;
+  const url = `${LOOKUP_API_BASE}?i=${id}`;
   const response = await axios.get(url);
+  
+  if (!response.data.drinks || !response.data.drinks[0]) {
+    throw new Error("Recipe not found");
+  }
+  
   const parsed = RecipeAPIResponseSchema.safeParse(response.data.drinks[0]);
   if (!parsed.success) {
     throw new Error("Invalid recipe data");
