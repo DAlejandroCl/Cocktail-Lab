@@ -1,4 +1,4 @@
-# 🌤 Weather Finder App
+# 🍹 Cocktail Lab
 
 [![Live Demo](https://img.shields.io/badge/demo-live-green)]()
 
@@ -57,13 +57,15 @@ You can try the application here:
 src/
 ├── components/
 │   ├── Header.tsx
-│   └── DrinkCard.tsx
+│   ├── DrinkCard.tsx
+│   └── Modal.tsx
 ├── layouts/
 │   └── Layout.tsx
 ├── services/
 │   └── RecipeService.ts
 ├── stores/
 │   ├── recipeSlice.ts
+│   ├── favoritesSlice.ts
 │   └── useAppStore.ts
 ├── types/
 │   └── index.ts
@@ -119,6 +121,7 @@ This project uses:
 - **Categories endpoint:** Get list of drink categories
 - **Filter endpoint:** Search drinks by category or ingredient
 - **Lookup endpoint:** Get detailed recipe information
+- **Search endpoints:** Search drinks by name
 
 ## 📄 License
 
