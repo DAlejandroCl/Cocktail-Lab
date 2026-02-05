@@ -24,7 +24,9 @@ export default function DrinkCard({ drink }: DrinkCardProps) {
 
       <div className="p-4 bg-slate-900/70 backdrop-blur-sm border-t border-white/10">
         <div className="grid grid-cols-[1fr_auto] gap-3 items-start mb-3">
-          <h3 className="text-lg font-bold text-white leading-tight">
+          <h3
+            className="text-lg font-bold text-white leading-tight line-clamp-2 min-h-[2.5em]"
+          >
             {drink.strDrink}
           </h3>
 
