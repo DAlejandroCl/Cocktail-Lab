@@ -27,7 +27,6 @@ export default function Header() {
 
   useEffect(() => {
     if (drinks.drinks.length > 0 && resultsRef.current) {
-      // Pequeño delay para asegurar que el contenido se renderizó
       setTimeout(() => {
         resultsRef.current?.scrollIntoView({
           behavior: "smooth",
@@ -201,7 +200,7 @@ export default function Header() {
 
                       <button
                         type="submit"
-                        className="button-primary w-full md:w-auto px-10 h-14 bg-primary text-navy-deep font-bold rounded-xl shadow-lg shadow-primary/20"
+                        className="button-primary w-full md:w-auto px-10 h-14 bg-primary text-navy-deep font-bold rounded-xl shadow-lg shadow-primary/20 cursor-pointer hover:scale-[1.02] transition-transform"
                       >
                         Search
                       </button>
