@@ -9,18 +9,23 @@ export default function SkeletonDrinkCard() {
         }}
       />
 
-      <div className="relative aspect-4/5 bg-slate-700/40" />
+      <div className="relative aspect-4/5 overflow-hidden bg-white/5">
+        <div className="absolute inset-0 bg-linear-to-b from-black/50 via-transparent to-black/30" />
 
-      <div className="relative p-5 bg-linear-to-b from-white/8 to-white/3 backdrop-blur-xl border-t border-white/10">
+        <div className="absolute top-3 left-3 right-3 flex justify-between z-10">
+          <div className="h-6 w-20 rounded-full bg-white/20 backdrop-blur-md" />
+
+          <div className="w-10 h-10 rounded-lg bg-white/20 backdrop-blur-md" />
+        </div>
+      </div>
+
+      <div className="relative p-5 bg-transparent backdrop-blur-md border-t border-white/10">
         <div className="space-y-2 mb-4">
-          <div className="h-4 w-3/4 rounded-md bg-slate-600/40" />
-          <div className="h-4 w-1/2 rounded-md bg-slate-600/30" />
+          <div className="h-4 w-3/4 mx-auto rounded-md bg-white/20" />
+          <div className="h-4 w-1/2 mx-auto rounded-md bg-white/15" />
         </div>
 
-        <div className="flex gap-2.5">
-          <div className="flex-1 h-11 rounded-xl bg-slate-600/30" />
-          <div className="w-11 h-11 rounded-xl bg-slate-600/30" />
-        </div>
+        <div className="h-11 w-full rounded-xl bg-white/20" />
       </div>
     </div>
   );
