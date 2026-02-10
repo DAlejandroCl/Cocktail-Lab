@@ -31,14 +31,14 @@ export type FavoritesSliceType = {
 }
 
 export const createFavoritesSlice : StateCreator<FavoritesSliceType> = (set, get) => ({
-    favorites: loadFavoritesFromStorage(), // Cargar desde localStorage al iniciar
+    favorites: loadFavoritesFromStorage(),
     
     addFavorite: (recipe) => {
         const { favorites } = get()
         if (!favorites.find(fav => fav.idDrink === recipe.idDrink)) {
             const newFavorites = [...favorites, recipe];
             set({ favorites: newFavorites });
-            saveFavoritesToStorage(newFavorites); // Guardar en localStorage
+            saveFavoritesToStorage(newFavorites);
         }
     },
     
@@ -46,7 +46,7 @@ export const createFavoritesSlice : StateCreator<FavoritesSliceType> = (set, get
         const { favorites } = get()
         const newFavorites = favorites.filter(fav => fav.idDrink !== id);
         set({ favorites: newFavorites });
-        saveFavoritesToStorage(newFavorites); // Guardar en localStorage
+        saveFavoritesToStorage(newFavorites);
     },
     
     isFavorite: (id) => {

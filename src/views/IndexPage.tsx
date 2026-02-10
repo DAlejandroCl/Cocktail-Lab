@@ -7,7 +7,6 @@ export default function IndexPage() {
   const drinks = useAppStore((state) => state.drinks);
   const searchRecipes = useAppStore((state) => state.searchRecipes);
 
-  // 👇 ajusta el nombre si tu store usa otro
   const isLoading = drinks.drinks.length === 0;
 
   const hasDrinks = useMemo(
@@ -22,7 +21,6 @@ export default function IndexPage() {
   return (
     <div className="relative">
       <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
-        {/* Header */}
         <div className="flex items-end justify-between mb-10 border-b border-white/10 pb-6">
           <div>
             <h2 className="text-2xl font-bold text-white uppercase tracking-tighter">
@@ -66,7 +64,6 @@ export default function IndexPage() {
           )}
         </div>
 
-        {/* Content */}
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {Array.from({ length: 8 }).map((_, index) => (
@@ -86,7 +83,6 @@ export default function IndexPage() {
             ))}
           </div>
         ) : (
-          /* Empty State */
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <div className="glass-panel rounded-full p-8 mb-6">
               <svg
