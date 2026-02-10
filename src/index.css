@@ -21,14 +21,13 @@
   body {
     margin: 0;
     padding: 0;
-    background: linear-gradient(135deg, #020617 0%, #0f172a 50%, #1e293b 100%);
-    background-attachment: fixed;
-    color: rgb(241 245 249);
     min-height: 100vh;
+    background: #020617;
+    color: rgb(241 245 249);
+    font-family: var(--font-sans);
     font-smoothing: antialiased;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    font-family: var(--font-sans);
   }
 }
 
@@ -91,25 +90,66 @@ body::after {
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+
+  background: rgba(15, 23, 42, 0.35);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+
+  transition:
+    transform 0.4s var(--ease-out-soft),
+    box-shadow 0.4s var(--ease-out-soft);
+}
+
+.glass-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+
+  background:
+    radial-gradient(
+      circle at 50% 0%,
+      rgba(251, 146, 60, 0.25),
+      transparent 65%
+    );
+
+  opacity: 0.8;
+}
+
+.glass-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.6),
+      rgba(255, 255, 255, 0)
+    );
+
+  mix-blend-mode: soft-light;
 }
 
 .glass-card:hover {
-  border-color: rgba(251, 146, 60, 0.6);
-  background: rgba(255, 255, 255, 0.12);
-  transform: translateY(-4px);
-  box-shadow: 
-    0 20px 40px rgba(0, 0, 0, 0.4),
-    0 0 0 1px rgba(251, 146, 60, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transform: translateY(-6px);
+  box-shadow:
+    0 24px 48px rgba(251, 146, 60, 0.18),
+    0 0 0 1px rgba(251, 146, 60, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
 }
+
 
 .button-primary {
   position: relative;
@@ -153,25 +193,37 @@ body::after {
 }
 
 .favorite-button {
-  background: rgba(30, 41, 59, 0.85);
-  backdrop-filter: blur(8px);
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   transition:
     transform 0.25s var(--ease-out-soft),
     box-shadow 0.25s var(--ease-out-soft),
     color 0.25s var(--ease-out-soft),
-    background-color 0.25s var(--ease-out-soft);
+    background-color 0.25s var(--ease-out-soft),
+    border-color 0.25s var(--ease-out-soft);
 }
 
-.favorite-button:hover {
+.favorite-button:hover:not(.is-active) {
   transform: translateY(-1px) scale(1.05);
+  background: rgba(15, 23, 42, 0.85);
+  border-color: rgba(255, 255, 255, 0.5) !important;
 }
 
 .favorite-button.is-active {
-  background: var(--color-primary);
+  background: var(--color-primary) !important;
   color: #020617;
+  border-color: rgba(251, 146, 60, 0.5) !important;
   box-shadow:
     0 8px 25px rgba(251, 146, 60, 0.45),
     0 0 0 1px rgba(251, 146, 60, 0.35);
+}
+
+.favorite-button.is-active:hover {
+  transform: translateY(-1px) scale(1.05);
+  box-shadow:
+    0 10px 30px rgba(251, 146, 60, 0.5),
+    0 0 0 1px rgba(251, 146, 60, 0.4);
 }
 
 .favorite-button.is-active svg {
