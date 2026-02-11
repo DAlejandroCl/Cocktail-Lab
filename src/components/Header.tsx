@@ -110,7 +110,7 @@ export default function Header() {
                   </p>
                 </section>
 
-                <section className="relative z-[100] mt-12">
+                <section className="relative z-100 mt-12">
                   <form onSubmit={handleSubmit}>
                     <div className="glass-panel p-3 rounded-2xl flex flex-col md:flex-row items-center gap-3 shadow-2xl">
                       <div className="flex-1 w-full relative">
@@ -173,11 +173,11 @@ export default function Header() {
                         {categoryOpen && (
                           <>
                             <div
-                              className="fixed inset-0 z-[110]"
+                              className="fixed inset-0 z-110"
                               onClick={() => setCategoryOpen(false)}
                             />
 
-                            <ul className="absolute top-full mt-2 w-full rounded-lg bg-slate-900/98 backdrop-blur-xl shadow-2xl overflow-hidden border border-primary/30 max-h-[300px] overflow-y-auto z-[120]">
+                            <ul className="absolute top-full mt-2 w-full rounded-lg bg-slate-900/98 backdrop-blur-xl shadow-2xl overflow-hidden border border-primary/30 max-h-75 overflow-y-auto z-120">
                               {categories.map((item) => (
                                 <li
                                   key={item.strCategory}
