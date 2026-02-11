@@ -6,13 +6,15 @@ export default function FavoritesPage() {
   const favorites = useAppStore((state) => state.favorites);
   const setNotification = useAppStore((state) => state.setNotification);
 
-  const hasFavorites = useMemo(() => favorites.length > 0, [favorites]);
+  const favoritesArray = useMemo(() => Object.values(favorites), [favorites]);
+
+  const hasFavorites = favoritesArray.length > 0;
 
   useEffect(() => {
-    if (favorites.length === 0) {
+    if (!hasFavorites) {
       setNotification("Your favorites list is empty", "info");
     }
-  }, [favorites.length, setNotification]);
+  }, [hasFavorites, setNotification]);
 
   return (
     <div className="relative min-h-screen">
@@ -22,10 +24,11 @@ export default function FavoritesPage() {
             <h2 className="text-2xl font-bold text-white uppercase tracking-tighter">
               My Favorites
             </h2>
+
             {hasFavorites && (
               <p className="text-slate-400 text-sm mt-1">
-                {favorites.length}{" "}
-                {favorites.length === 1 ? "recipe" : "recipes"} saved
+                {favoritesArray.length}{" "}
+                {favoritesArray.length === 1 ? "recipe" : "recipes"} saved
               </p>
             )}
           </div>
@@ -33,7 +36,7 @@ export default function FavoritesPage() {
 
         {hasFavorites ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {favorites.map((drink, index) => (
+            {favoritesArray.map((drink, index) => (
               <div
                 key={drink.idDrink}
                 className="animate-fade-up"
@@ -45,20 +48,23 @@ export default function FavoritesPage() {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-32 text-center">
+            {" "}
             <div className="glass-panel rounded-full p-8 mb-6">
+              {" "}
               <svg
                 className="w-16 h-16 text-primary"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
               >
+                {" "}
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
                   d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                />
-              </svg>
+                />{" "}
+              </svg>{" "}
             </div>
             <h2 className="text-2xl font-bold text-white mb-3 font-serif">
               No Favorites Yet

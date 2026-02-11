@@ -1,55 +1,61 @@
+import { memo, useCallback, useState } from "react";
 import type { Drink } from "../types";
 import { useAppStore } from "../stores/useAppStore";
-import { useState } from "react";
 
 type DrinkCardProps = {
   drink: Drink;
 };
 
-export default function DrinkCard({ drink }: DrinkCardProps) {
-  const selectRecipe = useAppStore((state) => state.selectRecipe);
-  const isFavorite = useAppStore((state) => state.isFavorite(drink.idDrink));
-  const addFavorite = useAppStore((state) => state.addFavorite);
-  const removeFavorite = useAppStore((state) => state.removeFavorite);
-  const setNotification = useAppStore((state) => state.setNotification);
+function DrinkCardComponent({ drink }: DrinkCardProps) {
+  const selectRecipe = useAppStore((s) => s.selectRecipe);
+  const addFavorite = useAppStore((s) => s.addFavorite);
+  const removeFavorite = useAppStore((s) => s.removeFavorite);
+  const setNotification = useAppStore((s) => s.setNotification);
+  const isFavorite = useAppStore((s) => s.isFavorite(drink.idDrink));
 
   const [isAnimating, setIsAnimating] = useState(false);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
 
-  const handleFavoriteClick = async (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleFavoriteClick = useCallback(
+    async (e: React.MouseEvent) => {
+      e.stopPropagation();
 
-    setIsAnimating(true);
-    setTimeout(() => setIsAnimating(false), 400);
+      setIsAnimating(true);
+      setTimeout(() => setIsAnimating(false), 400);
 
-    if (isFavorite) {
-      removeFavorite(drink.idDrink);
-      setNotification("Removed from favorites", "info");
-      return;
-    }
-
-    setIsLoadingDetails(true);
-
-    try {
-      const response = await fetch(
-        `https://www.thecocktaildb.com/api/json/v1/1/lookup.php?i=${drink.idDrink}`,
-      );
-      const data = await response.json();
-
-      if (data.drinks && data.drinks[0]) {
-        const fullRecipe = data.drinks[0];
-        addFavorite(fullRecipe);
-        setNotification("Added to favorites", "success");
-      } else {
-        setNotification("Unable to load cocktail details", "error");
+      if (isFavorite) {
+        removeFavorite(drink.idDrink);
+        setNotification("Removed from favorites", "info");
+        return;
       }
-    } catch (error) {
-      console.error("Error fetching recipe details:", error);
-      setNotification("Unable to load cocktail details", "error");
-    } finally {
-      setIsLoadingDetails(false);
-    }
-  };
+
+      setIsLoadingDetails(true);
+
+      try {
+        const response = await fetch(
+          `https://www.thecocktaildb.com/api/json/v1/1/lookup.php?i=${drink.idDrink}`
+        );
+        const data = await response.json();
+
+        if (data.drinks?.[0]) {
+          addFavorite(data.drinks[0]);
+          setNotification("Added to favorites", "success");
+        } else {
+          setNotification("Unable to load cocktail details", "error");
+        }
+      } catch (error) {
+        console.error(error);
+        setNotification("Unable to load cocktail details", "error");
+      } finally {
+        setIsLoadingDetails(false);
+      }
+    },
+    [drink.idDrink, isFavorite, addFavorite, removeFavorite, setNotification]
+  );
+
+  const handleSelectRecipe = useCallback(() => {
+    selectRecipe(drink.idDrink);
+  }, [selectRecipe, drink.idDrink]);
 
   return (
     <div className="glass-card rounded-2xl overflow-hidden group relative">
@@ -134,7 +140,7 @@ export default function DrinkCard({ drink }: DrinkCardProps) {
         </h3>
 
         <button
-          onClick={() => selectRecipe(drink.idDrink)}
+          onClick={handleSelectRecipe}
           className="button-primary w-full h-11 bg-primary text-navy-deep font-bold rounded-xl shadow-lg shadow-primary/20 text-sm tracking-wide hover:shadow-xl hover:shadow-primary/40 active:scale-[0.98] cursor-pointer transition-all duration-300 flex items-center justify-center gap-2"
           aria-label={`View recipe for ${drink.strDrink}`}
         >
@@ -144,3 +150,8 @@ export default function DrinkCard({ drink }: DrinkCardProps) {
     </div>
   );
 }
+
+export default memo(
+  DrinkCardComponent,
+  (prev, next) => prev.drink.idDrink === next.drink.idDrink,
+);

@@ -6,9 +6,8 @@ export default function Modal() {
   const modal = useAppStore((state) => state.modal);
   const closeModal = useAppStore((state) => state.closeModal);
   const selectedRecipe = useAppStore((state) => state.selectedRecipe);
-  const isFavorite = useAppStore((state) =>
-    state.isFavorite(selectedRecipe.idDrink)
-  );
+  const isFavorite = useAppStore((s) => s.isFavorite(selectedRecipe.idDrink));
+
   const addFavorite = useAppStore((state) => state.addFavorite);
   const removeFavorite = useAppStore((state) => state.removeFavorite);
   const setNotification = useAppStore((state) => state.setNotification);
