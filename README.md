@@ -56,24 +56,27 @@ You can try the application here:
 ```txt
 src/
 ├── components/
-│   ├── Header.tsx
 │   ├── DrinkCard.tsx
-│   └── Modal.tsx
+│   ├── Header.tsx
+│   ├── Modal.tsx
+│   ├── Notification.tsx
+│   └── SkeletonDrinkCard.tsx
 ├── layouts/
 │   └── Layout.tsx
 ├── services/
 │   └── RecipeService.ts
 ├── stores/
-│   ├── recipeSlice.ts
 │   ├── favoritesSlice.ts
+│   ├── notificationSlice.ts
+│   ├── recipeSlice.ts
 │   └── useAppStore.ts
 ├── types/
 │   └── index.ts
 ├── utils/
 │   └── recipes-schemas.ts
 ├── views/
-│   ├── IndexPage.tsx
-│   └── FavoritesPage.tsx
+│   ├── FavoritesPage.tsx
+│   └── IndexPage.tsx
 ├── router.tsx
 ├── main.tsx
 └── index.css
