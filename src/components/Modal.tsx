@@ -6,10 +6,13 @@ export default function Modal() {
   const modal = useAppStore((state) => state.modal);
   const closeModal = useAppStore((state) => state.closeModal);
   const selectedRecipe = useAppStore((state) => state.selectedRecipe);
-  const isFavorite = useAppStore((state) => state.isFavorite(selectedRecipe.idDrink));
+  const isFavorite = useAppStore((state) =>
+    state.isFavorite(selectedRecipe.idDrink)
+  );
   const addFavorite = useAppStore((state) => state.addFavorite);
   const removeFavorite = useAppStore((state) => state.removeFavorite);
-  
+  const setNotification = useAppStore((state) => state.setNotification);
+
   const [isAnimating, setIsAnimating] = useState(false);
 
   const handleFavoriteClick = () => {
@@ -18,17 +21,21 @@ export default function Modal() {
 
     if (isFavorite) {
       removeFavorite(selectedRecipe.idDrink);
+      setNotification("Removed from favorites", "info");
     } else {
       addFavorite(selectedRecipe);
+      setNotification("Added to favorites", "success");
     }
   };
 
   const renderIngredients = () => {
     const ingredients = [];
     for (let i = 1; i <= 10; i++) {
-      const ingredient = selectedRecipe[`strIngredient${i}` as keyof typeof selectedRecipe];
-      const measure = selectedRecipe[`strMeasure${i}` as keyof typeof selectedRecipe];
-      
+      const ingredient =
+        selectedRecipe[`strIngredient${i}` as keyof typeof selectedRecipe];
+      const measure =
+        selectedRecipe[`strMeasure${i}` as keyof typeof selectedRecipe];
+
       if (ingredient && ingredient.trim()) {
         ingredients.push(
           <div key={i} className="flex justify-between items-center p-4">
@@ -45,19 +52,19 @@ export default function Modal() {
 
   const renderInstructions = () => {
     if (!selectedRecipe.strInstructions) return null;
-    
+
     const steps = selectedRecipe.strInstructions
       .split(/\.\s+/)
-      .filter(step => step.trim().length > 0)
-      .map(step => step.trim() + (step.endsWith('.') ? '' : '.'));
+      .filter((step) => step.trim().length > 0)
+      .map((step) => step.trim() + (step.endsWith(".") ? "" : "."));
 
     return steps.map((step, index) => (
       <div key={index} className="flex gap-4">
-        <div 
+        <div
           className={`flex-none w-8 h-8 rounded-full ${
-            index === 0 
-              ? 'bg-primary text-navy-deep' 
-              : 'bg-primary/20 border border-primary/30 text-primary'
+            index === 0
+              ? "bg-primary text-navy-deep"
+              : "bg-primary/20 border border-primary/30 text-primary"
           } flex items-center justify-center text-sm font-bold`}
         >
           {index + 1}
@@ -70,7 +77,7 @@ export default function Modal() {
   return (
     <>
       <Transition appear show={modal} as={Fragment}>
-        <Dialog as="div" className="relative z-[200]" onClose={closeModal}>
+        <Dialog as="div" className="relative z-200" onClose={closeModal}>
           <Transition.Child
             as={Fragment}
             enter="ease-out duration-300"
@@ -95,7 +102,7 @@ export default function Modal() {
                 leaveTo="opacity-0 scale-95"
               >
                 <Dialog.Panel 
-                  className="w-full max-w-lg sm:rounded-[2rem] overflow-hidden flex flex-col max-h-[94vh] shadow-2xl relative"
+                  className="w-full max-w-lg sm:rounded-4xl overflow-hidden flex flex-col max-h-[94vh] shadow-2xl relative"
                   style={{
                     background: 'rgba(15, 23, 42, 0.75)',
                     backdropFilter: 'blur(40px) saturate(180%)',
@@ -119,13 +126,13 @@ export default function Modal() {
 
                   <div className="flex-1 overflow-y-auto custom-scrollbar">
                     <div className="px-4 py-2 sm:px-6 sm:pt-6">
-                      <div className="w-full relative overflow-hidden rounded-2xl aspect-[4/3] shadow-2xl border border-white/10">
+                      <div className="w-full relative overflow-hidden rounded-2xl aspect-4/3 shadow-2xl border border-white/10">
                         <img
                           alt={selectedRecipe.strDrink}
                           className="absolute inset-0 w-full h-full object-cover"
                           src={selectedRecipe.strDrinkThumb}
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                        <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent"></div>
                       </div>
                     </div>
 

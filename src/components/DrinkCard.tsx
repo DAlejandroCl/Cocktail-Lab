@@ -11,6 +11,7 @@ export default function DrinkCard({ drink }: DrinkCardProps) {
   const isFavorite = useAppStore((state) => state.isFavorite(drink.idDrink));
   const addFavorite = useAppStore((state) => state.addFavorite);
   const removeFavorite = useAppStore((state) => state.removeFavorite);
+  const setNotification = useAppStore((state) => state.setNotification);
 
   const [isAnimating, setIsAnimating] = useState(false);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
@@ -23,24 +24,30 @@ export default function DrinkCard({ drink }: DrinkCardProps) {
 
     if (isFavorite) {
       removeFavorite(drink.idDrink);
-    } else {
-      setIsLoadingDetails(true);
+      setNotification("Removed from favorites", "info");
+      return;
+    }
 
-      try {
-        const response = await fetch(
-          `https://www.thecocktaildb.com/api/json/v1/1/lookup.php?i=${drink.idDrink}`,
-        );
-        const data = await response.json();
+    setIsLoadingDetails(true);
 
-        if (data.drinks && data.drinks[0]) {
-          const fullRecipe = data.drinks[0];
-          addFavorite(fullRecipe);
-        }
-      } catch (error) {
-        console.error("Error fetching recipe details:", error);
-      } finally {
-        setIsLoadingDetails(false);
+    try {
+      const response = await fetch(
+        `https://www.thecocktaildb.com/api/json/v1/1/lookup.php?i=${drink.idDrink}`,
+      );
+      const data = await response.json();
+
+      if (data.drinks && data.drinks[0]) {
+        const fullRecipe = data.drinks[0];
+        addFavorite(fullRecipe);
+        setNotification("Added to favorites", "success");
+      } else {
+        setNotification("Unable to load cocktail details", "error");
       }
+    } catch (error) {
+      console.error("Error fetching recipe details:", error);
+      setNotification("Unable to load cocktail details", "error");
+    } finally {
+      setIsLoadingDetails(false);
     }
   };
 
@@ -75,7 +82,9 @@ export default function DrinkCard({ drink }: DrinkCardProps) {
             disabled={isLoadingDetails}
             className={`favorite-button w-10 h-10 rounded-lg border border-white/30 flex items-center justify-center shadow-lg backdrop-blur-md ${
               isFavorite ? "is-active" : "bg-black/40"
-            } ${isAnimating ? "animate-heart-pop" : ""} ${isLoadingDetails ? "opacity-50 cursor-wait" : ""}`}
+            } ${isAnimating ? "animate-heart-pop" : ""} ${
+              isLoadingDetails ? "opacity-50 cursor-wait" : ""
+            }`}
             aria-label={
               isFavorite ? "Remove from favorites" : "Add to favorites"
             }
@@ -120,15 +129,7 @@ export default function DrinkCard({ drink }: DrinkCardProps) {
       </div>
 
       <div className="relative p-5 backdrop-blur-xl bg-white/10 border-t border-white/20">
-<h3 className="
-  text-lg font-semibold
-  text-white
-  leading-tight mb-4
-  line-clamp-2 min-h-14
-  text-center
-  transition-colors duration-300
-  group-hover:text-white
-">
+        <h3 className="text-lg font-semibold text-white leading-tight mb-4 line-clamp-2 min-h-14 text-center transition-colors duration-300 group-hover:text-white">
           {drink.strDrink}
         </h3>
 

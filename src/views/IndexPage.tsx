@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { useAppStore } from "../stores/useAppStore";
 import DrinkCard from "../components/DrinkCard";
 import SkeletonDrinkCard from "../components/SkeletonDrinkCard";
@@ -6,6 +6,7 @@ import SkeletonDrinkCard from "../components/SkeletonDrinkCard";
 export default function IndexPage() {
   const drinks = useAppStore((state) => state.drinks);
   const searchRecipes = useAppStore((state) => state.searchRecipes);
+  const setNotification = useAppStore((state) => state.setNotification);
 
   const isLoading = drinks.drinks.length === 0;
 
@@ -13,6 +14,12 @@ export default function IndexPage() {
     () => drinks.drinks.length > 0,
     [drinks.drinks]
   );
+
+  useEffect(() => {
+    if (!isLoading && drinks.drinks.length === 0) {
+      setNotification("No cocktails found with those filters", "info");
+    }
+  }, [drinks.drinks, isLoading, setNotification]);
 
   const handleBrowseAll = () => {
     searchRecipes({ category: "Cocktail", ingredient: "" });
