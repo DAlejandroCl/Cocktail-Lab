@@ -1,6 +1,6 @@
 # 🍹 Cocktail Lab
 
-[![Live Demo](https://img.shields.io/badge/demo-live-green)]()
+[![Live Demo](https://img.shields.io/badge/demo-live-green)](https://cocktail-lab-devacl.vercel.app)
 
 A multi-page cocktail recipe application built with React + TypeScript and React Router DOM.
 Browse and discover drink recipes by category or ingredient using the [TheCocktailDB API](https://www.thecocktaildb.com/api.php). Features modular state management with Zustand Slice Pattern, runtime validation with Zod, and a responsive design.
@@ -9,7 +9,7 @@ Browse and discover drink recipes by category or ingredient using the [TheCockta
 
 You can try the application here:
 
-👉 
+👉 https://cocktail-lab-devacl.vercel.app
 
 ---
 
