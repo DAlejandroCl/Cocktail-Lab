@@ -1,16 +1,24 @@
 import { Dialog, Transition } from "@headlessui/react";
 import { Fragment, useState } from "react";
 import { useAppStore } from "../stores/useAppStore";
+import {
+  selectModal,
+  selectCloseModal,
+  selectSelectedRecipe,
+  selectAddFavorite,
+  selectRemoveFavorite,
+  selectSetNotification,
+  selectIsFavorite,
+} from "../stores/selectors";
 
 export default function Modal() {
-  const modal = useAppStore((state) => state.modal);
-  const closeModal = useAppStore((state) => state.closeModal);
-  const selectedRecipe = useAppStore((state) => state.selectedRecipe);
-  const isFavorite = useAppStore((s) => s.isFavorite(selectedRecipe.idDrink));
-
-  const addFavorite = useAppStore((state) => state.addFavorite);
-  const removeFavorite = useAppStore((state) => state.removeFavorite);
-  const setNotification = useAppStore((state) => state.setNotification);
+  const modal = useAppStore(selectModal);
+  const closeModal = useAppStore(selectCloseModal);
+  const selectedRecipe = useAppStore(selectSelectedRecipe);
+  const isFavorite = useAppStore(selectIsFavorite(selectedRecipe.idDrink));
+  const addFavorite = useAppStore(selectAddFavorite);
+  const removeFavorite = useAppStore(selectRemoveFavorite);
+  const setNotification = useAppStore(selectSetNotification);
 
   const [isAnimating, setIsAnimating] = useState(false);
 
@@ -42,7 +50,7 @@ export default function Modal() {
             <span className="text-primary font-bold text-lg">
               {measure && measure.trim() ? measure : "-"}
             </span>
-          </div>
+          </div>,
         );
       }
     }
@@ -100,13 +108,13 @@ export default function Modal() {
                 leaveFrom="opacity-100 scale-100"
                 leaveTo="opacity-0 scale-95"
               >
-                <Dialog.Panel 
+                <Dialog.Panel
                   className="w-full max-w-lg sm:rounded-4xl overflow-hidden flex flex-col max-h-[94vh] shadow-2xl relative"
                   style={{
-                    background: 'rgba(15, 23, 42, 0.75)',
-                    backdropFilter: 'blur(40px) saturate(180%)',
-                    WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-                    border: '1px solid rgba(255, 255, 255, 0.15)'
+                    background: "rgba(15, 23, 42, 0.75)",
+                    backdropFilter: "blur(40px) saturate(180%)",
+                    WebkitBackdropFilter: "blur(40px) saturate(180%)",
+                    border: "1px solid rgba(255, 255, 255, 0.15)",
                   }}
                 >
                   <div className="flex h-8 w-full items-center justify-center sm:hidden">
@@ -118,8 +126,18 @@ export default function Modal() {
                     className="absolute top-4 right-4 z-20 h-10 w-10 flex items-center justify-center rounded-full bg-black/30 backdrop-blur-md text-white border border-white/20 hover:bg-black/50 active:scale-95 transition-all"
                     aria-label="Close modal"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
                     </svg>
                   </button>
 
@@ -151,16 +169,29 @@ export default function Modal() {
                           {selectedRecipe.strDrink}
                         </Dialog.Title>
                         <p className="text-white/60 text-base italic">
-                          A carefully crafted cocktail for the discerning palate.
+                          A carefully crafted cocktail for the discerning
+                          palate.
                         </p>
                       </div>
 
                       <div className="space-y-4">
                         <div className="flex items-center gap-3">
-                          <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                          <svg
+                            className="w-6 h-6 text-primary"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                            />
                           </svg>
-                          <h3 className="text-white text-xl font-bold tracking-tight">Ingredients</h3>
+                          <h3 className="text-white text-xl font-bold tracking-tight">
+                            Ingredients
+                          </h3>
                         </div>
                         <div className="bg-white/5 rounded-2xl border border-white/10 overflow-hidden divide-y divide-white/5">
                           {renderIngredients()}
@@ -169,47 +200,65 @@ export default function Modal() {
 
                       <div className="space-y-4">
                         <div className="flex items-center gap-3">
-                          <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                          <svg
+                            className="w-6 h-6 text-primary"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                            />
                           </svg>
-                          <h3 className="text-white text-xl font-bold tracking-tight">Instructions</h3>
+                          <h3 className="text-white text-xl font-bold tracking-tight">
+                            Instructions
+                          </h3>
                         </div>
-                        <div className="space-y-6">
-                          {renderInstructions()}
-                        </div>
+                        <div className="space-y-6">{renderInstructions()}</div>
                       </div>
                     </div>
                   </div>
 
-                  <div 
+                  <div
                     className="absolute bottom-0 left-0 right-0 p-6 border-t border-white/10 flex gap-4"
                     style={{
-                      background: 'rgba(15, 23, 42, 0.5)',
-                      backdropFilter: 'blur(20px)',
-                      WebkitBackdropFilter: 'blur(20px)'
+                      background: "rgba(15, 23, 42, 0.5)",
+                      backdropFilter: "blur(20px)",
+                      WebkitBackdropFilter: "blur(20px)",
                     }}
                   >
-                    <button 
+                    <button
                       onClick={closeModal}
                       className="button-primary flex-1 h-14 bg-primary text-navy-deep font-bold rounded-2xl shadow-lg shadow-primary/20"
                     >
                       Close
                     </button>
-                    <button 
+                    <button
                       onClick={handleFavoriteClick}
                       className={`favorite-button w-14 h-14 rounded-2xl border border-white/20 flex items-center justify-center shadow-md ${
                         isFavorite ? "is-active" : ""
                       } ${isAnimating ? "animate-heart-pop" : ""}`}
-                      aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                      aria-label={
+                        isFavorite
+                          ? "Remove from favorites"
+                          : "Add to favorites"
+                      }
                     >
-                      <svg 
-                        className="w-6 h-6" 
+                      <svg
+                        className="w-6 h-6"
                         fill={isFavorite ? "currentColor" : "none"}
-                        stroke="currentColor" 
-                        strokeWidth={2} 
+                        stroke="currentColor"
+                        strokeWidth={2}
                         viewBox="0 0 24 24"
                       >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                        />
                       </svg>
                     </button>
                   </div>
