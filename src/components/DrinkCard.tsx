@@ -1,17 +1,24 @@
 import { memo, useCallback, useState } from "react";
 import type { Drink } from "../types";
 import { useAppStore } from "../stores/useAppStore";
+import {
+  selectSelectRecipe,
+  selectAddFavorite,
+  selectRemoveFavorite,
+  selectSetNotification,
+  selectIsFavorite,
+} from "../stores/selectors";
 
 type DrinkCardProps = {
   drink: Drink;
 };
 
 function DrinkCardComponent({ drink }: DrinkCardProps) {
-  const selectRecipe = useAppStore((s) => s.selectRecipe);
-  const addFavorite = useAppStore((s) => s.addFavorite);
-  const removeFavorite = useAppStore((s) => s.removeFavorite);
-  const setNotification = useAppStore((s) => s.setNotification);
-  const isFavorite = useAppStore((s) => s.isFavorite(drink.idDrink));
+  const selectRecipe = useAppStore(selectSelectRecipe);
+  const addFavorite = useAppStore(selectAddFavorite);
+  const removeFavorite = useAppStore(selectRemoveFavorite);
+  const setNotification = useAppStore(selectSetNotification);
+  const isFavorite = useAppStore(selectIsFavorite(drink.idDrink));
 
   const [isAnimating, setIsAnimating] = useState(false);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
@@ -33,7 +40,7 @@ function DrinkCardComponent({ drink }: DrinkCardProps) {
 
       try {
         const response = await fetch(
-          `https://www.thecocktaildb.com/api/json/v1/1/lookup.php?i=${drink.idDrink}`
+          `https://www.thecocktaildb.com/api/json/v1/1/lookup.php?i=${drink.idDrink}`,
         );
         const data = await response.json();
 
@@ -50,7 +57,7 @@ function DrinkCardComponent({ drink }: DrinkCardProps) {
         setIsLoadingDetails(false);
       }
     },
-    [drink.idDrink, isFavorite, addFavorite, removeFavorite, setNotification]
+    [drink.idDrink, isFavorite, addFavorite, removeFavorite, setNotification],
   );
 
   const handleSelectRecipe = useCallback(() => {
