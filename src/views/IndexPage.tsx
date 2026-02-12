@@ -2,13 +2,18 @@ import { useMemo, useEffect } from "react";
 import { useAppStore } from "../stores/useAppStore";
 import DrinkCard from "../components/DrinkCard";
 import SkeletonDrinkCard from "../components/SkeletonDrinkCard";
+import {
+  selectDrinks,
+  selectSearchRecipes,
+  selectSetNotification,
+  selectIsLoading,
+} from "../stores/selectors";
 
 export default function IndexPage() {
-  const drinks = useAppStore((state) => state.drinks);
-  const searchRecipes = useAppStore((state) => state.searchRecipes);
-  const setNotification = useAppStore((state) => state.setNotification);
-
-  const isLoading = drinks.drinks.length === 0;
+  const drinks = useAppStore(selectDrinks);
+const searchRecipes = useAppStore(selectSearchRecipes);
+const setNotification = useAppStore(selectSetNotification);
+const isLoading = useAppStore(selectIsLoading);
 
   const hasDrinks = useMemo(
     () => drinks.drinks.length > 0,
