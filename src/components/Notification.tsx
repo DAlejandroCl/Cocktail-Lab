@@ -1,16 +1,20 @@
 import { Fragment, useEffect } from "react";
 import { Transition } from "@headlessui/react";
-import { 
-  CheckCircleIcon, 
-  XCircleIcon, 
-  InformationCircleIcon 
+import {
+  CheckCircleIcon,
+  XCircleIcon,
+  InformationCircleIcon,
 } from "@heroicons/react/24/outline";
 import { XMarkIcon } from "@heroicons/react/20/solid";
 import { useAppStore } from "../stores/useAppStore";
+import {
+  selectNotification,
+  selectClearNotification,
+} from "../stores/selectors";
 
 export default function Notification() {
-  const notification = useAppStore((state) => state.notification);
-  const clearNotification = useAppStore((state) => state.clearNotification);
+  const notification = useAppStore(selectNotification);
+  const clearNotification = useAppStore(selectClearNotification);
 
   useEffect(() => {
     if (notification) {
@@ -45,7 +49,6 @@ export default function Notification() {
           <div className="absolute inset-0 rounded-2xl ring-1 ring-primary/30 shadow-lg shadow-primary/20 pointer-events-none" />
 
           <div className="p-5 flex items-start gap-4 relative">
-            
             <div className="shrink-0">
               {notification.type === "success" && (
                 <CheckCircleIcon className="w-6 h-6 text-green-400" />
