@@ -14,41 +14,58 @@ You can try the application here:
 ---
 
 ## ✨ Features
-- Multi-page navigation with React Router DOM
-- Browse recipes by category or ingredient
-- Real-time data from TheCocktailDB API
-- Display:
+- Multi-page navigation powered by React Router
+- Browse cocktail recipes by category or ingredient
+- Real-time data fetching from TheCocktailDB API
+- Detailed recipe view with:
   - Drink name and image
-  - Recipe details
+  - Preparation instructions
   - Ingredients and measurements
-- Favorites system to save preferred recipes
-- Input validation with Zod schemas
-- Modular state management using Zustand Slice Pattern
-- Responsive UI with Tailwind CSS
-- Loading states and error handling
+- Favorites system with:
+  - Persistent storage (localStorage)
+  - Instant add/remove functionality
+  - Derived favorites counter
+- Global notification system for user feedback
+- Optimized global state using:
+  - Zustand Slice Pattern
+  - Centralized typed selectors
+  - Controlled subscriptions to prevent unnecessary re-renders
+- Strong runtime validation using Zod
+- Type-safe domain models with TypeScript
+- Loading states and graceful error handling
+- Fully responsive UI built with Tailwind CSS
+- Animated UI elements for improved user experience
 
 ---
 
 ## 🛠 Tech Stack
-- **React** (Functional Components)
+- **React** (Functional Components + Hooks)
 - **TypeScript**
-- **Vite**
-- **Axios** for HTTP requests
-- **Zod** for schema validation
-- **Zustand** for state management
-- **React Router DOM** for routing
-- **Tailwind CSS**
+- **Vite** (Lightning-fast development environment)
+- **Zustand** (Modular state management with slices & persist middleware)
+- **React Router DOM** (Client-side routing)
+- **Axios** (HTTP client)
+- **Zod** (Runtime schema validation)
+- **Tailwind CSS** (Utility-first styling)
+- **LocalStorage** (Selective persistence via Zustand middleware)
 
 ---
 
 ## 🧠 Architecture & Concepts
-- Multi-page application with client-side routing
-- Zustand Slice Pattern for modular state management
-- Separate slices for recipes and favorites
-- API logic encapsulated in service layer
-- Strong runtime and compile-time validation using Zod
-- Reusable UI components
-- Type-safe API responses
+- Multi-page application powered by React Router with layout-based routing
+- Modular state management using Zustand Slice Pattern
+- Centralized typed selectors layer to optimize subscriptions and prevent unnecessary re-renders
+- Global store composed via unified AppState typing
+- Persistent state management using Zustand persist middleware (favorites stored selectively)
+- Clean separation of concerns:
+  - Slices → business logic & state mutations
+  - Selectors → controlled and optimized state access
+  - Services → API communication layer
+- API logic fully encapsulated in a dedicated service layer
+- Strong runtime validation with Zod
+- Fully typed domain models with TypeScript
+- Reusable, memoized UI components for performance optimization
+- Scalable and extensible store architecture ready for future features
 
 ---
 
@@ -69,6 +86,7 @@ src/
 │   ├── favoritesSlice.ts
 │   ├── notificationSlice.ts
 │   ├── recipeSlice.ts
+│   ├── selectors.ts
 │   └── useAppStore.ts
 ├── types/
 │   └── index.ts
