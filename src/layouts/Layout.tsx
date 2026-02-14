@@ -3,15 +3,18 @@ import { Suspense } from "react";
 import Header from "../components/Header";
 import Modal from "../components/Modal";
 import Notification from "../components/Notification";
+import ErrorBoundary from "../components/ErrorBoundary";
 
 export default function Layout() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
       <Suspense fallback={null}>
-        <main className="flex-1">
-          <Outlet />
-        </main>
+        <ErrorBoundary>
+          <main className="flex-1">
+            <Outlet />
+          </main>
+        </ErrorBoundary>
       </Suspense>
       <Modal />
       <Notification />
