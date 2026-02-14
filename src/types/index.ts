@@ -7,8 +7,9 @@ import {
   SearchFiltersSchema,
 } from "../utils/recipes-schemas";
 
-export type Category = z.infer<typeof CategoriesAPIResponseSchema>["drinks"][number];
-export type Categories = z.infer<typeof CategoriesAPIResponseSchema>;
+export type CategoriesAPIResponse = z.infer<typeof CategoriesAPIResponseSchema>;
+export type DrinksAPIResponseType = z.infer<typeof DrinksAPIResponse>;
+export type Category = string;
 export type SearchFilters = z.infer<typeof SearchFiltersSchema>;
 export type Drink = z.infer<typeof DrinkAPIResponse>;
 export type Drinks = z.infer<typeof DrinksAPIResponse>;
