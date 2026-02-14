@@ -15,19 +15,27 @@ export default function Modal() {
   const modal = useAppStore(selectModal);
   const closeModal = useAppStore(selectCloseModal);
   const selectedRecipe = useAppStore(selectSelectedRecipe);
-  const isFavorite = useAppStore(selectIsFavorite(selectedRecipe.idDrink));
   const addFavorite = useAppStore(selectAddFavorite);
   const removeFavorite = useAppStore(selectRemoveFavorite);
   const setNotification = useAppStore(selectSetNotification);
 
   const [isAnimating, setIsAnimating] = useState(false);
 
+  // ✅ Defensive id extraction
+  const recipeId = selectedRecipe?.idDrink ?? "";
+
+  // ✅ Safe selector call (never breaks hooks order)
+  const isFavorite = useAppStore(selectIsFavorite(recipeId));
+
+  // 🛡 True defensive rendering
+  if (!modal || !selectedRecipe) return null;
+
   const handleFavoriteClick = () => {
     setIsAnimating(true);
     setTimeout(() => setIsAnimating(false), 400);
 
     if (isFavorite) {
-      removeFavorite(selectedRecipe.idDrink);
+      removeFavorite(recipeId);
       setNotification("Removed from favorites", "info");
     } else {
       addFavorite(selectedRecipe);
@@ -37,9 +45,11 @@ export default function Modal() {
 
   const renderIngredients = () => {
     const ingredients = [];
+
     for (let i = 1; i <= 10; i++) {
       const ingredient =
         selectedRecipe[`strIngredient${i}` as keyof typeof selectedRecipe];
+
       const measure =
         selectedRecipe[`strMeasure${i}` as keyof typeof selectedRecipe];
 
@@ -50,10 +60,11 @@ export default function Modal() {
             <span className="text-primary font-bold text-lg">
               {measure && measure.trim() ? measure : "-"}
             </span>
-          </div>,
+          </div>
         );
       }
     }
+
     return ingredients;
   };
 
@@ -76,7 +87,9 @@ export default function Modal() {
         >
           {index + 1}
         </div>
-        <p className="text-white/70 text-sm leading-relaxed pt-1">{step}</p>
+        <p className="text-white/70 text-sm leading-relaxed pt-1">
+          {step}
+        </p>
       </div>
     ));
   };

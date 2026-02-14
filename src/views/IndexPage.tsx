@@ -11,14 +11,11 @@ import {
 
 export default function IndexPage() {
   const drinks = useAppStore(selectDrinks);
-const searchRecipes = useAppStore(selectSearchRecipes);
-const setNotification = useAppStore(selectSetNotification);
-const isLoading = useAppStore(selectIsLoading);
+  const searchRecipes = useAppStore(selectSearchRecipes);
+  const setNotification = useAppStore(selectSetNotification);
+  const isLoading = useAppStore(selectIsLoading);
 
-  const hasDrinks = useMemo(
-    () => drinks.drinks.length > 0,
-    [drinks.drinks]
-  );
+  const hasDrinks = useMemo(() => drinks.drinks.length > 0, [drinks.drinks]);
 
   useEffect(() => {
     if (!isLoading && drinks.drinks.length === 0) {
