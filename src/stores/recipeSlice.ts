@@ -1,11 +1,17 @@
-import type { StateCreator } from "zustand"
-import { getCategories, getRecipeById, getRecipes } from "../services/RecipeService"
-import type { Category, Drink, Drinks, RecipeDetail, SearchFilters } from "../types"
+import type { StateCreator } from "zustand";
+import { getCategories, getRecipeById, getRecipes } from "../services/RecipeService";
+import type {
+  Category,
+  Drink,
+  Drinks,
+  RecipeDetail,
+  SearchFilters,
+} from "../types";
 
 export type RecipesSliceType = {
   categories: Category[];
   drinks: Drinks;
-  selectedRecipe: RecipeDetail;
+  selectedRecipe: RecipeDetail | null;
   modal: boolean;
   isLoading: boolean;
   hasSearched: boolean;
@@ -15,41 +21,50 @@ export type RecipesSliceType = {
   closeModal: () => void;
 };
 
-
 export const createRecipesSlice: StateCreator<RecipesSliceType> = (set) => ({
   categories: [],
   drinks: { drinks: [] },
-  selectedRecipe: {} as RecipeDetail,
+  selectedRecipe: null,
   modal: false,
   isLoading: false,
   hasSearched: false,
 
   fetchCategories: async () => {
-    const categories = await getCategories();
-    set({ categories });
+    try {
+      const categories = await getCategories();
+      set({ categories });
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+    }
   },
 
   searchRecipes: async (filters) => {
-  set({ isLoading: true, hasSearched: true });
+    set({ isLoading: true, hasSearched: true });
 
-  try {
-    const drinks = await getRecipes(filters);
-    set({ drinks: { drinks } });
-  } finally {
-    set({ isLoading: false });
-  }
-},
-
+    try {
+      const drinks = await getRecipes(filters);
+      set({ drinks: { drinks } });
+    } catch (error) {
+      console.error("Error searching recipes:", error);
+      set({ drinks: { drinks: [] } });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
 
   selectRecipe: async (id) => {
-    const selectedRecipe = await getRecipeById(id);
-    set({ selectedRecipe, modal: true });
+    try {
+      const selectedRecipe = await getRecipeById(id);
+      set({ selectedRecipe, modal: true });
+    } catch (error) {
+      console.error("Error fetching recipe detail:", error);
+    }
   },
 
   closeModal: () => {
     set({
       modal: false,
-      selectedRecipe: {} as RecipeDetail,
+      selectedRecipe: null,
     });
   },
 });
