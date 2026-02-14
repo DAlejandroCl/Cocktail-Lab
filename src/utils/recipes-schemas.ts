@@ -1,63 +1,87 @@
 import { z } from "zod";
 
+const nullableString = z
+  .string()
+  .trim()
+  .min(1)
+  .nullable()
+  .optional()
+  .transform((val) => (val && val.length > 0 ? val : null));
+
 export const CategoriesAPIResponseSchema = z.object({
-  drinks: z.array(
-    z.object({
-      strCategory: z.string(),
-    })
-  ),
+  drinks: z
+    .array(
+      z.object({
+        strCategory: z.string().trim().min(1),
+      })
+    )
+    .nullable()
+    .optional()
+    .transform((val) => val ?? []),
 });
 
-export const SearchFiltersSchema = z.object({
-  ingredient: z.string().optional(),
-  category: z.string().optional(),
-});
+export const SearchFiltersSchema = z
+  .object({
+    ingredient: z.string().trim().min(1).optional(),
+    category: z.string().trim().min(1).optional(),
+  })
+  .refine(
+    (data) => data.ingredient || data.category,
+    "At least one filter must be provided"
+  );
 
 export const DrinkAPIResponse = z.object({
-    idDrink: z.string(),
-    strDrink: z.string(),
-    strDrinkThumb: z.string(),
-    strCategory: z.string().optional()
-})
+  idDrink: z.string().trim().min(1),
+  strDrink: z.string().trim().min(1),
+  strDrinkThumb: z.string().url().or(z.string().trim().min(1)),
+  strCategory: z.string().trim().min(1).optional().nullable(),
+});
 
 export const DrinksAPIResponse = z.object({
-  drinks: z.array(DrinkAPIResponse)
+  drinks: z
+    .array(DrinkAPIResponse)
+    .nullable()
+    .optional()
+    .transform((val) => val ?? []),
 });
 
 export const RecipeAPIResponseSchema = z.object({
-  idDrink: z.string(),
-  strDrink: z.string(),
-  strDrinkThumb: z.string(),
-  strInstructions: z.string(),
-  strCategory: z.string().optional(),
-  strIngredient1: z.string().nullable(),
-  strIngredient2: z.string().nullable(),
-  strIngredient3: z.string().nullable(),
-  strIngredient4: z.string().nullable(),
-  strIngredient5: z.string().nullable(),
-  strIngredient6: z.string().nullable(),
-  strIngredient7: z.string().nullable(),
-  strIngredient8: z.string().nullable(),
-  strIngredient9: z.string().nullable(),
-  strIngredient10: z.string().nullable(),
-  strIngredient11: z.string().nullable(),
-  strIngredient12: z.string().nullable(),
-  strIngredient13: z.string().nullable(),
-  strIngredient14: z.string().nullable(),
-  strIngredient15: z.string().nullable(),
-  strMeasure1: z.string().nullable(),
-  strMeasure2: z.string().nullable(),
-  strMeasure3: z.string().nullable(),
-  strMeasure4: z.string().nullable(),
-  strMeasure5: z.string().nullable(),
-  strMeasure6: z.string().nullable(),
-  strMeasure7: z.string().nullable(),
-  strMeasure8: z.string().nullable(),
-  strMeasure9: z.string().nullable(),
-  strMeasure10: z.string().nullable(),
-  strMeasure11: z.string().nullable(),
-  strMeasure12: z.string().nullable(),
-  strMeasure13: z.string().nullable(),
-  strMeasure14: z.string().nullable(),
-  strMeasure15: z.string().nullable(),
+  idDrink: z.string().trim().min(1),
+  strDrink: z.string().trim().min(1),
+  strDrinkThumb: z.string().url().or(z.string().trim().min(1)),
+  strInstructions: z.string().trim().min(1),
+
+  strCategory: z.string().trim().min(1).optional().nullable(),
+
+  strIngredient1: nullableString,
+  strIngredient2: nullableString,
+  strIngredient3: nullableString,
+  strIngredient4: nullableString,
+  strIngredient5: nullableString,
+  strIngredient6: nullableString,
+  strIngredient7: nullableString,
+  strIngredient8: nullableString,
+  strIngredient9: nullableString,
+  strIngredient10: nullableString,
+  strIngredient11: nullableString,
+  strIngredient12: nullableString,
+  strIngredient13: nullableString,
+  strIngredient14: nullableString,
+  strIngredient15: nullableString,
+
+  strMeasure1: nullableString,
+  strMeasure2: nullableString,
+  strMeasure3: nullableString,
+  strMeasure4: nullableString,
+  strMeasure5: nullableString,
+  strMeasure6: nullableString,
+  strMeasure7: nullableString,
+  strMeasure8: nullableString,
+  strMeasure9: nullableString,
+  strMeasure10: nullableString,
+  strMeasure11: nullableString,
+  strMeasure12: nullableString,
+  strMeasure13: nullableString,
+  strMeasure14: nullableString,
+  strMeasure15: nullableString,
 });
