@@ -26,13 +26,15 @@ You can try the application here:
   - Instant add/remove functionality
   - Derived favorites counter
 - Global notification system for user feedback
+- Global Error Boundary for UI crash isolation
 - Optimized global state using:
   - Zustand Slice Pattern
   - Centralized typed selectors
   - Controlled subscriptions to prevent unnecessary re-renders
 - Strong runtime validation using Zod
-- Type-safe domain models with TypeScript
-- Loading states and graceful error handling
+- Explicit API → Domain transformation layer
+- Defensive null and edge-case handling for external API responses
+- Loading states and graceful async error handling
 - Fully responsive UI built with Tailwind CSS
 - Animated UI elements for improved user experience
 
@@ -74,6 +76,7 @@ You can try the application here:
 src/
 ├── components/
 │   ├── DrinkCard.tsx
+│   ├── ErrorBoundary.tsx
 │   ├── Header.tsx
 │   ├── Modal.tsx
 │   ├── Notification.tsx
