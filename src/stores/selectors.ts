@@ -28,3 +28,5 @@ export const selectNotification = (state: AppState) => state.notification;
 export const selectSetNotification = (state: AppState) => state.setNotification;
 export const selectClearNotification = (state: AppState) =>
   state.clearNotification;
+
+export const selectHasSearched = (state: AppState) => state.hasSearched;
