@@ -42,6 +42,9 @@ const SEARCH_API_BASE =
 const LOOKUP_API_BASE =
   "https://www.thecocktaildb.com/api/json/v1/1/lookup.php";
 
+const RANDOM_API_BASE =
+  "https://www.thecocktaildb.com/api/json/v1/1/random.php";
+
 export async function getCategories(): Promise<string[]> {
   const data = await safeGet<unknown>(CATEGORIES_API_URL);
   if (!data) return [];
@@ -194,6 +197,37 @@ export async function getRecipeById(id: string) {
   }
 
   return parsed.data;
+}
+
+export async function getRandomRecipes(count: number): Promise<Drink[]> {
+  const requests = Array.from({ length: count }, () =>
+    safeGet<unknown>(RANDOM_API_BASE),
+  );
+
+  const responses = await Promise.all(requests);
+
+  const drinks: Drink[] = [];
+
+  for (const data of responses) {
+    if (!data) continue;
+
+    const parsed = DrinksAPIResponse.safeParse(data);
+
+    if (!parsed.success) {
+      console.error("Invalid random drink schema:", parsed.error);
+      continue;
+    }
+
+    if (parsed.data.drinks && parsed.data.drinks.length > 0) {
+      drinks.push(parsed.data.drinks[0]);
+    }
+  }
+
+  const unique = deduplicate(drinks);
+
+  unique.sort((a, b) => a.strDrink.localeCompare(b.strDrink));
+
+  return unique.slice(0, 100);
 }
 
 function deduplicate(drinks: Drink[]): Drink[] {
