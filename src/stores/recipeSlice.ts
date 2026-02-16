@@ -1,5 +1,10 @@
 import type { StateCreator } from "zustand";
-import { getCategories, getRecipeById, getRecipes } from "../services/RecipeService";
+import {
+  getCategories,
+  getRecipeById,
+  getRecipes,
+  getRandomRecipes,
+} from "../services/RecipeService";
 import type {
   Category,
   Drink,
@@ -42,7 +47,16 @@ export const createRecipesSlice: StateCreator<RecipesSliceType> = (set) => ({
     set({ isLoading: true, hasSearched: true });
 
     try {
-      const drinks = await getRecipes(filters);
+      let drinks: Drink[] = [];
+
+      if (!filters.category && !filters.ingredient) {
+        drinks = await getRandomRecipes(150);
+      } else {
+        drinks = await getRecipes(filters);
+
+        drinks.sort((a, b) => a.strDrink.localeCompare(b.strDrink));
+      }
+
       set({ drinks: { drinks } });
     } catch (error) {
       console.error("Error searching recipes:", error);
