@@ -7,6 +7,7 @@ import {
   selectSearchRecipes,
   selectSetNotification,
   selectIsLoading,
+  selectHasSearched,
 } from "../stores/selectors";
 
 export default function IndexPage() {
@@ -14,17 +15,18 @@ export default function IndexPage() {
   const searchRecipes = useAppStore(selectSearchRecipes);
   const setNotification = useAppStore(selectSetNotification);
   const isLoading = useAppStore(selectIsLoading);
+  const hasSearched = useAppStore(selectHasSearched);
 
   const hasDrinks = useMemo(() => drinks.drinks.length > 0, [drinks.drinks]);
 
   useEffect(() => {
-    if (!isLoading && drinks.drinks.length === 0) {
+    if (hasSearched && !isLoading && drinks.drinks.length === 0) {
       setNotification("No cocktails found with those filters", "info");
     }
-  }, [drinks.drinks, isLoading, setNotification]);
+  }, [drinks.drinks, isLoading, hasSearched, setNotification]);
 
   const handleBrowseAll = () => {
-    searchRecipes({ category: "Cocktail", ingredient: "" });
+    searchRecipes({ category: "", ingredient: "" });
   };
 
   return (
@@ -120,7 +122,7 @@ export default function IndexPage() {
 
             <button
               onClick={handleBrowseAll}
-              className="px-8 py-3 bg-primary text-navy-deep font-bold rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center gap-2 active:scale-95"
+              className="button-primary px-8 py-3 bg-primary text-navy-deep font-bold rounded-xl shadow-lg shadow-primary/20 flex items-center gap-2 active:scale-95 hover:scale-[1.02] transition-transform"
             >
               <svg
                 className="w-5 h-5"
