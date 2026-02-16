@@ -17,16 +17,18 @@ export default function Notification() {
   const clearNotification = useAppStore(selectClearNotification);
 
   useEffect(() => {
-    if (notification) {
-      const timer = setTimeout(() => {
-        clearNotification();
-      }, 3000);
+    if (!notification) return;
 
-      return () => clearTimeout(timer);
-    }
+    const timer = setTimeout(() => {
+      clearNotification();
+    }, 3000);
+
+    return () => clearTimeout(timer);
   }, [notification, clearNotification]);
 
-  if (!notification) return null;
+  if (!notification || !notification.message) return null;
+
+  const isError = notification.type === "error";
 
   return (
     <div className="pointer-events-none fixed inset-0 z-9999 flex items-start justify-end p-6">
@@ -41,6 +43,9 @@ export default function Notification() {
         leaveTo="opacity-0 scale-95"
       >
         <div
+          role={isError ? "alert" : "status"}
+          aria-live={isError ? "assertive" : "polite"}
+          aria-atomic="true"
           className="pointer-events-auto w-full max-w-sm rounded-2xl shadow-2xl border border-white/10 backdrop-blur-xl relative overflow-hidden"
           style={{
             background: "rgba(15, 23, 42, 0.85)",
@@ -49,7 +54,7 @@ export default function Notification() {
           <div className="absolute inset-0 rounded-2xl ring-1 ring-primary/30 shadow-lg shadow-primary/20 pointer-events-none" />
 
           <div className="p-5 flex items-start gap-4 relative">
-            <div className="shrink-0">
+            <div className="shrink-0" aria-hidden="true">
               {notification.type === "success" && (
                 <CheckCircleIcon className="w-6 h-6 text-green-400" />
               )}
@@ -69,9 +74,10 @@ export default function Notification() {
 
             <button
               onClick={clearNotification}
-              className="text-white/40 hover:text-white transition-colors"
+              aria-label="Close notification"
+              className="text-white/40 hover:text-white transition-colors focus-visible:outline-none"
             >
-              <XMarkIcon className="w-5 h-5" />
+              <XMarkIcon className="w-5 h-5" aria-hidden="true" />
             </button>
           </div>
         </div>
