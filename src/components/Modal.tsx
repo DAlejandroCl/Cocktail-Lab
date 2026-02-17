@@ -1,5 +1,5 @@
 import { Dialog, Transition } from "@headlessui/react";
-import { Fragment, useState } from "react";
+import { Fragment, useState, useRef } from "react";
 import { useAppStore } from "../stores/useAppStore";
 import {
   selectModal,
@@ -20,14 +20,11 @@ export default function Modal() {
   const setNotification = useAppStore(selectSetNotification);
 
   const [isAnimating, setIsAnimating] = useState(false);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
-  // ✅ Defensive id extraction
   const recipeId = selectedRecipe?.idDrink ?? "";
-
-  // ✅ Safe selector call (never breaks hooks order)
   const isFavorite = useAppStore(selectIsFavorite(recipeId));
 
-  // 🛡 True defensive rendering
   if (!modal || !selectedRecipe) return null;
 
   const handleFavoriteClick = () => {
@@ -44,7 +41,7 @@ export default function Modal() {
   };
 
   const renderIngredients = () => {
-    const ingredients = [];
+    const items = [];
 
     for (let i = 1; i <= 10; i++) {
       const ingredient =
@@ -54,18 +51,28 @@ export default function Modal() {
         selectedRecipe[`strMeasure${i}` as keyof typeof selectedRecipe];
 
       if (ingredient && ingredient.trim()) {
-        ingredients.push(
-          <div key={i} className="flex justify-between items-center p-4">
-            <span className="text-white/80 font-medium">{ingredient}</span>
-            <span className="text-primary font-bold text-lg">
+        items.push(
+          <li
+            key={i}
+            className="grid grid-cols-[auto_minmax(120px,180px)] gap-4 p-4 items-start"
+          >
+            <span className="font-medium text-white/80 whitespace-nowrap">
+              {ingredient}
+            </span>
+
+            <span className="text-primary font-semibold text-sm leading-tight text-right wrap-break-word">
               {measure && measure.trim() ? measure : "-"}
             </span>
-          </div>
+          </li>,
         );
       }
     }
 
-    return ingredients;
+    return (
+      <ul className="bg-white/5 rounded-2xl border border-white/10 overflow-hidden divide-y divide-white/5">
+        {items}
+      </ul>
+    );
   };
 
   const renderInstructions = () => {
@@ -76,28 +83,37 @@ export default function Modal() {
       .filter((step) => step.trim().length > 0)
       .map((step) => step.trim() + (step.endsWith(".") ? "" : "."));
 
-    return steps.map((step, index) => (
-      <div key={index} className="flex gap-4">
-        <div
-          className={`flex-none w-8 h-8 rounded-full ${
-            index === 0
-              ? "bg-primary text-navy-deep"
-              : "bg-primary/20 border border-primary/30 text-primary"
-          } flex items-center justify-center text-sm font-bold`}
-        >
-          {index + 1}
-        </div>
-        <p className="text-white/70 text-sm leading-relaxed pt-1">
-          {step}
-        </p>
-      </div>
-    ));
+    return (
+      <ol className="space-y-6">
+        {steps.map((step, index) => (
+          <li key={index} className="flex gap-4">
+            <span
+              aria-hidden="true"
+              className={`flex-none w-8 h-8 rounded-full ${
+                index === 0
+                  ? "bg-primary text-navy-deep"
+                  : "bg-primary/20 border border-primary/30 text-primary"
+              } flex items-center justify-center text-sm font-bold`}
+            >
+              {index + 1}
+            </span>
+
+            <p className="text-white/70 text-sm leading-relaxed pt-1">{step}</p>
+          </li>
+        ))}
+      </ol>
+    );
   };
 
   return (
     <>
       <Transition appear show={modal} as={Fragment}>
-        <Dialog as="div" className="relative z-200" onClose={closeModal}>
+        <Dialog
+          as="div"
+          className="relative z-200"
+          onClose={closeModal}
+          initialFocus={closeButtonRef}
+        >
           <Transition.Child
             as={Fragment}
             enter="ease-out duration-300"
@@ -107,7 +123,10 @@ export default function Modal() {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-md" />
+            <div
+              className="fixed inset-0 bg-black/60 backdrop-blur-md"
+              aria-hidden="true"
+            />
           </Transition.Child>
 
           <div className="fixed inset-0 overflow-y-auto">
@@ -123,6 +142,8 @@ export default function Modal() {
               >
                 <Dialog.Panel
                   className="w-full max-w-lg sm:rounded-4xl overflow-hidden flex flex-col max-h-[94vh] shadow-2xl relative"
+                  aria-labelledby="modal-title"
+                  aria-describedby="modal-description"
                   style={{
                     background: "rgba(15, 23, 42, 0.75)",
                     backdropFilter: "blur(40px) saturate(180%)",
@@ -130,11 +151,9 @@ export default function Modal() {
                     border: "1px solid rgba(255, 255, 255, 0.15)",
                   }}
                 >
-                  <div className="flex h-8 w-full items-center justify-center sm:hidden">
-                    <div className="h-1.5 w-12 rounded-full bg-white/30"></div>
-                  </div>
-
                   <button
+                    ref={closeButtonRef}
+                    type="button"
                     onClick={closeModal}
                     className="absolute top-4 right-4 z-20 h-10 w-10 flex items-center justify-center rounded-full bg-black/30 backdrop-blur-md text-white border border-white/20 hover:bg-black/50 active:scale-95 transition-all"
                     aria-label="Close modal"
@@ -144,6 +163,7 @@ export default function Modal() {
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
+                      aria-hidden="true"
                     >
                       <path
                         strokeLinecap="round"
@@ -158,80 +178,96 @@ export default function Modal() {
                     <div className="px-4 py-2 sm:px-6 sm:pt-6">
                       <div className="w-full relative overflow-hidden rounded-2xl aspect-4/3 shadow-2xl border border-white/10">
                         <img
-                          alt={selectedRecipe.strDrink}
+                          alt={`Image of ${selectedRecipe.strDrink} cocktail`}
                           className="absolute inset-0 w-full h-full object-cover"
                           src={selectedRecipe.strDrinkThumb}
                         />
-                        <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent"></div>
+                        <div
+                          className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent"
+                          aria-hidden="true"
+                        />
                       </div>
                     </div>
 
                     <div className="px-6 py-6 space-y-8 pb-32">
                       <div className="space-y-3">
-                        <div className="flex flex-wrap gap-2">
-                          {selectedRecipe.strCategory && (
-                            <span className="inline-flex items-center px-3 py-1.5 rounded-md bg-primary text-navy-deep text-[10px] font-bold uppercase tracking-widest shadow-lg">
-                              {selectedRecipe.strCategory}
-                            </span>
-                          )}
-                        </div>
                         <Dialog.Title
+                          id="modal-title"
                           as="h1"
                           className="text-white font-serif text-4xl leading-tight tracking-tight"
                         >
                           {selectedRecipe.strDrink}
                         </Dialog.Title>
-                        <p className="text-white/60 text-base italic">
+
+                        <Dialog.Description
+                          id="modal-description"
+                          as="p"
+                          className="text-white/60 text-base italic"
+                        >
                           A carefully crafted cocktail for the discerning
                           palate.
-                        </p>
+                        </Dialog.Description>
                       </div>
 
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-3">
-                          <svg
-                            className="w-6 h-6 text-primary"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                            />
-                          </svg>
-                          <h3 className="text-white text-xl font-bold tracking-tight">
-                            Ingredients
-                          </h3>
-                        </div>
-                        <div className="bg-white/5 rounded-2xl border border-white/10 overflow-hidden divide-y divide-white/5">
+                      <section aria-labelledby="ingredients-heading">
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-3">
+                            <svg
+                              className="w-5 h-5 text-primary"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                              aria-hidden="true"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                              />
+                            </svg>
+
+                            <h3
+                              id="ingredients-heading"
+                              className="text-white text-xl font-bold tracking-tight"
+                            >
+                              Ingredients
+                            </h3>
+                          </div>
+
                           {renderIngredients()}
                         </div>
-                      </div>
+                      </section>
 
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-3">
-                          <svg
-                            className="w-6 h-6 text-primary"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                            />
-                          </svg>
-                          <h3 className="text-white text-xl font-bold tracking-tight">
-                            Instructions
-                          </h3>
+                      <section aria-labelledby="instructions-heading">
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-3">
+                            <svg
+                              className="w-5 h-5 text-primary"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                              aria-hidden="true"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                              />
+                            </svg>
+
+                            <h3
+                              id="instructions-heading"
+                              className="text-white text-xl font-bold tracking-tight"
+                            >
+                              Instructions
+                            </h3>
+                          </div>
+
+                          {renderInstructions()}
                         </div>
-                        <div className="space-y-6">{renderInstructions()}</div>
-                      </div>
+                      </section>
                     </div>
                   </div>
 
@@ -244,21 +280,25 @@ export default function Modal() {
                     }}
                   >
                     <button
+                      type="button"
                       onClick={closeModal}
                       className="button-primary flex-1 h-14 bg-primary text-navy-deep font-bold rounded-2xl shadow-lg shadow-primary/20"
                     >
                       Close
                     </button>
+
                     <button
+                      type="button"
                       onClick={handleFavoriteClick}
-                      className={`favorite-button w-14 h-14 rounded-2xl border border-white/20 flex items-center justify-center shadow-md ${
-                        isFavorite ? "is-active" : ""
-                      } ${isAnimating ? "animate-heart-pop" : ""}`}
+                      aria-pressed={isFavorite}
                       aria-label={
                         isFavorite
                           ? "Remove from favorites"
                           : "Add to favorites"
                       }
+                      className={`favorite-button w-14 h-14 rounded-2xl border border-white/20 flex items-center justify-center shadow-md ${
+                        isFavorite ? "is-active" : ""
+                      } ${isAnimating ? "animate-heart-pop" : ""}`}
                     >
                       <svg
                         className="w-6 h-6"
@@ -266,6 +306,7 @@ export default function Modal() {
                         stroke="currentColor"
                         strokeWidth={2}
                         viewBox="0 0 24 24"
+                        aria-hidden="true"
                       >
                         <path
                           strokeLinecap="round"
