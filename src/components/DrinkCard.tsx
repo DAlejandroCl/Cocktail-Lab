@@ -66,14 +66,18 @@ function DrinkCardComponent({ drink }: DrinkCardProps) {
 
   return (
     <article
-      className="glass-card rounded-2xl overflow-hidden group relative"
+      className="glass-card animate-card-enter rounded-2xl overflow-hidden relative"
       aria-labelledby={`drink-title-${drink.idDrink}`}
+      aria-describedby={
+        drink.strCategory ? `drink-category-${drink.idDrink}` : undefined
+      }
     >
       <div className="relative aspect-4/5 overflow-hidden">
         <img
           src={drink.strDrinkThumb}
           alt={drink.strDrink}
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+          loading="lazy"
+          className="w-full h-full object-cover transition-transform duration-700"
         />
 
         <div className="absolute inset-0 bg-linear-to-b from-black/60 via-transparent to-black/40"></div>
@@ -137,7 +141,7 @@ function DrinkCardComponent({ drink }: DrinkCardProps) {
           aria-describedby={
             drink.strCategory ? `drink-category-${drink.idDrink}` : undefined
           }
-          className="button-primary w-full h-11 bg-primary text-navy-deep font-bold rounded-xl shadow-lg shadow-primary/20 text-sm tracking-wide hover:shadow-xl hover:shadow-primary/40 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-black transition-all duration-300 flex items-center justify-center gap-2"
+          className="button-primary w-full h-11 bg-primary text-navy-deep font-bold rounded-xl text-sm tracking-wide active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-black transition-all duration-300 flex items-center justify-center gap-2"
         >
           View Recipe
         </button>
