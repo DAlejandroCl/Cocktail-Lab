@@ -10,6 +10,8 @@ interface State {
 }
 
 export default class ErrorBoundary extends React.Component<Props, State> {
+  private errorRef = React.createRef<HTMLHeadingElement>();
+
   constructor(props: Props) {
     super(props);
     this.state = { hasError: false };
@@ -21,6 +23,12 @@ export default class ErrorBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error("Error caught by ErrorBoundary:", error, errorInfo);
+  }
+
+  componentDidUpdate(_: Props, prevState: State) {
+    if (!prevState.hasError && this.state.hasError) {
+      this.errorRef.current?.focus();
+    }
   }
 
   handleReload = () => {
@@ -35,7 +43,11 @@ export default class ErrorBoundary extends React.Component<Props, State> {
 
       return (
         <div className="min-h-[70vh] flex items-center justify-center px-6 py-16">
-          <div className="relative w-full max-w-lg">
+          <div
+            className="relative w-full max-w-lg"
+            role="alert"
+            aria-labelledby="error-title"
+          >
             <div className="absolute -inset-1 rounded-3xl bg-linear-to-r from-primary/30 via-purple-500/20 to-primary/30 blur-2xl opacity-40" />
 
             <div className="relative bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-10 text-center shadow-2xl">
@@ -47,6 +59,7 @@ export default class ErrorBoundary extends React.Component<Props, State> {
                     stroke="currentColor"
                     strokeWidth={2}
                     viewBox="0 0 24 24"
+                    aria-hidden="true"
                   >
                     <path
                       strokeLinecap="round"
@@ -57,7 +70,12 @@ export default class ErrorBoundary extends React.Component<Props, State> {
                 </div>
               </div>
 
-              <h2 className="text-3xl font-bold text-white mb-4 tracking-tight">
+              <h2
+                id="error-title"
+                ref={this.errorRef}
+                tabIndex={-1}
+                className="text-3xl font-bold text-white mb-4 tracking-tight focus:outline-none"
+              >
                 Something went wrong
               </h2>
 
@@ -68,7 +86,7 @@ export default class ErrorBoundary extends React.Component<Props, State> {
 
               <button
                 onClick={this.handleReload}
-                className="button-primary px-10 h-14 bg-primary text-navy-deep font-bold rounded-xl shadow-lg shadow-primary/20 cursor-pointer hover:scale-[1.02] transition-transform"
+                className="button-primary px-10 h-14 bg-primary text-navy-deep font-bold rounded-xl shadow-lg shadow-primary/20 cursor-pointer hover:scale-[1.02] transition-transform focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-black"
               >
                 Reload Page
               </button>
