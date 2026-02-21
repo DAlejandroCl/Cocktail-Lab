@@ -4,7 +4,7 @@ import {
   getRecipeById,
   getRecipes,
   getRandomRecipes,
-} from "../services/RecipeService";
+} from "../services/recipeService";
 import type {
   Category,
   Drink,
