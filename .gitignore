@@ -1,5 +1,17 @@
+# =========================================================
+# Dependencies
+# =========================================================
+node_modules/
+.pnp
+.pnp.js
+.npm
+.yarn/
+.pnp.*
+
+# =========================================================
 # Logs
-logs
+# =========================================================
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -7,26 +19,54 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Dependencies
-node_modules/
-.pnp
-.pnp.js
-
-# Testing
+# =========================================================
+# Testing - Vitest / Coverage / Reports
+# =========================================================
 coverage/
 *.lcov
-.nyc_output
+.nyc_output/
+vitest-report/
+test-results/
 
-# Production build
+# =========================================================
+# Playwright
+# =========================================================
+playwright-report/
+playwright/.cache/
+blob-report/
+trace.zip
+
+# =========================================================
+# Production builds
+# =========================================================
 dist/
 dist-ssr/
 build/
 
-# Editor directories and files
+# =========================================================
+# TypeScript
+# =========================================================
+*.tsbuildinfo
+
+# =========================================================
+# Environment variables
+# =========================================================
+.env
+.env.*
+!.env.example
+
+# =========================================================
+# Vite
+# =========================================================
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# =========================================================
+# Editor / IDE
+# =========================================================
 .vscode/*
 !.vscode/extensions.json
 .idea/
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
@@ -35,53 +75,31 @@ build/
 *.swp
 *~
 
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# =========================================================
+# OS Files
+# =========================================================
 
-# Vite
-vite.config.js.timestamp-*
-vite.config.ts.timestamp-*
-
-# TypeScript
-*.tsbuildinfo
-
-# Optional npm cache directory
-.npm
-
-# Optional eslint cache
-.eslintcache
-
-# Optional stylelint cache
-.stylelintcache
-
-# Yarn
-.yarn/cache
-.yarn/unplugged
-.yarn/build-state.yml
-.yarn/install-state.gz
-.pnp.*
-
-# MacOS
+## macOS
 .DS_Store
 .AppleDouble
 .LSOverride
 
-# Windows
+## Windows
 Thumbs.db
 Thumbs.db:encryptable
 ehthumbs.db
 ehthumbs_vista.db
 Desktop.ini
 
-# Linux
-*~
+## Linux
 .directory
 .Trash-*
 
-# Temporary files
+# =========================================================
+# Cache & Temporary
+# =========================================================
+.eslintcache
+.stylelintcache
 *.tmp
 *.temp
+.cache/
