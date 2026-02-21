@@ -1,6 +1,5 @@
 import type { StateCreator } from "zustand";
 import type { RecipeDetail } from "../types";
-import type { AppState } from "./useAppStore";
 
 export type FavoritesMap = Record<string, RecipeDetail>;
 
@@ -12,7 +11,7 @@ export type FavoritesSliceType = {
 };
 
 export const createFavoritesSlice: StateCreator<
-  AppState,
+  FavoritesSliceType,
   [],
   [],
   FavoritesSliceType
