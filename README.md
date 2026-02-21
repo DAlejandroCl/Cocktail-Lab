@@ -73,34 +73,95 @@ You can try the application here:
 
 ## 🗂 Project Structure
 ```txt
-src/
-├── components/
-│   ├── DrinkCard.tsx
-│   ├── ErrorBoundary.tsx
-│   ├── Header.tsx
-│   ├── Modal.tsx
-│   ├── Notification.tsx
-│   └── SkeletonDrinkCard.tsx
-├── layouts/
-│   └── Layout.tsx
-├── services/
-│   └── RecipeService.ts
-├── stores/
-│   ├── favoritesSlice.ts
-│   ├── notificationSlice.ts
-│   ├── recipeSlice.ts
-│   ├── selectors.ts
-│   └── useAppStore.ts
-├── types/
-│   └── index.ts
-├── utils/
-│   └── recipes-schemas.ts
-├── views/
-│   ├── FavoritesPage.tsx
-│   └── IndexPage.tsx
-├── router.tsx
-├── main.tsx
-└── index.css
+Cocktail-Lab/
+├── .github/
+│   └── workflows/
+│       └── ci.yml                    
+│
+├── docs/
+│   ├── architecture.md               
+│   ├── testing-strategy.md           
+│   └── accessibility.md              
+│
+├── src/
+│   ├── components/
+│   │   ├── DrinkCard.tsx
+│   │   ├── ErrorBoundary.tsx
+│   │   ├── Header.tsx
+│   │   ├── Modal.tsx
+│   │   ├── Notification.tsx
+│   │   └── SkeletonDrinkCard.tsx
+│   ├── layouts/
+│   │   └── Layout.tsx
+│   ├── services/
+│   │   └── RecipeService.ts
+│   ├── stores/
+│   │   ├── favoritesSlice.ts
+│   │   ├── notificationSlice.ts
+│   │   ├── recipeSlice.ts
+│   │   ├── selectors.ts
+│   │   └── useAppStore.ts
+│   ├── types/
+│   │   └── index.ts
+│   ├── utils/
+│   │   └── recipes-schemas.ts
+│   ├── views/
+│   │   ├── FavoritesPage.tsx
+│   │   └── IndexPage.tsx
+│   ├── router.tsx
+│   ├── main.tsx
+│   └── index.css
+│
+├── tests/                            
+│   │
+│   ├── unit/                         
+│   │   ├── utils/
+│   │   │   └── recipes-schemas.test.ts    
+│   │   ├── services/
+│   │   │   └── RecipeService.test.ts      
+│   │   ├── stores/
+│   │   │   ├── favoritesSlice.test.ts     
+│   │   │   ├── recipeSlice.test.ts        
+│   │   │   └── notificationSlice.test.ts  
+│   │   └── components/
+│   │       ├── DrinkCard.test.tsx         
+│   │       ├── Modal.test.tsx             
+│   │       ├── Notification.test.tsx      
+│   │       ├── Header.test.tsx            
+│   │       └── ErrorBoundary.test.tsx     
+│   │
+│   ├── integration/                  
+│   │   ├── IndexPage.test.tsx             
+│   │   ├── FavoritesPage.test.tsx         
+│   │   └── FavoritesFlow.test.tsx         
+│   │
+│   ├── e2e/                          
+│   │   ├── browse-and-favorite.spec.ts    
+│   │   ├── search-flow.spec.ts            
+│   │   └── navigation.spec.ts             
+│   │
+│   ├── accessibility/                
+│   │   ├── DrinkCard.a11y.test.tsx        
+│   │   ├── Modal.a11y.test.tsx            
+│   │   └── Navigation.a11y.test.tsx       
+│   │
+│   ├── mocks/                        
+│   │   ├── handlers.ts                    
+│   │   ├── server.ts                      
+│   │   └── factories.ts                   
+│   │
+│   └── setup/                        
+│       ├── test-setup.ts                  
+│       └── jest-axe-setup.ts              
+│
+├── coverage/                         
+├── playwright-report/                
+├── test-results/                     
+│
+├── vitest.config.ts                  
+├── playwright.config.ts              
+├── .gitignore                        
+└── package.json                      
 ```
 
 ## ⚙️ Installation & Local Setup
