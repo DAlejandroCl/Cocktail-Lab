@@ -1,6 +1,10 @@
 export default function SkeletonDrinkCard() {
   return (
-    <div className="glass-card rounded-2xl overflow-hidden relative animate-pulse">
+    <div
+      aria-hidden="true"
+      role="presentation"
+      className="glass-card rounded-2xl overflow-hidden relative animate-pulse"
+    >
       <div
         className="absolute inset-0 rounded-2xl pointer-events-none"
         style={{
