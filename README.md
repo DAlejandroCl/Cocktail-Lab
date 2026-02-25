@@ -2,10 +2,20 @@
 
 [![Live Demo](https://img.shields.io/badge/demo-live-green)](https://cocktail-lab-devacl.vercel.app)
 
-A multi-page cocktail recipe application built with React + TypeScript and React Router DOM.
+A multi-page cocktail recipe application built with **React + TypeScript** and React Router DOM.
 Browse and discover drink recipes by category or ingredient using the [TheCocktailDB API](https://www.thecocktaildb.com/api.php). Features modular state management with Zustand Slice Pattern, runtime validation with Zod, and a responsive design.
+# 🍹 Cocktail Lab
 
-## 🚀 Live Demo
+[![Live Demo](https://img.shields.io/badge/demo-live-green)](https://cocktail-lab-devacl.vercel.app)
+
+A multi-page cocktail recipe application built with .  
+The project focuses on modular state management, runtime data validation, strong typing, and a complete multi-layer testing strategy.
+
+It consumes the public [TheCocktailDB API](https://www.thecocktaildb.com/api.php) to allow users to browse, explore, and save cocktail recipes.
+
+---
+
+# 🚀 Live Demo
 
 You can try the application here:
 
@@ -13,156 +23,134 @@ You can try the application here:
 
 ---
 
-## ✨ Features
-- Multi-page navigation powered by React Router
-- Browse cocktail recipes by category or ingredient
-- Real-time data fetching from TheCocktailDB API
-- Detailed recipe view with:
-  - Drink name and image
-  - Preparation instructions
-  - Ingredients and measurements
-- Favorites system with:
-  - Persistent storage (localStorage)
-  - Instant add/remove functionality
-  - Derived favorites counter
-- Global notification system for user feedback
-- Global Error Boundary for UI crash isolation
-- Optimized global state using:
-  - Zustand Slice Pattern
-  - Centralized typed selectors
-  - Controlled subscriptions to prevent unnecessary re-renders
-- Strong runtime validation using Zod
+# ✨ Core Features
+
+This application is designed to demonstrate real-world frontend engineering practices while maintaining a clean and user-friendly experience.
+
+## 🔎 Recipe Exploration
+- Browse cocktails by **category**
+- Search drinks by **ingredient or name**
+- Real-time API fetching with loading states
+- Defensive handling of null or malformed API responses
+
+## 📖 Detailed Recipe View
+- Drink name and thumbnail
+- Ingredients with measurements
+- Preparation instructions
 - Explicit API → Domain transformation layer
-- Defensive null and edge-case handling for external API responses
-- Loading states and graceful async error handling
-- Fully responsive UI built with Tailwind CSS
-- Animated UI elements for improved user experience
+
+## ❤️ Favorites System
+- Add / remove drinks instantly
+- Persistent storage using Zustand `persist` middleware
+- Derived favorites counter
+- Optimized re-rendering using centralized selectors
+
+## 🔔 User Feedback & Stability
+- Global notification system
+- Graceful async error handling
+- Global Error Boundary for UI crash isolation
+
+## 🎨 UI & Experience
+- Fully responsive layout
+- Skeleton loading states
+- Accessible semantic markup
+- Tailwind-based utility-first styling
+- Subtle UI animations
 
 ---
 
-## 🛠 Tech Stack
-- **React** (Functional Components + Hooks)
-- **TypeScript**
-- **Vite** (Lightning-fast development environment)
-- **Zustand** (Modular state management with slices & persist middleware)
-- **React Router DOM** (Client-side routing)
-- **Axios** (HTTP client)
-- **Zod** (Runtime schema validation)
-- **Tailwind CSS** (Utility-first styling)
-- **LocalStorage** (Selective persistence via Zustand middleware)
+# 🛠 Tech Stack
+
+Each tool in this project was selected with a clear purpose:
+
+### ⚛️ React
+Component-based UI architecture using functional components and hooks.
+
+### 🔷 TypeScript
+Strong static typing across components, store, services, and domain models.
+
+### ⚡ Vite
+Fast development server and optimized production builds.
+
+### 🗂 React Router DOM
+Multi-page routing with layout-based structure.
+
+### 🧠 Zustand
+Global state management using the **Slice Pattern** and controlled subscriptions.
+
+### 💾 Zustand Persist Middleware
+Selective persistence of the favorites slice using `localStorage`.
+
+### 🌐 Axios
+Promise-based HTTP client for API communication.
+
+### 🛡 Zod
+Runtime schema validation to ensure API response integrity.
+
+### 🎨 Tailwind CSS
+Utility-first CSS framework for responsive and scalable styling.
+
+### 🧪 Vitest
+Unit and integration testing framework optimized for Vite.
+
+### 🧩 Testing Library
+User-centric testing utilities for React components.
+
+### 🧭 Playwright
+End-to-end testing to validate real browser flows.
+
+### ♿ jest-axe
+Automated accessibility validation integrated into component and page tests.
 
 ---
 
-## 🧠 Architecture & Concepts
-- Multi-page application powered by React Router with layout-based routing
-- Modular state management using Zustand Slice Pattern
-- Centralized typed selectors layer to optimize subscriptions and prevent unnecessary re-renders
-- Global store composed via unified AppState typing
-- Persistent state management using Zustand persist middleware (favorites stored selectively)
-- Clean separation of concerns:
-  - Slices → business logic & state mutations
-  - Selectors → controlled and optimized state access
-  - Services → API communication layer
-- API logic fully encapsulated in a dedicated service layer
-- Strong runtime validation with Zod
-- Fully typed domain models with TypeScript
-- Reusable, memoized UI components for performance optimization
-- Scalable and extensible store architecture ready for future features
+# 🧠 Architecture Overview
+
+This project follows a modular and layered architecture designed to keep responsibilities clearly separated.
+
+At a high level:
+
+- **Views** → Page-level components  
+- **Components** → Reusable UI building blocks  
+- **Store (Zustand slices)** → Business logic & state mutations  
+- **Selectors layer** → Optimized and controlled state access  
+- **Services** → API communication  
+- **Schemas (Zod)** → Runtime validation layer  
+- **Domain models** → Fully typed transformations from API data  
+
+The global store is composed using the **Zustand Slice Pattern**, allowing independent features to scale without tightly coupling state logic.
+
+For a full architectural breakdown:
+
+📄 See → [`docs/architecture.md`](./docs/architecture.md)
 
 ---
 
-## 🗂 Project Structure
-```txt
-Cocktail-Lab/
-├── .github/
-│   └── workflows/
-│       └── ci.yml                    
-│
-├── docs/
-│   ├── architecture.md               
-│   ├── testing-strategy.md           
-│   └── accessibility.md              
-│
-├── src/
-│   ├── components/
-│   │   ├── DrinkCard.tsx
-│   │   ├── ErrorBoundary.tsx
-│   │   ├── Header.tsx
-│   │   ├── Modal.tsx
-│   │   ├── Notification.tsx
-│   │   └── SkeletonDrinkCard.tsx
-│   ├── layouts/
-│   │   └── Layout.tsx
-│   ├── services/
-│   │   └── RecipeService.ts
-│   ├── stores/
-│   │   ├── favoritesSlice.ts
-│   │   ├── notificationSlice.ts
-│   │   ├── recipeSlice.ts
-│   │   ├── selectors.ts
-│   │   └── useAppStore.ts
-│   ├── types/
-│   │   └── index.ts
-│   ├── utils/
-│   │   └── recipes-schemas.ts
-│   ├── views/
-│   │   ├── FavoritesPage.tsx
-│   │   └── IndexPage.tsx
-│   ├── router.tsx
-│   ├── main.tsx
-│   └── index.css
-│
-├── tests/                            
-│   │
-│   ├── unit/                         
-│   │   ├── utils/
-│   │   │   └── recipes-schemas.test.ts    
-│   │   ├── services/
-│   │   │   └── RecipeService.test.ts      
-│   │   ├── stores/
-│   │   │   ├── favoritesSlice.test.ts     
-│   │   │   ├── recipeSlice.test.ts        
-│   │   │   └── notificationSlice.test.ts  
-│   │   └── components/
-│   │       ├── DrinkCard.test.tsx         
-│   │       ├── Modal.test.tsx             
-│   │       ├── Notification.test.tsx      
-│   │       ├── Header.test.tsx            
-│   │       └── ErrorBoundary.test.tsx     
-│   │
-│   ├── integration/                  
-│   │   ├── IndexPage.test.tsx             
-│   │   ├── FavoritesPage.test.tsx         
-│   │   └── FavoritesFlow.test.tsx         
-│   │
-│   ├── e2e/                          
-│   │   ├── browse-and-favorite.spec.ts    
-│   │   ├── search-flow.spec.ts            
-│   │   └── navigation.spec.ts             
-│   │
-│   ├── accessibility/                
-│   │   ├── DrinkCard.a11y.test.tsx        
-│   │   ├── Modal.a11y.test.tsx            
-│   │   └── Navigation.a11y.test.tsx       
-│   │
-│   ├── mocks/                        
-│   │   ├── handlers.ts                    
-│   │   ├── server.ts                      
-│   │   └── factories.ts                   
-│   │
-│   └── setup/                        
-│       ├── test-setup.ts                  
-│       └── jest-axe-setup.ts              
-│
-├── coverage/                         
-├── playwright-report/                
-├── test-results/                     
-│
-├── vitest.config.ts                  
-├── playwright.config.ts              
-├── .gitignore                        
-└── package.json                      
-```
+# 🧪 Testing Strategy
+
+This project implements a complete multi-layer testing approach to validate both logic and user experience:
+
+- **Unit Tests** → Pure logic, slices, services, utilities  
+- **Component Tests** → UI behavior in isolation  
+- **Integration Tests** → Feature-level behavior  
+- **E2E Tests** → Real user flows in the browser (Playwright)  
+- **Accessibility Tests** → Automated semantic validation (jest-axe)  
+
+The tests are structured by responsibility and isolated using mocks and MSW where appropriate.
+
+📄 Summary → [`docs/testing-strategy-summary.md`](./docs/testing-strategy-summary.md)  
+📄 Full Strategy → [`docs/testing-strategy.md`](./docs/testing-strategy.md)  
+📄 Accessibility Details → [`docs/accessibility.md`](./docs/accessibility.md)
+
+---
+
+# 🗂 Project Structure
+
+To keep this README concise, the complete organized project tree is documented here:
+
+📄 [`docs/project-structure.md`](./docs/project-structure.md)
+
+---
 
 ## ⚙️ Installation & Local Setup
 
@@ -192,21 +180,57 @@ npm run dev
 http://localhost:5173
 ```
 
-## 🎯 Usage
+## 🧪 Run Tests
 
-1. **Browse Recipes:** Select a category or enter an ingredient to search for cocktails
-2. **View Details:** Click "View Recipe" to see full recipe information
-3. **Save Favorites:** Add your favorite recipes to the favorites page for quick access
-4. **Navigate:** Use the navigation menu to switch between browsing and favorites
+1. Unit & Integration
+```bash
+npm run test
+```
 
+2. Coverage
+```bash
+npm run test:coverage
+```
 
-## 📚 API Reference
-This project uses:
+3. E2E (Playwright)
+```bash
+npm run test:e2e
+```
 
-- **Categories endpoint:** Get list of drink categories
-- **Filter endpoint:** Search drinks by category or ingredient
-- **Lookup endpoint:** Get detailed recipe information
-- **Search endpoints:** Search drinks by name
+## 🎯 Engineering Focus
+
+Key engineering principles applied:
+
+- Clear separation of concerns across views, components, store, and services
+- Modular state architecture using Zustand Slice Pattern
+- Centralized typed selectors to prevent unnecessary re-renders
+- Runtime validation of external API responses using Zod
+- Explicit API → Domain transformation layer
+- Strong TypeScript typing across the entire codebase
+- Defensive handling of nullable and edge-case API responses
+- Multi-layer testing strategy (unit, integration, e2e, accessibility)
+
+The goal is to demonstrate structured frontend architecture and reliability-focused development practices.
+
+# 📚 API Reference
+
+This project consumes data from the public **TheCocktailDB API**.
+
+Endpoints used:
+
+- **Categories endpoint**  
+  Retrieves the list of available drink categories.
+
+- **Filter endpoint**  
+  Fetches drinks filtered by category or ingredient.
+
+- **Lookup endpoint**  
+  Retrieves detailed recipe information by drink ID.
+
+- **Search endpoint**  
+  Searches drinks by name.
+
+All API responses are validated using Zod schemas before being transformed into typed domain models and stored in the global state.
 
 ## 📄 License
 
