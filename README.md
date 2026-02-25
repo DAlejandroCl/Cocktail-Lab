@@ -2,20 +2,15 @@
 
 [![Live Demo](https://img.shields.io/badge/demo-live-green)](https://cocktail-lab-devacl.vercel.app)
 
-A multi-page cocktail recipe application built with **React + TypeScript** and React Router DOM.
-Browse and discover drink recipes by category or ingredient using the [TheCocktailDB API](https://www.thecocktaildb.com/api.php). Features modular state management with Zustand Slice Pattern, runtime validation with Zod, and a responsive design.
-# 🍹 Cocktail Lab
+A multi-page cocktail recipe application built with **React + TypeScript** and **React Router DOM**.
 
-[![Live Demo](https://img.shields.io/badge/demo-live-green)](https://cocktail-lab-devacl.vercel.app)
+Originally developed as part of a React course project focused on multi-page routing and Zustand's Slice Pattern, the application progressively evolved to incorporate improved styling, modular architecture, runtime validation, and a comprehensive multi-layer testing strategy.
 
-A multi-page cocktail recipe application built with .  
-The project focuses on modular state management, runtime data validation, strong typing, and a complete multi-layer testing strategy.
-
-It consumes the public [TheCocktailDB API](https://www.thecocktaildb.com/api.php) to allow users to browse, explore, and save cocktail recipes.
+The app consumes the public [TheCocktailDB API](https://www.thecocktaildb.com/api.php) to allow users to browse, search, and manage cocktail recipes in a structured and scalable way.
 
 ---
 
-# 🚀 Live Demo
+## 🚀 Live Demo
 
 You can try the application here:
 
@@ -23,34 +18,34 @@ You can try the application here:
 
 ---
 
-# ✨ Core Features
+## ✨ Core Features
 
 This application is designed to demonstrate real-world frontend engineering practices while maintaining a clean and user-friendly experience.
 
-## 🔎 Recipe Exploration
+#### 🔎 Recipe Exploration
 - Browse cocktails by **category**
 - Search drinks by **ingredient or name**
 - Real-time API fetching with loading states
-- Defensive handling of null or malformed API responses
+- Resilient data handling for unreliable API responses
 
-## 📖 Detailed Recipe View
+#### 📖 Detailed Recipe View
 - Drink name and thumbnail
 - Ingredients with measurements
 - Preparation instructions
 - Explicit API → Domain transformation layer
 
-## ❤️ Favorites System
+#### ❤️ Favorites System
 - Add / remove drinks instantly
 - Persistent storage using Zustand `persist` middleware
 - Derived favorites counter
 - Optimized re-rendering using centralized selectors
 
-## 🔔 User Feedback & Stability
+#### 🔔 User Feedback & Stability
 - Global notification system
 - Graceful async error handling
 - Global Error Boundary for UI crash isolation
 
-## 🎨 UI & Experience
+#### 🎨 UI & Experience
 - Fully responsive layout
 - Skeleton loading states
 - Accessible semantic markup
@@ -59,52 +54,27 @@ This application is designed to demonstrate real-world frontend engineering prac
 
 ---
 
-# 🛠 Tech Stack
+## 🛠 Tech Stack
 
 Each tool in this project was selected with a clear purpose:
 
-### ⚛️ React
-Component-based UI architecture using functional components and hooks.
-
-### 🔷 TypeScript
-Strong static typing across components, store, services, and domain models.
-
-### ⚡ Vite
-Fast development server and optimized production builds.
-
-### 🗂 React Router DOM
-Multi-page routing with layout-based structure.
-
-### 🧠 Zustand
-Global state management using the **Slice Pattern** and controlled subscriptions.
-
-### 💾 Zustand Persist Middleware
-Selective persistence of the favorites slice using `localStorage`.
-
-### 🌐 Axios
-Promise-based HTTP client for API communication.
-
-### 🛡 Zod
-Runtime schema validation to ensure API response integrity.
-
-### 🎨 Tailwind CSS
-Utility-first CSS framework for responsive and scalable styling.
-
-### 🧪 Vitest
-Unit and integration testing framework optimized for Vite.
-
-### 🧩 Testing Library
-User-centric testing utilities for React components.
-
-### 🧭 Playwright
-End-to-end testing to validate real browser flows.
-
-### ♿ jest-axe
-Automated accessibility validation integrated into component and page tests.
+- **⚛️ React** - Component-based UI architecture using functional components and hooks.
+- **🔷 TypeScript** - Strong static typing across components, store, services, and domain models.
+- **⚡ Vite** - Fast development server and optimized production builds.
+- **🗂 React Router DOM** - Multi-page routing with layout-based structure.
+- **🧠 Zustand** - Global state management using the **Slice Pattern** and controlled subscriptions.
+- **💾 Zustand Persist Middleware** - Selective persistence of the favorites slice using `localStorage`.
+- **🌐 Axios** - Promise-based HTTP client for API communication.
+- **🛡 Zod** - Runtime schema validation to ensure API response integrity.
+- **🎨 Tailwind CSS** - Utility-first CSS framework for responsive and scalable styling.
+- **🧪 Vitest** - Unit and integration testing framework optimized for Vite.
+- **🧩 Testing Library** - User-centric testing utilities for React components.
+- **🧭 Playwright** - End-to-end testing to validate real browser flows.
+- **♿ jest-axe** - Automated accessibility validation integrated into component and page tests.
 
 ---
 
-# 🧠 Architecture Overview
+## 🧠 Architecture Overview
 
 This project follows a modular and layered architecture designed to keep responsibilities clearly separated.
 
@@ -126,7 +96,7 @@ For a full architectural breakdown:
 
 ---
 
-# 🧪 Testing Strategy
+## 🧪 Testing Strategy
 
 This project implements a complete multi-layer testing approach to validate both logic and user experience:
 
@@ -144,7 +114,7 @@ The tests are structured by responsibility and isolated using mocks and MSW wher
 
 ---
 
-# 🗂 Project Structure
+## 🗂 Project Structure
 
 To keep this README concise, the complete organized project tree is documented here:
 
@@ -180,6 +150,8 @@ npm run dev
 http://localhost:5173
 ```
 
+---
+
 ## 🧪 Run Tests
 
 1. Unit & Integration
@@ -197,6 +169,8 @@ npm run test:coverage
 npm run test:e2e
 ```
 
+---
+
 ## 🎯 Engineering Focus
 
 Key engineering principles applied:
@@ -212,25 +186,22 @@ Key engineering principles applied:
 
 The goal is to demonstrate structured frontend architecture and reliability-focused development practices.
 
-# 📚 API Reference
+---
+
+## 📚 API Reference
 
 This project consumes data from the public **TheCocktailDB API**.
 
 Endpoints used:
 
-- **Categories endpoint**  
-  Retrieves the list of available drink categories.
-
-- **Filter endpoint**  
-  Fetches drinks filtered by category or ingredient.
-
-- **Lookup endpoint**  
-  Retrieves detailed recipe information by drink ID.
-
-- **Search endpoint**  
-  Searches drinks by name.
+- **Categories endpoint**: Retrieves the list of available drink categories.
+- **Filter endpoint**: Fetches drinks filtered by category or ingredient.
+- **Lookup endpoint**: Retrieves detailed recipe information by drink ID.
+- **Search endpoint**: Searches drinks by name.
 
 All API responses are validated using Zod schemas before being transformed into typed domain models and stored in the global state.
+
+---
 
 ## 📄 License
 
