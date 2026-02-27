@@ -282,6 +282,7 @@ export default function Modal() {
                     <button
                       type="button"
                       onClick={closeModal}
+                      aria-label="Close modal"
                       className="button-primary flex-1 h-14 bg-primary text-navy-deep font-bold rounded-2xl shadow-lg shadow-primary/20"
                     >
                       Close
