@@ -1,4 +1,5 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import Header from "@/components/Header";
@@ -52,15 +53,16 @@ describe("Header", () => {
 
   it("calls fetchCategories on mount", () => {
     renderHeader();
-
-    expect(mockFetchCategories).toHaveBeenCalled();
+    expect(mockFetchCategories).toHaveBeenCalledTimes(1);
   });
 
   it("renders navigation links", () => {
     renderHeader();
 
-    expect(screen.getByText("Home")).toBeInTheDocument();
-    expect(screen.getByText("Favorites")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /home/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /favorites/i }),
+    ).toBeInTheDocument();
   });
 
   it("renders search form only on home route", () => {
@@ -71,11 +73,11 @@ describe("Header", () => {
     expect(screen.queryByRole("search")).not.toBeInTheDocument();
   });
 
-  it("shows error if submitting without filters", () => {
+  it("shows error if submitting without filters", async () => {
+    const user = userEvent.setup();
     renderHeader();
 
-    const button = screen.getByRole("button", { name: /search/i });
-    fireEvent.click(button);
+    await user.click(screen.getByRole("button", { name: /search/i }));
 
     expect(mockSetNotification).toHaveBeenCalledWith(
       "Please enter an ingredient or select a category.",
@@ -83,16 +85,14 @@ describe("Header", () => {
     );
   });
 
-  it("calls searchRecipes when ingredient is provided", () => {
+  it("calls searchRecipes when ingredient is provided", async () => {
+    const user = userEvent.setup();
     renderHeader();
 
     const input = screen.getByPlaceholderText(/search by ingredients/i);
 
-    fireEvent.change(input, {
-      target: { name: "ingredient", value: "Gin" },
-    });
-
-    fireEvent.click(screen.getByRole("button", { name: /search/i }));
+    await user.type(input, "Gin");
+    await user.click(screen.getByRole("button", { name: /search/i }));
 
     expect(mockSearchRecipes).toHaveBeenCalledWith({
       ingredient: "Gin",
@@ -100,18 +100,37 @@ describe("Header", () => {
     });
   });
 
-  it("calls searchRecipes when category is selected", () => {
+  it("calls searchRecipes when category is selected", async () => {
+    const user = userEvent.setup();
     renderHeader();
 
-    fireEvent.click(screen.getByText("All Categories"));
-
-    fireEvent.click(screen.getByText("Cocktail"));
-
-    fireEvent.click(screen.getByRole("button", { name: /search/i }));
+    await user.click(screen.getByText("All Categories"));
+    await user.click(screen.getByText("Cocktail"));
+    await user.click(screen.getByRole("button", { name: /search/i }));
 
     expect(mockSearchRecipes).toHaveBeenCalledWith({
       ingredient: "",
       category: "Cocktail",
     });
+  });
+
+  it("disables search button while loading", () => {
+    setupStore({ isLoading: true });
+
+    renderHeader();
+
+    const button = screen.getByRole("button", { name: /search/i });
+    expect(button).toBeDisabled();
+  });
+
+  it("does not call searchRecipes while loading", async () => {
+    const user = userEvent.setup();
+    setupStore({ isLoading: true });
+
+    renderHeader();
+
+    await user.click(screen.getByRole("button", { name: /search/i }));
+
+    expect(mockSearchRecipes).not.toHaveBeenCalled();
   });
 });
