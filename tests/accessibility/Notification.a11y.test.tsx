@@ -1,94 +1,84 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
-import { axe, toHaveNoViolations } from "jest-axe";
+import { render, screen, waitFor, act } from "@testing-library/react";
+import { axe } from "jest-axe";
 import userEvent from "@testing-library/user-event";
 import Notification from "@/components/Notification";
 import { useAppStore } from "@/stores/useAppStore";
 
-expect.extend(toHaveNoViolations);
-
-/* -------------------------------------------------- */
-/*                Setup Store                         */
-/* -------------------------------------------------- */
+// ─────────────────────────────────────────────
+// Setup
+// ─────────────────────────────────────────────
 
 beforeEach(() => {
-  useAppStore.setState({
-    ...useAppStore.getState(),
-    notification: null,
-    clearNotification: vi.fn(() =>
-      useAppStore.setState({ notification: null })
-    ),
-  });
-
-  vi.useFakeTimers();
+  useAppStore.setState({ notification: null });
 });
 
 afterEach(() => {
-  vi.clearAllTimers();
   vi.useRealTimers();
 });
 
-/* -------------------------------------------------- */
-/*               Helper Renderer                      */
-/* -------------------------------------------------- */
+// ─────────────────────────────────────────────
+// Helper
+// ─────────────────────────────────────────────
 
-const renderNotification = () => render(<Notification />);
+function renderNotification() {
+  return render(<Notification />);
+}
 
-/* ================================================== */
-/*              ACCESSIBILITY TESTS                   */
-/* ================================================== */
+function setNotification(message: string, type: "success" | "error" | "info") {
+  useAppStore.setState({ notification: { message, type } });
+}
 
-describe("Notification Accessibility", () => {
-  /* ---------------- Axe ---------------- */
+// ─────────────────────────────────────────────
+// Tests
+// ─────────────────────────────────────────────
 
-  it("has no accessibility violations", async () => {
-    useAppStore.setState({
-      notification: {
-        message: "Success message",
-        type: "success",
-      },
-    });
+describe("Notification — Accessibility", () => {
+
+  it("has no accessibility violations for a success notification", async () => {
+    setNotification("Added to favorites", "success");
 
     const { container } = renderNotification();
+
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });
 
-  /* ---------------- Roles ---------------- */
+  it("has no accessibility violations for an error notification", async () => {
+    setNotification("Something failed", "error");
 
-  it("uses role=status for success/info", () => {
-    useAppStore.setState({
-      notification: {
-        message: "Saved correctly",
-        type: "success",
-      },
-    });
+    const { container } = renderNotification();
+
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
+  });
+
+  it("uses role=status for success notifications (polite live region)", () => {
+    setNotification("Saved correctly", "success");
 
     renderNotification();
 
     expect(screen.getByRole("status")).toBeInTheDocument();
   });
 
-  it("uses role=alert for errors", () => {
-    useAppStore.setState({
-      notification: {
-        message: "Something failed",
-        type: "error",
-      },
-    });
+  it("uses role=status for info notifications (polite live region)", () => {
+    setNotification("Your list is empty", "info");
+
+    renderNotification();
+
+    expect(screen.getByRole("status")).toBeInTheDocument();
+  });
+
+  it("uses role=alert for error notifications (assertive live region)", () => {
+    setNotification("Something failed", "error");
 
     renderNotification();
 
     expect(screen.getByRole("alert")).toBeInTheDocument();
   });
 
-  it("sets correct aria-live value", () => {
-    useAppStore.setState({
-      notification: {
-        message: "Info message",
-        type: "info",
-      },
-    });
+  it("success notification has aria-live=polite and aria-atomic=true", () => {
+    setNotification("Saved!", "success");
 
     renderNotification();
 
@@ -97,120 +87,114 @@ describe("Notification Accessibility", () => {
     expect(region).toHaveAttribute("aria-atomic", "true");
   });
 
-  /* ---------------- Close Button ---------------- */
-
-  it("has accessible close button", () => {
-    useAppStore.setState({
-      notification: {
-        message: "Closable",
-        type: "success",
-      },
-    });
+  it("error notification has aria-live=assertive", () => {
+    setNotification("Error occurred", "error");
 
     renderNotification();
 
-    const button = screen.getByRole("button", {
-      name: /close notification/i,
-    });
-
-    expect(button).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveAttribute("aria-live", "assertive");
   });
 
-  it("clears notification when close button is clicked", async () => {
+  it("has an accessible close button", () => {
+    setNotification("Closable message", "success");
+
+    renderNotification();
+
+    expect(
+      screen.getByRole("button", { name: /close notification/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("clicking the close button clears the notification", async () => {
     const user = userEvent.setup();
 
-    useAppStore.setState({
-      notification: {
-        message: "Closable",
-        type: "success",
-      },
-    });
+    setNotification("Closable message", "success");
 
     renderNotification();
 
-    const button = screen.getByRole("button", {
-      name: /close notification/i,
-    });
-
-    await user.click(button);
+    await user.click(
+      screen.getByRole("button", { name: /close notification/i }),
+    );
 
     await waitFor(() => {
-      expect(
-        useAppStore.getState().notification
-      ).toBeNull();
+      expect(useAppStore.getState().notification).toBeNull();
     });
   });
 
-  /* ================================================== */
-  /*              AUTO DISMISS BEHAVIOR                 */
-  /* ================================================== */
+  it("auto-dismisses success notification after 4000ms", async () => {
+    vi.useFakeTimers();
 
-  it("auto-dismisses success notification after 4s", async () => {
-    useAppStore.setState({
-      notification: {
-        message: "Auto success",
-        type: "success",
-      },
-    });
+    setNotification("Added to favorites", "success");
 
     renderNotification();
 
-    vi.advanceTimersByTime(4000);
+    act(() => {
+      vi.advanceTimersByTime(4000);
+    });
 
     await waitFor(() => {
-      expect(
-        useAppStore.getState().notification
-      ).toBeNull();
+      expect(useAppStore.getState().notification).toBeNull();
     });
+
+    vi.useRealTimers();
   });
 
-  it("auto-dismisses info notification after 6s", async () => {
-    useAppStore.setState({
-      notification: {
-        message: "Auto info",
-        type: "info",
-      },
-    });
+  it("success notification is still present at 3999ms", () => {
+    vi.useFakeTimers();
+
+    setNotification("Saved!", "success");
 
     renderNotification();
 
-    vi.advanceTimersByTime(6000);
-
-    await waitFor(() => {
-      expect(
-        useAppStore.getState().notification
-      ).toBeNull();
+    act(() => {
+      vi.advanceTimersByTime(3999);
     });
-  });
-
-  it("does NOT auto-dismiss error notifications", async () => {
-    useAppStore.setState({
-      notification: {
-        message: "Persistent error",
-        type: "error",
-      },
-    });
-
-    renderNotification();
-
-    vi.advanceTimersByTime(10000);
 
     expect(useAppStore.getState().notification).not.toBeNull();
+
+    vi.useRealTimers();
   });
 
-  /* ================================================== */
-  /*                INTERACTION TESTS                   */
-  /* ================================================== */
+  it("auto-dismisses info notification after 6000ms", async () => {
+    vi.useFakeTimers();
 
-  it("pauses timer on hover", async () => {
-    const user = userEvent.setup();
+    setNotification("Your list is empty", "info");
 
-    useAppStore.setState({
-      notification: {
-        message: "Hover pause",
-        type: "success",
-      },
+    renderNotification();
+
+    act(() => {
+      vi.advanceTimersByTime(6000);
     });
+
+    await waitFor(() => {
+      expect(useAppStore.getState().notification).toBeNull();
+    });
+
+    vi.useRealTimers();
+  });
+
+  it("error notification does NOT auto-dismiss", () => {
+    vi.useFakeTimers();
+
+    setNotification("Persistent error", "error");
+
+    renderNotification();
+
+    act(() => {
+      vi.advanceTimersByTime(10_000);
+    });
+
+    expect(useAppStore.getState().notification).not.toBeNull();
+
+    vi.useRealTimers();
+  });
+
+  it("pauses the auto-dismiss timer on mouse enter", async () => {
+    vi.useFakeTimers();
+
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime.bind(vi) });
+
+    setNotification("Hover pause", "success");
 
     renderNotification();
 
@@ -218,52 +202,48 @@ describe("Notification Accessibility", () => {
 
     await user.hover(region);
 
-    vi.advanceTimersByTime(4000);
+    act(() => {
+      vi.advanceTimersByTime(4000);
+    });
 
     expect(useAppStore.getState().notification).not.toBeNull();
+
+    vi.useRealTimers();
   });
 
-  it("pauses timer on focus", async () => {
-    const user = userEvent.setup();
+  it("pauses the auto-dismiss timer on focus", async () => {
+    vi.useFakeTimers();
 
-    useAppStore.setState({
-      notification: {
-        message: "Focus pause",
-        type: "success",
-      },
-    });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime.bind(vi) });
+
+    setNotification("Focus pause", "success");
 
     renderNotification();
-
-    const closeButton = screen.getByRole("button", {
-      name: /close notification/i,
-    });
 
     await user.tab();
 
-    expect(closeButton).toHaveFocus();
+    expect(
+      screen.getByRole("button", { name: /close notification/i }),
+    ).toHaveFocus();
 
-    vi.advanceTimersByTime(4000);
+    act(() => {
+      vi.advanceTimersByTime(4000);
+    });
 
     expect(useAppStore.getState().notification).not.toBeNull();
+
+    vi.useRealTimers();
   });
 
-  /* ================================================== */
-  /*            RENDER CONDITIONS                       */
-  /* ================================================== */
-
-  it("does not render if notification is null", () => {
+  it("renders nothing when notification is null", () => {
     renderNotification();
+
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
-  it("does not render if message is empty", () => {
-    useAppStore.setState({
-      notification: {
-        message: "",
-        type: "success",
-      },
-    });
+  it("renders nothing when the message is an empty string", () => {
+    useAppStore.setState({ notification: { message: "", type: "success" } });
 
     renderNotification();
 
