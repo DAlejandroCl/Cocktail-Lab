@@ -68,9 +68,7 @@ function renderFavoritesPage() {
 }
 
 function seedFavorite(...recipes: RecipeDetail[]) {
-  const favorites = Object.fromEntries(
-    recipes.map((r) => [r.idDrink, r]),
-  );
+  const favorites = Object.fromEntries(recipes.map((r) => [r.idDrink, r]));
   useAppStore.setState({ favorites });
 }
 
@@ -90,8 +88,6 @@ beforeEach(() => {
 // ─────────────────────────────────────────────
 
 describe("FavoritesPage — Integration", () => {
-
-  // ── Empty state ───────────────────────────────────────────────────────
 
   describe("empty state", () => {
     it("renders the empty state heading when there are no favorites", () => {
@@ -125,7 +121,6 @@ describe("FavoritesPage — Integration", () => {
     it("dispatches an info notification when the list is empty", async () => {
       renderFavoritesPage();
 
-      // El useEffect de FavoritesPage llama a setNotification cuando !hasFavorites
       await waitFor(() => {
         expect(useAppStore.getState().notification).toEqual({
           message: "Your favorites list is empty",
@@ -134,8 +129,6 @@ describe("FavoritesPage — Integration", () => {
       });
     });
   });
-
-  // ── Con favoritos ─────────────────────────────────────────────────────
 
   describe("with favorites", () => {
     beforeEach(() => {
@@ -194,8 +187,6 @@ describe("FavoritesPage — Integration", () => {
       expect(screen.getByText("Daiquiri")).toBeInTheDocument();
     });
   });
-
-  // ── Remove favorite ───────────────────────────────────────────────────
 
   describe("remove from favorites", () => {
     beforeEach(() => {
@@ -285,7 +276,7 @@ describe("FavoritesPage — Integration", () => {
       expect(screen.getByText("Daiquiri")).toBeInTheDocument();
     });
 
-    it("heart button shows aria-pressed=false after removing", async () => {
+    it("heart button shows aria-pressed=true before removal", async () => {
       const user = userEvent.setup();
 
       renderFavoritesPage();
@@ -295,13 +286,10 @@ describe("FavoritesPage — Integration", () => {
         name: /remove mojito from favorites/i,
       });
 
-      // Confirmar que antes del click está pressed
       expect(removeButton).toHaveAttribute("aria-pressed", "true");
 
       await user.click(removeButton);
 
-      // Después del click la card desaparece (lista vacía),
-      // así que verificamos que ya no existe el botón en el DOM
       await waitFor(() => {
         expect(
           screen.queryByRole("button", { name: /remove mojito from favorites/i }),
@@ -309,8 +297,6 @@ describe("FavoritesPage — Integration", () => {
       });
     });
   });
-
-  // ── Accesibilidad ─────────────────────────────────────────────────────
 
   describe("accessibility", () => {
     it("each drink card has an accessible article role with labelledby", () => {
