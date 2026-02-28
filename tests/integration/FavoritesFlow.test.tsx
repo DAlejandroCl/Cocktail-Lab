@@ -63,10 +63,6 @@ const mockRecipeDetail: RecipeDetail = {
 // Helpers
 // ─────────────────────────────────────────────
 
-/**
- * Render the full app shell with Layout + routes using MemoryRouter.
- * initialEntries controls which route is active at start.
- */
 function renderApp(initialEntries: string[] = ["/"]) {
   return render(
     <MemoryRouter initialEntries={initialEntries}>
@@ -80,10 +76,6 @@ function renderApp(initialEntries: string[] = ["/"]) {
   );
 }
 
-/**
- * Seed the store directly with a favorite already saved.
- * Avoids relying on the add flow when testing remove/display behavior.
- */
 function seedFavorite(recipe: RecipeDetail) {
   useAppStore.setState((state) => ({
     favorites: { ...state.favorites, [recipe.idDrink]: recipe },
@@ -95,10 +87,8 @@ function seedFavorite(recipe: RecipeDetail) {
 // ─────────────────────────────────────────────
 
 beforeEach(() => {
-  // Reset store to a clean slate before every test
   useAppStore.setState({ favorites: {}, notification: null });
 
-  // Register the lookup handler needed by DrinkCard's fetch-on-favorite
   server.use(
     http.get(
       "https://www.thecocktaildb.com/api/json/v1/1/lookup.php",
@@ -117,15 +107,11 @@ afterEach(() => {
 
 describe("Favorites Flow — Integration", () => {
 
-  // ── FavoritesPage empty state ──────────────────────────────────────────
-
   describe("FavoritesPage — empty state", () => {
     it("renders the empty state message when there are no favorites", () => {
       renderApp(["/favorites"]);
 
-      expect(
-        screen.getByText("No Favorites Yet"),
-      ).toBeInTheDocument();
+      expect(screen.getByText("No Favorites Yet")).toBeInTheDocument();
     });
 
     it("shows an info notification when favorites list is empty", async () => {
@@ -145,8 +131,6 @@ describe("Favorites Flow — Integration", () => {
       expect(screen.queryByRole("article")).not.toBeInTheDocument();
     });
   });
-
-  // ── FavoritesPage with favorites ──────────────────────────────────────
 
   describe("FavoritesPage — with favorites", () => {
     beforeEach(() => {
@@ -172,12 +156,13 @@ describe("Favorites Flow — Integration", () => {
       expect(screen.queryByText("No Favorites Yet")).not.toBeInTheDocument();
     });
 
-    it("plural label shows 'recipes' when there are multiple favorites", () => {
+    it("shows plural 'recipes' label when there are multiple favorites", () => {
       const secondRecipe: RecipeDetail = {
         ...mockRecipeDetail,
         idDrink: "2",
         strDrink: "Daiquiri",
       };
+
       useAppStore.setState((state) => ({
         favorites: {
           ...state.favorites,
@@ -191,16 +176,12 @@ describe("Favorites Flow — Integration", () => {
     });
   });
 
-  // ── Add to favorites (via DrinkCard on IndexPage) ─────────────────────
-
   describe("Add to favorites", () => {
     it("adds a drink to favorites when the heart button is clicked", async () => {
       const user = userEvent.setup();
 
       renderApp(["/"]);
 
-      // Wait for the drink card to appear (IndexPage fetches on mount or after search)
-      // Seed drinks directly into the store to avoid depending on the search flow
       useAppStore.setState({
         drinks: { drinks: [mockDrink] },
         hasSearched: true,
@@ -258,17 +239,15 @@ describe("Favorites Flow — Integration", () => {
       await user.click(addButton);
 
       await waitFor(() => {
-        // After adding, aria-label flips to "Remove..."
         expect(
           screen.getByRole("button", { name: /remove mojito from favorites/i }),
         ).toHaveAttribute("aria-pressed", "true");
       });
     });
 
-    it("shows error notification when lookup API fails", async () => {
+    it("shows error notification when the lookup API fails", async () => {
       const user = userEvent.setup();
 
-      // Override the lookup handler to simulate a network failure
       server.use(
         http.get(
           "https://www.thecocktaildb.com/api/json/v1/1/lookup.php",
@@ -327,14 +306,12 @@ describe("Favorites Flow — Integration", () => {
     });
   });
 
-  // ── Remove from favorites ─────────────────────────────────────────────
-
   describe("Remove from favorites", () => {
     beforeEach(() => {
       seedFavorite(mockRecipeDetail);
     });
 
-    it("removes a drink from favorites when heart button is clicked on FavoritesPage", async () => {
+    it("removes a drink from favorites when the heart button is clicked on FavoritesPage", async () => {
       const user = userEvent.setup();
 
       renderApp(["/favorites"]);
@@ -389,13 +366,10 @@ describe("Favorites Flow — Integration", () => {
     });
   });
 
-  // ── Persistence ───────────────────────────────────────────────────────
-
   describe("Favorites persistence", () => {
     it("favorites survive a store re-read (state is retained in memory)", () => {
       seedFavorite(mockRecipeDetail);
 
-      // Simulate reading the store from a different part of the app
       const favorites = useAppStore.getState().favorites;
 
       expect(favorites["1"]).toMatchObject({
@@ -407,15 +381,11 @@ describe("Favorites Flow — Integration", () => {
     it("isFavorite selector returns true for a saved drink", () => {
       seedFavorite(mockRecipeDetail);
 
-      const isFavorite = useAppStore.getState().isFavorite("1");
-
-      expect(isFavorite).toBe(true);
+      expect(useAppStore.getState().isFavorite("1")).toBe(true);
     });
 
     it("isFavorite selector returns false for a drink not in favorites", () => {
-      const isFavorite = useAppStore.getState().isFavorite("999");
-
-      expect(isFavorite).toBe(false);
+      expect(useAppStore.getState().isFavorite("999")).toBe(false);
     });
   });
 });
