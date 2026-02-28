@@ -3,8 +3,6 @@ import { http, HttpResponse } from "msw";
 // ─────────────────────────────────────────────
 // Inline fixtures for handlers
 // ─────────────────────────────────────────────
-// Kept simple and static here. For tests that need specific data,
-// override locally with server.use() inside the test.
 
 const DEFAULT_DRINK = {
   idDrink: "1",
@@ -56,8 +54,6 @@ const DEFAULT_RECIPE_DETAIL = {
 
 export const handlers = [
 
-  // GET /filter.php — search by category or ingredient
-  // Used by: searchByCategory, searchByIngredient
   http.get(
     "https://www.thecocktaildb.com/api/json/v1/1/filter.php",
     ({ request }) => {
@@ -65,7 +61,6 @@ export const handlers = [
       const ingredient = url.searchParams.get("i");
       const category = url.searchParams.get("c");
 
-      // Special case: ingredient "empty" simulates an API response with no results
       if (ingredient === "empty") {
         return HttpResponse.json({ drinks: null });
       }
@@ -81,8 +76,6 @@ export const handlers = [
     },
   ),
 
-  // GET /search.php — search by name
-  // Used by: searchByName
   http.get(
     "https://www.thecocktaildb.com/api/json/v1/1/search.php",
     ({ request }) => {
@@ -99,8 +92,6 @@ export const handlers = [
     },
   ),
 
-  // GET /lookup.php — full recipe detail by drink ID
-  // Used by: getRecipeById (selectRecipe, addFavorite in DrinkCard)
   http.get(
     "https://www.thecocktaildb.com/api/json/v1/1/lookup.php",
     ({ request }) => {
@@ -117,8 +108,6 @@ export const handlers = [
     },
   ),
 
-  // GET /list.php?c=list — category list
-  // Used by: getCategories
   http.get(
     "https://www.thecocktaildb.com/api/json/v1/1/list.php",
     () => {
@@ -133,8 +122,6 @@ export const handlers = [
     },
   ),
 
-  // GET /random.php — random cocktail
-  // Used by: getRandomRecipes (Browse All on IndexPage)
   http.get(
     "https://www.thecocktaildb.com/api/json/v1/1/random.php",
     () => {

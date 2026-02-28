@@ -7,14 +7,6 @@ import type { Drink } from "@/types";
 
 let drinkIdCounter = 1;
 
-/**
- * Creates a valid Drink object with sensible defaults.
- * Accepts partial overrides to customize each test.
- *
- * @example
- * const drink = makeDrink({ strDrink: "Daiquiri" });
- * const drinks = [makeDrink(), makeDrink(), makeDrink()]; // auto-incremented unique IDs
- */
 export function makeDrink(overrides: Partial<Drink> = {}): Drink {
   const id = String(drinkIdCounter++);
 
@@ -31,13 +23,6 @@ export function makeDrink(overrides: Partial<Drink> = {}): Drink {
 // RecipeDetail factory (full recipe)
 // ─────────────────────────────────────────────
 
-/**
- * Creates a valid RecipeDetail object with sensible defaults.
- * All optional ingredient/measure fields default to null.
- *
- * @example
- * const recipe = makeRecipeDetail({ strDrink: "Mojito", strIngredient1: "White rum" });
- */
 export function makeRecipeDetail(
   overrides: Partial<RecipeDetail> = {},
 ): RecipeDetail {
@@ -86,12 +71,6 @@ export function makeRecipeDetail(
   };
 }
 
-/**
- * Resets the ID counter. Call in beforeEach when predictable IDs matter.
- *
- * @example
- * beforeEach(() => resetFactoryCounters());
- */
 export function resetFactoryCounters() {
   drinkIdCounter = 1;
 }
@@ -100,25 +79,10 @@ export function resetFactoryCounters() {
 // Collection helpers
 // ─────────────────────────────────────────────
 
-/**
- * Generates an array of N drinks with unique auto-incremented IDs.
- *
- * @example
- * const drinks = makeDrinks(3);
- * // [{ idDrink: "1", ... }, { idDrink: "2", ... }, { idDrink: "3", ... }]
- */
 export function makeDrinks(count: number, overrides: Partial<Drink> = {}): Drink[] {
   return Array.from({ length: count }, () => makeDrink(overrides));
 }
 
-/**
- * Converts an array of RecipeDetail into the FavoritesMap shape the store expects.
- * Useful for seeding the store: useAppStore.setState({ favorites: toFavoritesMap([...]) }).
- *
- * @example
- * const favorites = toFavoritesMap([makeRecipeDetail(), makeRecipeDetail()]);
- * useAppStore.setState({ favorites });
- */
 export function toFavoritesMap(
   recipes: RecipeDetail[],
 ): Record<string, RecipeDetail> {
