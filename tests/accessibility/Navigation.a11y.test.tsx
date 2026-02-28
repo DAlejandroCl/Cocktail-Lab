@@ -1,100 +1,77 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { axe, toHaveNoViolations } from "jest-axe";
+import { axe } from "jest-axe";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import Layout from "@/layouts/Layout";
 
-expect.extend(toHaveNoViolations);
+// ─────────────────────────────────────────────
+// Helper
+// ─────────────────────────────────────────────
 
-/* -------------------------------------------------- */
-/* Helper renderer with router context               */
-/* -------------------------------------------------- */
-
-const renderWithRouter = () => {
+function renderLayout() {
   return render(
     <MemoryRouter initialEntries={["/"]}>
       <Routes>
         <Route element={<Layout />}>
-          <Route
-            index
-            element={<div>Home Page</div>}
-          />
+          <Route index element={<div>Home Page</div>} />
         </Route>
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
-};
+}
 
-/* -------------------------------------------------- */
-/*                     Tests                          */
-/* -------------------------------------------------- */
+// ─────────────────────────────────────────────
+// Tests
+// ─────────────────────────────────────────────
 
-describe("Layout Accessibility", () => {
-  /* ---------------- Automated ---------------- */
+describe("Layout — Accessibility", () => {
 
-  it("should have no accessibility violations", async () => {
-    const { container } = renderWithRouter();
+  it("has no accessibility violations", async () => {
+    const { container } = renderLayout();
+
     const results = await axe(container);
-
     expect(results).toHaveNoViolations();
   });
 
-  /* ---------------- Landmarks ---------------- */
-
   it("renders a main landmark", () => {
-    renderWithRouter();
+    renderLayout();
 
-    const main = screen.getByRole("main");
-
-    expect(main).toBeInTheDocument();
+    expect(screen.getByRole("main")).toBeInTheDocument();
   });
 
   it("renders only one main landmark", () => {
-    renderWithRouter();
+    renderLayout();
 
-    const mains = screen.getAllByRole("main");
-
-    expect(mains).toHaveLength(1);
+    expect(screen.getAllByRole("main")).toHaveLength(1);
   });
 
-  /* ---------------- Skip Link ---------------- */
+  it("renders a skip link", () => {
+    renderLayout();
 
-  it("renders skip link", () => {
-    renderWithRouter();
-
-    const skipLink = screen.getByRole("link", {
-      name: /skip to main content/i,
-    });
-
-    expect(skipLink).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /skip to main content/i }),
+    ).toBeInTheDocument();
   });
 
-  it("skip link moves focus to main content", async () => {
+  it("skip link moves focus to main content on Enter", async () => {
     const user = userEvent.setup();
-    renderWithRouter();
 
-    const skipLink = screen.getByRole("link", {
-      name: /skip to main content/i,
-    });
+    renderLayout();
+
+    const skipLink = screen.getByRole("link", { name: /skip to main content/i });
 
     await user.tab();
     expect(skipLink).toHaveFocus();
 
     await user.keyboard("{Enter}");
 
-    const main = screen.getByRole("main");
-
-    expect(main).toHaveFocus();
+    expect(screen.getByRole("main")).toHaveFocus();
   });
 
-  /* ---------------- Structure ---------------- */
+  it("main has id=main-content for the skip link target", () => {
+    renderLayout();
 
-  it("main has correct id for skip link", () => {
-    renderWithRouter();
-
-    const main = screen.getByRole("main");
-
-    expect(main).toHaveAttribute("id", "main-content");
+    expect(screen.getByRole("main")).toHaveAttribute("id", "main-content");
   });
 });
