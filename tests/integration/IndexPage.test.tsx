@@ -11,11 +11,6 @@ import IndexPage from "@/views/IndexPage";
 // Helper
 // ─────────────────────────────────────────────
 
-/**
- * IndexPage no necesita Routes/Layout, pero DrinkCard llama a selectRecipe
- * (que abre el Modal) y éste usa useNavigate internamente via headlessui.
- * Envolver en MemoryRouter evita el error "useNavigate outside Router".
- */
 function renderIndexPage() {
   return render(
     <MemoryRouter>
@@ -44,13 +39,10 @@ beforeEach(() => {
 
 describe("IndexPage — Integration", () => {
 
-  // ── Estado inicial ────────────────────────────────────────────────────
-
   describe("initial state", () => {
     it("renders the empty state heading", () => {
       renderIndexPage();
 
-      // Texto real del componente — h2 cuando no hay drinks
       expect(
         screen.getByRole("heading", { name: /your perfect mix awaits/i }),
       ).toBeInTheDocument();
@@ -79,13 +71,10 @@ describe("IndexPage — Integration", () => {
     });
   });
 
-  // ── Loading state ─────────────────────────────────────────────────────
-
   describe("loading state", () => {
     it("shows 8 skeleton cards while fetching", async () => {
       const user = userEvent.setup();
 
-      // Delay the MSW response so we can assert the loading UI
       server.use(
         http.get(
           "https://www.thecocktaildb.com/api/json/v1/1/random.php",
@@ -110,8 +99,6 @@ describe("IndexPage — Integration", () => {
         screen.getByRole("button", { name: /browse all recipes/i }),
       );
 
-      // SkeletonDrinkCard tiene role="presentation" y aria-hidden="true"
-      // Necesitamos { hidden: true } para que Testing Library los encuentre
       const skeletons = screen.getAllByRole("presentation", { hidden: true });
       expect(skeletons).toHaveLength(8);
     });
@@ -143,14 +130,11 @@ describe("IndexPage — Integration", () => {
         screen.getByRole("button", { name: /browse all recipes/i }),
       );
 
-      // Texto real del JSX: "Mixing the perfect drinks for you…"
       expect(
         screen.getByText(/mixing the perfect drinks for you/i),
       ).toBeInTheDocument();
     });
   });
-
-  // ── Resultado exitoso ─────────────────────────────────────────────────
 
   describe("successful fetch", () => {
     it("displays drink cards after fetching", async () => {
@@ -176,14 +160,12 @@ describe("IndexPage — Integration", () => {
         screen.getByRole("button", { name: /browse all recipes/i }),
       );
 
-      // "Found 1 recipe" — singular porque el handler devuelve 1 drink
       await waitFor(() => {
         expect(screen.getByText(/found 1 recipe/i)).toBeInTheDocument();
       });
     });
 
     it("shows plural 'recipes' label when multiple drinks are returned", () => {
-      // Override handler para devolver 2 drinks
       server.use(
         http.get(
           "https://www.thecocktaildb.com/api/json/v1/1/random.php",
@@ -200,13 +182,13 @@ describe("IndexPage — Integration", () => {
         ),
       );
 
-      // Seed directamente 2 drinks en el store para evitar depender
-      // del número de llamadas paralelas que hace getRandomRecipes(150)
       useAppStore.setState({
-        drinks: { drinks: [
-          { idDrink: "1", strDrink: "Mojito", strDrinkThumb: "https://image.com/mojito.jpg" },
-          { idDrink: "2", strDrink: "Daiquiri", strDrinkThumb: "https://image.com/daiquiri.jpg" },
-        ]},
+        drinks: {
+          drinks: [
+            { idDrink: "1", strDrink: "Mojito", strDrinkThumb: "https://image.com/mojito.jpg" },
+            { idDrink: "2", strDrink: "Daiquiri", strDrinkThumb: "https://image.com/daiquiri.jpg" },
+          ],
+        },
         hasSearched: true,
         isLoading: false,
       });
@@ -255,16 +237,8 @@ describe("IndexPage — Integration", () => {
     });
   });
 
-  // ── Sin resultados ────────────────────────────────────────────────────
-
   describe("empty results", () => {
     it("shows an info notification when no drinks are found", async () => {
-      // Seed el estado post-búsqueda sin resultados directamente.
-      // No se puede usar el botón "Browse All" para este caso porque
-      // handleBrowseAll siempre pasa { category: "", ingredient: "" }
-      // lo que activa getRandomRecipes(150), nunca un resultado vacío.
-      // La forma correcta es simular el estado que el slice produciría
-      // tras una búsqueda sin resultados.
       useAppStore.setState({
         drinks: { drinks: [] },
         isLoading: false,
@@ -274,8 +248,6 @@ describe("IndexPage — Integration", () => {
 
       renderIndexPage();
 
-      // El useEffect de IndexPage dispara setNotification cuando:
-      // hasSearched=true && !isLoading && drinks.length === 0
       await waitFor(() => {
         expect(useAppStore.getState().notification).toEqual({
           message: "No cocktails found with those filters",
@@ -285,7 +257,6 @@ describe("IndexPage — Integration", () => {
     });
 
     it("does not show notification on initial render (hasSearched=false)", () => {
-      // hasSearched=false por defecto — el useEffect no debe disparar
       renderIndexPage();
 
       expect(useAppStore.getState().notification).toBeNull();
@@ -300,17 +271,14 @@ describe("IndexPage — Integration", () => {
 
       renderIndexPage();
 
-      // El empty state sigue visible (no hay drinks que mostrar)
       expect(
         screen.getByRole("heading", { name: /your perfect mix awaits/i }),
       ).toBeInTheDocument();
     });
   });
 
-  // ── Accesibilidad ─────────────────────────────────────────────────────
-
   describe("accessibility", () => {
-    it("Browse All button is keyboard accessible", async () => {
+    it("Browse All button is keyboard accessible", () => {
       renderIndexPage();
 
       const button = screen.getByRole("button", { name: /browse all recipes/i });
@@ -319,11 +287,13 @@ describe("IndexPage — Integration", () => {
       expect(button).toHaveFocus();
     });
 
-    it("drink cards are rendered as articles with accessible names", async () => {
+    it("drink cards are rendered as articles with accessible names", () => {
       useAppStore.setState({
-        drinks: { drinks: [
-          { idDrink: "1", strDrink: "Mojito", strDrinkThumb: "https://image.com/mojito.jpg" },
-        ]},
+        drinks: {
+          drinks: [
+            { idDrink: "1", strDrink: "Mojito", strDrinkThumb: "https://image.com/mojito.jpg" },
+          ],
+        },
         hasSearched: true,
         isLoading: false,
       });
