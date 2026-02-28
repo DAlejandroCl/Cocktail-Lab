@@ -1,69 +1,96 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
+import { axe } from "jest-axe";
 import userEvent from "@testing-library/user-event";
-import { axe, toHaveNoViolations } from "jest-axe";
 import Modal from "@/components/Modal";
 import { useAppStore } from "@/stores/useAppStore";
-import type { RecipeDetail } from "@/types";
+import { makeRecipeDetail } from "../mocks/factories";
 
-expect.extend(toHaveNoViolations);
-
-/* -------------------------------------------------- */
-/*                   Mock Recipe                      */
-/* -------------------------------------------------- */
-
-const mockRecipe: RecipeDetail = {
-  idDrink: "1",
-  strDrink: "Mojito",
-  strDrinkThumb: "https://image.com/mojito.jpg",
-  strInstructions: "Mix ingredients. Serve chilled.",
-  strIngredient1: "Rum",
-  strMeasure1: "50ml",
-} as RecipeDetail;
-
-/* -------------------------------------------------- */
-/*              Reset Zustand Store                   */
-/* -------------------------------------------------- */
+// ─────────────────────────────────────────────
+// Setup
+// ─────────────────────────────────────────────
 
 beforeEach(() => {
+  const recipe = makeRecipeDetail({ strDrink: "Mojito" });
+
   useAppStore.setState({
-    ...useAppStore.getState(),
     modal: true,
-    selectedRecipe: mockRecipe,
+    selectedRecipe: recipe,
     favorites: {},
+    notification: null,
   });
 });
 
-/* -------------------------------------------------- */
-/*                      Tests                         */
-/* -------------------------------------------------- */
+afterEach(() => {
+  document.body.querySelectorAll("button").forEach((btn) => {
+    if (!btn.closest("[data-testid]")) btn.remove();
+  });
+});
 
-describe("Modal Accessibility", () => {
-  it("should have no accessibility violations", async () => {
+// ─────────────────────────────────────────────
+// Tests
+// ─────────────────────────────────────────────
+
+describe("Modal — Accessibility", () => {
+
+  it("has no accessibility violations", async () => {
     const { container } = render(<Modal />);
+
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });
 
-  it("renders a dialog with proper role", () => {
+  it("renders a dialog with the correct role", () => {
     render(<Modal />);
+
     expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
-  it("sets initial focus inside the modal (Headless UI initialFocus)", async () => {
+  it("dialog title heading has id=modal-title", () => {
     render(<Modal />);
 
-    const closeButtons = screen.getAllByRole("button", {
+    expect(
+      screen.getByRole("heading", { name: /mojito/i }),
+    ).toHaveAttribute("id", "modal-title");
+  });
+
+  it("ingredients section is labelled by its heading", () => {
+    render(<Modal />);
+
+    const heading = screen.getByRole("heading", { name: /ingredients/i });
+    expect(heading).toHaveAttribute("id", "ingredients-heading");
+    expect(heading.closest("section")).toHaveAttribute(
+      "aria-labelledby",
+      "ingredients-heading",
+    );
+  });
+
+  it("instructions section is labelled by its heading", () => {
+    render(<Modal />);
+
+    const heading = screen.getByRole("heading", { name: /instructions/i });
+    expect(heading).toHaveAttribute("id", "instructions-heading");
+    expect(heading.closest("section")).toHaveAttribute(
+      "aria-labelledby",
+      "instructions-heading",
+    );
+  });
+
+  it("sets initial focus inside the modal on open (headlessui initialFocus)", async () => {
+    render(<Modal />);
+
+    const [firstCloseButton] = screen.getAllByRole("button", {
       name: /close modal/i,
     });
 
     await waitFor(() => {
-      expect(closeButtons[0]).toHaveFocus();
+      expect(firstCloseButton).toHaveFocus();
     });
   });
 
-  it("keeps focus within the modal when tabbing (jsdom-safe validation)", async () => {
+  it("keeps focus within the modal when tabbing", async () => {
     const user = userEvent.setup();
+
     render(<Modal />);
 
     const dialog = screen.getByRole("dialog");
@@ -73,7 +100,7 @@ describe("Modal Accessibility", () => {
     expect(dialog.contains(document.activeElement)).toBe(true);
   });
 
-  it("restores focus to previously focused element when closed", async () => {
+  it("restores focus to the previously focused element when closed", async () => {
     const user = userEvent.setup();
 
     const trigger = document.createElement("button");
@@ -83,19 +110,20 @@ describe("Modal Accessibility", () => {
 
     render(<Modal />);
 
-    const closeButtons = screen.getAllByRole("button", {
+    const [firstCloseButton] = screen.getAllByRole("button", {
       name: /close modal/i,
     });
 
-    await user.click(closeButtons[0]);
+    await user.click(firstCloseButton);
 
     await waitFor(() => {
       expect(trigger).toHaveFocus();
     });
   });
 
-  it("closes modal with Escape key", async () => {
+  it("closes the modal when Escape is pressed", async () => {
     const user = userEvent.setup();
+
     render(<Modal />);
 
     await user.keyboard("{Escape}");
@@ -103,5 +131,12 @@ describe("Modal Accessibility", () => {
     await waitFor(() => {
       expect(useAppStore.getState().modal).toBe(false);
     });
+  });
+
+  it("all close buttons have accessible aria-labels", () => {
+    render(<Modal />);
+
+    const closeButtons = screen.getAllByRole("button", { name: /close modal/i });
+    expect(closeButtons.length).toBeGreaterThanOrEqual(1);
   });
 });
