@@ -1,7 +1,8 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import Modal from "@/components/Modal";
-import type { AppState } from "@/stores/useAppStore";
+// AppState is defined in selectors — import from there for consistency
+import type { AppState } from "@/stores/selectors";
 import type { RecipeDetail } from "@/types";
 
 vi.mock("@/stores/useAppStore", () => ({
@@ -10,12 +11,18 @@ vi.mock("@/stores/useAppStore", () => ({
 
 import { useAppStore } from "@/stores/useAppStore";
 
-/* -------------------- Mocks -------------------- */
+// ─────────────────────────────────────────────
+// Action mocks
+// ─────────────────────────────────────────────
 
 const mockCloseModal = vi.fn();
 const mockAddFavorite = vi.fn();
 const mockRemoveFavorite = vi.fn();
 const mockSetNotification = vi.fn();
+
+// ─────────────────────────────────────────────
+// Fixtures
+// ─────────────────────────────────────────────
 
 const mockRecipe: RecipeDetail = {
   idDrink: "123",
@@ -23,7 +30,6 @@ const mockRecipe: RecipeDetail = {
   strDrinkThumb: "https://image.jpg",
   strInstructions: "Add ice. Pour rum. Stir well.",
   strCategory: "Cocktail",
-
   strIngredient1: "Rum",
   strIngredient2: "Mint",
   strIngredient3: "Lime",
@@ -39,7 +45,6 @@ const mockRecipe: RecipeDetail = {
   strIngredient13: null,
   strIngredient14: null,
   strIngredient15: null,
-
   strMeasure1: "2 oz",
   strMeasure2: "5 leaves",
   strMeasure3: "1 slice",
@@ -57,6 +62,10 @@ const mockRecipe: RecipeDetail = {
   strMeasure15: null,
 };
 
+// ─────────────────────────────────────────────
+// Store helper
+// ─────────────────────────────────────────────
+
 function setupStore(overrides?: Partial<AppState>) {
   const mockedUseAppStore = useAppStore as unknown as Mock;
 
@@ -68,6 +77,11 @@ function setupStore(overrides?: Partial<AppState>) {
     removeFavorite: mockRemoveFavorite,
     setNotification: mockSetNotification,
     favorites: {},
+    // isFavorite is required by AppState; selectIsFavorite reads state.favorites
+    // directly, so the favorites override drives the actual boolean value.
+    isFavorite: (id: string) => Boolean(
+      ({ ...baseState, ...overrides } as AppState).favorites?.[id],
+    ),
   };
 
   mockedUseAppStore.mockImplementation(
@@ -76,7 +90,9 @@ function setupStore(overrides?: Partial<AppState>) {
   );
 }
 
-/* -------------------- Tests -------------------- */
+// ─────────────────────────────────────────────
+// Tests
+// ─────────────────────────────────────────────
 
 describe("Modal", () => {
   beforeEach(() => {
@@ -84,10 +100,11 @@ describe("Modal", () => {
     setupStore();
   });
 
-  it("does not render if modal is false", () => {
+  it("does not render when modal state is false", () => {
     setupStore({ modal: false });
 
     const { container } = render(<Modal />);
+
     expect(container.firstChild).toBeNull();
   });
 
@@ -100,7 +117,7 @@ describe("Modal", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders ingredients correctly", () => {
+  it("renders ingredients with their measures", () => {
     render(<Modal />);
 
     expect(screen.getByText("Rum")).toBeInTheDocument();
@@ -110,7 +127,7 @@ describe("Modal", () => {
     expect(screen.getByText("5 leaves")).toBeInTheDocument();
   });
 
-  it("renders instructions split into steps", () => {
+  it("renders instructions split into individual steps", () => {
     render(<Modal />);
 
     expect(screen.getByText("Add ice.")).toBeInTheDocument();
@@ -118,22 +135,24 @@ describe("Modal", () => {
     expect(screen.getByText("Stir well.")).toBeInTheDocument();
   });
 
-  it("calls closeModal when Close button is clicked", () => {
+  it("calls closeModal when the Close button is clicked", () => {
     render(<Modal />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    // The bottom Close button has aria-label="Close modal" — match that label,
+    // not the visible text "Close" which is not the accessible name
+    fireEvent.click(
+      screen.getAllByRole("button", { name: /close modal/i })[0],
+    );
 
     expect(mockCloseModal).toHaveBeenCalled();
   });
 
-  it("adds favorite when not already favorite", () => {
+  it("adds to favorites when the drink is not already a favorite", () => {
     render(<Modal />);
 
-    const favButton = screen.getByRole("button", {
-      name: /add to favorites/i,
-    });
-
-    fireEvent.click(favButton);
+    fireEvent.click(
+      screen.getByRole("button", { name: /add to favorites/i }),
+    );
 
     expect(mockAddFavorite).toHaveBeenCalledWith(mockRecipe);
     expect(mockSetNotification).toHaveBeenCalledWith(
@@ -142,18 +161,14 @@ describe("Modal", () => {
     );
   });
 
-  it("removes favorite when already favorite", () => {
-    setupStore({
-      favorites: { "123": mockRecipe },
-    });
+  it("removes from favorites when the drink is already a favorite", () => {
+    setupStore({ favorites: { "123": mockRecipe } });
 
     render(<Modal />);
 
-    const favButton = screen.getByRole("button", {
-      name: /remove from favorites/i,
-    });
-
-    fireEvent.click(favButton);
+    fireEvent.click(
+      screen.getByRole("button", { name: /remove from favorites/i }),
+    );
 
     expect(mockRemoveFavorite).toHaveBeenCalledWith("123");
     expect(mockSetNotification).toHaveBeenCalledWith(
