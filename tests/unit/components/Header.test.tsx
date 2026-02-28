@@ -3,7 +3,8 @@ import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import Header from "@/components/Header";
-import type { AppState } from "@/stores/useAppStore";
+// AppState is defined in selectors — import from there for consistency
+import type { AppState } from "@/stores/selectors";
 
 vi.mock("@/stores/useAppStore", () => ({
   useAppStore: vi.fn(),
@@ -11,11 +12,17 @@ vi.mock("@/stores/useAppStore", () => ({
 
 import { useAppStore } from "@/stores/useAppStore";
 
-/* -------------------- Mocks -------------------- */
+// ─────────────────────────────────────────────
+// Action mocks
+// ─────────────────────────────────────────────
 
 const mockFetchCategories = vi.fn();
 const mockSearchRecipes = vi.fn();
 const mockSetNotification = vi.fn();
+
+// ─────────────────────────────────────────────
+// Store helper
+// ─────────────────────────────────────────────
 
 function setupStore(overrides?: Partial<AppState>) {
   const mockedUseAppStore = useAppStore as unknown as Mock;
@@ -35,6 +42,10 @@ function setupStore(overrides?: Partial<AppState>) {
   );
 }
 
+// ─────────────────────────────────────────────
+// Render helper
+// ─────────────────────────────────────────────
+
 function renderHeader(path = "/") {
   return render(
     <MemoryRouter initialEntries={[path]}>
@@ -43,7 +54,9 @@ function renderHeader(path = "/") {
   );
 }
 
-/* -------------------- Tests -------------------- */
+// ─────────────────────────────────────────────
+// Tests
+// ─────────────────────────────────────────────
 
 describe("Header", () => {
   beforeEach(() => {
@@ -53,6 +66,7 @@ describe("Header", () => {
 
   it("calls fetchCategories on mount", () => {
     renderHeader();
+
     expect(mockFetchCategories).toHaveBeenCalledTimes(1);
   });
 
@@ -60,12 +74,10 @@ describe("Header", () => {
     renderHeader();
 
     expect(screen.getByRole("link", { name: /home/i })).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: /favorites/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /favorites/i })).toBeInTheDocument();
   });
 
-  it("renders search form only on home route", () => {
+  it("renders search form only on the home route", () => {
     renderHeader("/");
     expect(screen.getByRole("search")).toBeInTheDocument();
 
@@ -73,8 +85,9 @@ describe("Header", () => {
     expect(screen.queryByRole("search")).not.toBeInTheDocument();
   });
 
-  it("shows error if submitting without filters", async () => {
+  it("shows error notification when submitting without any filters", async () => {
     const user = userEvent.setup();
+
     renderHeader();
 
     await user.click(screen.getByRole("button", { name: /search/i }));
@@ -85,13 +98,15 @@ describe("Header", () => {
     );
   });
 
-  it("calls searchRecipes when ingredient is provided", async () => {
+  it("calls searchRecipes with ingredient when only ingredient is provided", async () => {
     const user = userEvent.setup();
+
     renderHeader();
 
-    const input = screen.getByPlaceholderText(/search by ingredients/i);
-
-    await user.type(input, "Gin");
+    await user.type(
+      screen.getByPlaceholderText(/search by ingredients/i),
+      "Gin",
+    );
     await user.click(screen.getByRole("button", { name: /search/i }));
 
     expect(mockSearchRecipes).toHaveBeenCalledWith({
@@ -100,8 +115,9 @@ describe("Header", () => {
     });
   });
 
-  it("calls searchRecipes when category is selected", async () => {
+  it("calls searchRecipes with category when only category is selected", async () => {
     const user = userEvent.setup();
+
     renderHeader();
 
     await user.click(screen.getByText("All Categories"));
@@ -114,17 +130,17 @@ describe("Header", () => {
     });
   });
 
-  it("disables search button while loading", () => {
+  it("disables the search button while loading", () => {
     setupStore({ isLoading: true });
 
     renderHeader();
 
-    const button = screen.getByRole("button", { name: /search/i });
-    expect(button).toBeDisabled();
+    expect(screen.getByRole("button", { name: /search/i })).toBeDisabled();
   });
 
   it("does not call searchRecipes while loading", async () => {
     const user = userEvent.setup();
+
     setupStore({ isLoading: true });
 
     renderHeader();
