@@ -1,67 +1,61 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
-import { axe, toHaveNoViolations } from "jest-axe";
+import { axe } from "jest-axe";
 import userEvent from "@testing-library/user-event";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
-expect.extend(toHaveNoViolations);
-
-/* -------------------------------------------------- */
-/*           Helper Component That Throws             */
-/* -------------------------------------------------- */
+// ─────────────────────────────────────────────
+// Helper component that throws
+// ─────────────────────────────────────────────
 
 const ProblemChild: React.FC = () => {
   throw new Error("Test error");
 };
 
-/* ================================================== */
-/*                 ACCESSIBILITY TESTS                */
-/* ================================================== */
+// ─────────────────────────────────────────────
+// Setup
+// ─────────────────────────────────────────────
 
-describe("ErrorBoundary Accessibility", () => {
-  beforeEach(() => {
-    vi.spyOn(console, "error").mockImplementation(() => {});
-  });
+beforeEach(() => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+});
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
-  /* -------------------------------------------------- */
-  /*              Normal Render                         */
-  /* -------------------------------------------------- */
+// ─────────────────────────────────────────────
+// Tests
+// ─────────────────────────────────────────────
+
+describe("ErrorBoundary — Accessibility", () => {
 
   it("renders children when no error occurs", () => {
     render(
       <ErrorBoundary>
         <div>Safe content</div>
-      </ErrorBoundary>
+      </ErrorBoundary>,
     );
 
     expect(screen.getByText("Safe content")).toBeInTheDocument();
   });
 
-  /* -------------------------------------------------- */
-  /*            Fallback Default UI                     */
-  /* -------------------------------------------------- */
-
-  it("renders fallback UI when error occurs", async () => {
+  it("renders fallback UI with role=alert when an error occurs", async () => {
     render(
       <ErrorBoundary>
         <ProblemChild />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     );
 
-    const alert = await screen.findByRole("alert");
-    expect(alert).toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
   });
 
-  it("has no accessibility violations", async () => {
+  it("has no accessibility violations in the fallback UI", async () => {
     const { container } = render(
       <ErrorBoundary>
         <ProblemChild />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     );
 
     await waitFor(async () => {
@@ -70,32 +64,26 @@ describe("ErrorBoundary Accessibility", () => {
     });
   });
 
-  /* -------------------------------------------------- */
-  /*           ARIA & SEMANTICS                         */
-  /* -------------------------------------------------- */
-
-  it("uses aria-labelledby correctly", async () => {
+  it("fallback container uses aria-labelledby pointing to the error title", async () => {
     render(
       <ErrorBoundary>
         <ProblemChild />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     );
 
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveAttribute("aria-labelledby", "error-title");
 
-    const heading = screen.getByRole("heading", {
-      name: /something went wrong/i,
-    });
-
-    expect(heading).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /something went wrong/i }),
+    ).toBeInTheDocument();
   });
 
-  it("moves focus to error heading", async () => {
+  it("moves focus to the error heading on mount", async () => {
     render(
       <ErrorBoundary>
         <ProblemChild />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     );
 
     const heading = await screen.findByRole("heading", {
@@ -107,78 +95,79 @@ describe("ErrorBoundary Accessibility", () => {
     });
   });
 
-  /* -------------------------------------------------- */
-  /*                Button Accessibility                */
-  /* -------------------------------------------------- */
-
-  it("renders accessible reload button", async () => {
+  it("error heading has tabIndex=-1 for programmatic focus", async () => {
     render(
       <ErrorBoundary>
         <ProblemChild />
-      </ErrorBoundary>
-    );
-
-    const button = await screen.findByRole("button", {
-      name: /reload page/i,
-    });
-
-    expect(button).toBeInTheDocument();
-  });
-
-  it("calls window.location.reload when clicking reload", async () => {
-    const reloadMock = vi
-      .spyOn(window.location, "reload")
-      .mockImplementation(() => {});
-
-    const user = userEvent.setup();
-
-    render(
-      <ErrorBoundary>
-        <ProblemChild />
-      </ErrorBoundary>
-    );
-
-    const button = await screen.findByRole("button", {
-      name: /reload page/i,
-    });
-
-    await user.click(button);
-
-    expect(reloadMock).toHaveBeenCalled();
-  });
-
-  /* -------------------------------------------------- */
-  /*              Custom Fallback                       */
-  /* -------------------------------------------------- */
-
-  it("renders custom fallback if provided", async () => {
-    render(
-      <ErrorBoundary fallback={<div>Custom fallback</div>}>
-        <ProblemChild />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     );
 
     expect(
-      await screen.findByText("Custom fallback")
+      await screen.findByRole("heading", { name: /something went wrong/i }),
+    ).toHaveAttribute("tabindex", "-1");
+  });
+
+  it("renders an accessible Reload Page button", async () => {
+    render(
+      <ErrorBoundary>
+        <ProblemChild />
+      </ErrorBoundary>,
+    );
+
+    expect(
+      await screen.findByRole("button", { name: /reload page/i }),
     ).toBeInTheDocument();
   });
 
-  /* -------------------------------------------------- */
-  /*              Keyboard Navigation                   */
-  /* -------------------------------------------------- */
+  it("calls window.location.reload when the Reload button is clicked", async () => {
+    const user = userEvent.setup();
 
-  it("does not trap focus", async () => {
+    const reloadMock = vi.fn();
+    const originalLocation = window.location;
+
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: { ...originalLocation, reload: reloadMock },
+    });
+
+    render(
+      <ErrorBoundary>
+        <ProblemChild />
+      </ErrorBoundary>,
+    );
+
+    await user.click(
+      await screen.findByRole("button", { name: /reload page/i }),
+    );
+
+    expect(reloadMock).toHaveBeenCalledOnce();
+
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: originalLocation,
+    });
+  });
+
+  it("renders a custom fallback if the fallback prop is provided", async () => {
+    render(
+      <ErrorBoundary fallback={<div>Custom fallback</div>}>
+        <ProblemChild />
+      </ErrorBoundary>,
+    );
+
+    expect(await screen.findByText("Custom fallback")).toBeInTheDocument();
+  });
+
+  it("does not trap focus — Tab moves past the Reload button", async () => {
     const user = userEvent.setup();
 
     render(
       <ErrorBoundary>
         <ProblemChild />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     );
 
-    const button = await screen.findByRole("button", {
-      name: /reload page/i,
-    });
+    const button = await screen.findByRole("button", { name: /reload page/i });
 
     await user.tab();
     expect(button).toHaveFocus();
