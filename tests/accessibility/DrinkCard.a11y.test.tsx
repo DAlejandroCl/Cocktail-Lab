@@ -1,26 +1,36 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { axe, toHaveNoViolations } from "jest-axe";
+import { axe } from "jest-axe";
 import DrinkCard from "@/components/DrinkCard";
 import { useAppStore } from "@/stores/useAppStore";
 import type { Drink } from "@/types";
 
-expect.extend(toHaveNoViolations);
+// ─────────────────────────────────────────────
+// Fixture
+// ─────────────────────────────────────────────
 
-/* -------------------------------------------------- */
-/*                 Mock fetch                         */
-/* -------------------------------------------------- */
+const mockDrink: Drink = {
+  idDrink: "123",
+  strDrink: "Mojito",
+  strDrinkThumb: "https://image.com/mojito.jpg",
+  strCategory: "Cocktail",
+};
+
+// ─────────────────────────────────────────────
+// Setup
+// ─────────────────────────────────────────────
 
 beforeEach(() => {
   vi.stubGlobal(
     "fetch",
     vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ drinks: [] }))
-    )
+      new Response(JSON.stringify({ drinks: [] }), {
+        headers: { "Content-Type": "application/json" },
+      }),
+    ),
   );
 
   useAppStore.setState({
-    ...useAppStore.getState(),
     favorites: {},
     notification: null,
   });
@@ -30,55 +40,27 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-/* -------------------------------------------------- */
-/*                 Mock Drink                         */
-/* -------------------------------------------------- */
+// ─────────────────────────────────────────────
+// Tests
+// ─────────────────────────────────────────────
 
-const mockDrink: Drink = {
-  idDrink: "123",
-  strDrink: "Mojito",
-  strDrinkThumb: "https://image.com/mojito.jpg",
-  strCategory: "Cocktail",
-} as Drink;
-
-/* -------------------------------------------------- */
-/*                Reset Zustand Store                 */
-/* -------------------------------------------------- */
-
-beforeEach(() => {
-  const store = useAppStore.getState();
-
-  useAppStore.setState({
-    ...store,
-    favorites: {},
-    notification: null,
-  });
-});
-
-/* -------------------------------------------------- */
-/*                    Tests                           */
-/* -------------------------------------------------- */
-
-describe("DrinkCard Accessibility", () => {
-  it("should have no accessibility violations", async () => {
+describe("DrinkCard — Accessibility", () => {
+  it("has no accessibility violations", async () => {
     const { container } = render(<DrinkCard drink={mockDrink} />);
 
     const results = await axe(container);
-
     expect(results).toHaveNoViolations();
   });
 
-  it("has properly associated heading", () => {
+  it("has a properly associated heading for the drink name", () => {
     render(<DrinkCard drink={mockDrink} />);
 
-    const heading = screen.getByRole("heading", {
-      name: "Mojito",
-    });
-
-    expect(heading).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Mojito" }),
+    ).toBeInTheDocument();
   });
 
-  it("favorite button has accessible label", () => {
+  it("favorite button has an accessible label and aria-pressed=false when not a favorite", () => {
     render(<DrinkCard drink={mockDrink} />);
 
     const button = screen.getByRole("button", {
@@ -89,23 +71,24 @@ describe("DrinkCard Accessibility", () => {
     expect(button).toHaveAttribute("aria-pressed", "false");
   });
 
-  it("view recipe button is accessible", () => {
+  it("View Recipe button is accessible", () => {
     render(<DrinkCard drink={mockDrink} />);
 
-    const button = screen.getByRole("button", {
-      name: /view recipe/i,
-    });
-
-    expect(button).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /view recipe/i }),
+    ).toBeInTheDocument();
   });
 
-  it("image has proper alt text", () => {
+  it("image has descriptive alt text", () => {
     render(<DrinkCard drink={mockDrink} />);
 
-    const image = screen.getByRole("img", {
-      name: "Mojito",
-    });
+    expect(screen.getByRole("img", { name: "Mojito" })).toBeInTheDocument();
+  });
 
-    expect(image).toBeInTheDocument();
+  it("card is wrapped in an article with aria-labelledby pointing to the drink title", () => {
+    render(<DrinkCard drink={mockDrink} />);
+
+    const article = screen.getByRole("article");
+    expect(article).toHaveAttribute("aria-labelledby", "drink-title-123");
   });
 });
