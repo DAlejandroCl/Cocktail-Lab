@@ -1,161 +1,170 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { axe, toHaveNoViolations } from "jest-axe";
+import { axe } from "jest-axe";
+import { MemoryRouter } from "react-router-dom";
 import IndexPage from "@/views/IndexPage";
 import { useAppStore } from "@/stores/useAppStore";
-import type { AppState } from "@/stores/selectors";
-import type { Drink } from "@/types";
+import { makeDrink } from "../mocks/factories";
 
-expect.extend(toHaveNoViolations);
+// ─────────────────────────────────────────────
+// Setup
+// ─────────────────────────────────────────────
 
-/* ================================================== */
-/*                    Mocks                           */
-/* ================================================== */
+beforeEach(() => {
+  useAppStore.setState({
+    drinks: { drinks: [] },
+    isLoading: false,
+    hasSearched: false,
+    favorites: {},
+    notification: null,
+  });
+});
 
-vi.mock("@/stores/useAppStore");
+// ─────────────────────────────────────────────
+// Helper
+// ─────────────────────────────────────────────
 
-vi.mock("@/components/DrinkCard", () => ({
-  default: ({ drink }: { drink: Drink }) => (
-    <div data-testid="drink-card">{drink.strDrink}</div>
-  ),
-}));
-
-vi.mock("@/components/SkeletonDrinkCard", () => ({
-  default: () => <div data-testid="skeleton-card" />,
-}));
-
-/* ================================================== */
-/*                Mock Helpers                        */
-/* ================================================== */
-
-type Selector<T> = (state: AppState) => T;
-
-function mockStore(state: AppState) {
-  vi.mocked(useAppStore).mockImplementation(
-    <T,>(selector: Selector<T>): T => selector(state)
+function renderIndexPage() {
+  return render(
+    <MemoryRouter>
+      <IndexPage />
+    </MemoryRouter>,
   );
 }
 
-/* ================================================== */
-/*                Mock Base State                     */
-/* ================================================== */
+// ─────────────────────────────────────────────
+// Tests
+// ─────────────────────────────────────────────
 
-const mockSearchRecipes = vi.fn();
-const mockSetNotification = vi.fn();
-const mockSelectRecipe = vi.fn();
-const mockAddFavorite = vi.fn();
-const mockRemoveFavorite = vi.fn();
-const mockCloseModal = vi.fn();
-const mockClearNotification = vi.fn();
-const mockFetchCategories = vi.fn();
-const mockIsFavorite = vi.fn().mockReturnValue(false);
+describe("IndexPage — Accessibility", () => {
 
-const baseState: AppState = {
-  /* Recipes slice */
-  drinks: { drinks: [] },
-  categories: [],
-  isLoading: false,
-  modal: false,
-  selectedRecipe: null,
-  hasSearched: false,
-
-  searchRecipes: mockSearchRecipes,
-  selectRecipe: mockSelectRecipe,
-  closeModal: mockCloseModal,
-  fetchCategories: mockFetchCategories,
-
-  /* Favorites slice */
-  favorites: {},
-  addFavorite: mockAddFavorite,
-  removeFavorite: mockRemoveFavorite,
-  isFavorite: mockIsFavorite,
-
-  /* Notification slice */
-  notification: null,
-  setNotification: mockSetNotification,
-  clearNotification: mockClearNotification,
-};
-
-/* ================================================== */
-/*                     TESTS                          */
-/* ================================================== */
-
-describe("IndexPage Accessibility", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("renders empty state accessibly", async () => {
-    mockStore({
-      ...baseState,
-      drinks: { drinks: [] },
-      isLoading: false,
-      hasSearched: false,
-    });
-
-    const { container } = render(<IndexPage />);
-
-    expect(
-      screen.getByRole("heading", { name: /your perfect mix awaits/i })
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByRole("button", { name: /browse all recipes/i })
-    ).toBeInTheDocument();
+  it("has no accessibility violations in the empty state", async () => {
+    const { container } = renderIndexPage();
 
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });
 
-  it("renders loading state accessibly", async () => {
-    mockStore({
-      ...baseState,
-      isLoading: true,
-    });
-
-    const { container } = render(<IndexPage />);
+  it("renders the empty state heading accessibly", () => {
+    renderIndexPage();
 
     expect(
-      screen.getByText(/mixing the perfect drinks for you/i)
+      screen.getByRole("heading", { name: /your perfect mix awaits/i }),
     ).toBeInTheDocument();
+  });
 
-    expect(screen.getAllByTestId("skeleton-card")).toHaveLength(8);
+  it("Browse All Recipes button is accessible in the empty state", () => {
+    renderIndexPage();
+
+    expect(
+      screen.getByRole("button", { name: /browse all recipes/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("has no accessibility violations in the loading state", async () => {
+    useAppStore.setState({ isLoading: true });
+
+    const { container } = renderIndexPage();
 
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });
 
-  it("renders drinks grid accessibly", async () => {
-    const mockDrink: Drink = {
-      idDrink: "1",
-      strDrink: "Margarita",
-      strDrinkThumb: "https://test.com/image.jpg",
-      strCategory: "Cocktail",
-    };
+  it("shows the loading message during fetch", () => {
+    useAppStore.setState({ isLoading: true });
 
-    mockIsFavorite.mockReturnValue(true);
+    renderIndexPage();
 
-    mockStore({
-      ...baseState,
-      drinks: { drinks: [mockDrink] },
+    expect(
+      screen.getByText(/mixing the perfect drinks for you/i),
+    ).toBeInTheDocument();
+  });
+
+  it("renders 8 skeleton cards with aria-hidden while loading", () => {
+    useAppStore.setState({ isLoading: true });
+
+    renderIndexPage();
+
+    const skeletons = screen.getAllByRole("presentation", { hidden: true });
+    expect(skeletons).toHaveLength(8);
+  });
+
+  it("has no accessibility violations when drinks are displayed", async () => {
+    const drink = makeDrink({ strDrink: "Margarita" });
+
+    useAppStore.setState({
+      drinks: { drinks: [drink] },
       hasSearched: true,
+      isLoading: false,
     });
 
-    const { container } = render(<IndexPage />);
+    const { container } = renderIndexPage();
+
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
+  });
+
+  it("renders the Featured Mixes heading when drinks are present", () => {
+    const drink = makeDrink({ strDrink: "Margarita" });
+
+    useAppStore.setState({
+      drinks: { drinks: [drink] },
+      hasSearched: true,
+      isLoading: false,
+    });
+
+    renderIndexPage();
 
     expect(
-      screen.getByRole("heading", { name: /featured mixes/i })
+      screen.getByRole("heading", { name: /featured mixes/i }),
     ).toBeInTheDocument();
+  });
+
+  it("shows the recipe count when drinks are present", () => {
+    const drink = makeDrink({ strDrink: "Margarita" });
+
+    useAppStore.setState({
+      drinks: { drinks: [drink] },
+      hasSearched: true,
+      isLoading: false,
+    });
+
+    renderIndexPage();
 
     expect(screen.getByText(/found 1 recipe/i)).toBeInTheDocument();
+  });
 
-    expect(screen.getByTestId("drink-card")).toBeInTheDocument();
+  it("drink cards are wrapped in articles with aria-labelledby", () => {
+    const drink = makeDrink({ strDrink: "Margarita" });
+
+    useAppStore.setState({
+      drinks: { drinks: [drink] },
+      hasSearched: true,
+      isLoading: false,
+    });
+
+    renderIndexPage();
+
+    const article = screen.getByRole("article");
+    expect(article).toHaveAttribute(
+      "aria-labelledby",
+      `drink-title-${drink.idDrink}`,
+    );
+  });
+
+  it("View All button is accessible when drinks are present", () => {
+    const drink = makeDrink({ strDrink: "Margarita" });
+
+    useAppStore.setState({
+      drinks: { drinks: [drink] },
+      hasSearched: true,
+      isLoading: false,
+    });
+
+    renderIndexPage();
 
     expect(
-      screen.getByRole("button", { name: /view all/i })
+      screen.getByRole("button", { name: /view all/i }),
     ).toBeInTheDocument();
-
-    const results = await axe(container);
-    expect(results).toHaveNoViolations();
   });
 });
