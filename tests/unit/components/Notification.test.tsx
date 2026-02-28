@@ -1,125 +1,119 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import Notification from '@/components/Notification'
-import { useAppStore } from '@/stores/useAppStore'
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import Notification from "@/components/Notification";
+import { useAppStore } from "@/stores/useAppStore";
 
-describe('Notification Component', () => {
+// ─────────────────────────────────────────────
+// Setup
+// ─────────────────────────────────────────────
+
+describe("Notification Component", () => {
   beforeEach(() => {
-    useAppStore.setState({
-      notification: null,
-    })
-    vi.useFakeTimers()
-  })
+    useAppStore.setState({ notification: null });
+    vi.useFakeTimers();
+  });
 
+  // afterEach was previously missing from the vitest import
   afterEach(() => {
-    vi.useRealTimers()
-  })
+    vi.useRealTimers();
+  });
 
-  it('does not render when there is no notification', () => {
-    render(<Notification />)
+  // ── Render conditions ─────────────────────────────────────────────────
 
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
-    expect(screen.queryByRole('status')).not.toBeInTheDocument()
-  })
+  it("does not render when there is no notification", () => {
+    render(<Notification />);
 
-  it('renders success notification with correct role', () => {
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("renders a success notification with role=status", () => {
     useAppStore.setState({
-      notification: {
-        type: 'success',
-        message: 'Saved successfully',
-      },
-    })
+      notification: { type: "success", message: "Saved successfully" },
+    });
 
-    render(<Notification />)
+    render(<Notification />);
 
-    expect(screen.getByRole('status')).toBeInTheDocument()
-    expect(screen.getByText('Saved successfully')).toBeVisible()
-  })
+    expect(screen.getByRole("status")).toBeInTheDocument();
+    expect(screen.getByText("Saved successfully")).toBeVisible();
+  });
 
-  it('renders error notification with alert role', () => {
+  it("renders an error notification with role=alert", () => {
     useAppStore.setState({
-      notification: {
-        type: 'error',
-        message: 'Something went wrong',
-      },
-    })
+      notification: { type: "error", message: "Something went wrong" },
+    });
 
-    render(<Notification />)
+    render(<Notification />);
 
-    expect(screen.getByRole('alert')).toBeInTheDocument()
-    expect(screen.getByText('Something went wrong')).toBeVisible()
-  })
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.getByText("Something went wrong")).toBeVisible();
+  });
 
-  it('clears notification when close button is clicked', async () => {
-    const user = userEvent.setup()
+  // ── Close button ──────────────────────────────────────────────────────
 
-    useAppStore.setState({
-      notification: {
-        type: 'info',
-        message: 'Information message',
-      },
-    })
-
-    render(<Notification />)
-
-    const button = screen.getByRole('button', {
-      name: /close notification/i,
-    })
-
-    await user.click(button)
-
-    expect(useAppStore.getState().notification).toBeNull()
-  })
-
-  it('auto-dismisses success notification after duration', () => {
-    useAppStore.setState({
-      notification: {
-        type: 'success',
-        message: 'Auto dismiss test',
-      },
-    })
-
-    render(<Notification />)
-
-    vi.advanceTimersByTime(4000)
-
-    expect(useAppStore.getState().notification).toBeNull()
-  })
-
-  it('does not auto-dismiss error notifications', () => {
-    useAppStore.setState({
-      notification: {
-        type: 'error',
-        message: 'Error stays',
-      },
-    })
-
-    render(<Notification />)
-
-    vi.advanceTimersByTime(10000)
-
-    expect(useAppStore.getState().notification).not.toBeNull()
-  })
-
-  it('pauses timer on hover', async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+  it("clears the notification when the close button is clicked", async () => {
+    // userEvent requires real timers; switch back for this interaction test
+    vi.useRealTimers();
+    const user = userEvent.setup();
 
     useAppStore.setState({
-      notification: {
-        type: 'success',
-        message: 'Hover test',
-      },
-    })
+      notification: { type: "info", message: "Information message" },
+    });
 
-    render(<Notification />)
+    render(<Notification />);
 
-    const container = screen.getByRole('status')
+    await user.click(
+      screen.getByRole("button", { name: /close notification/i }),
+    );
 
-    await user.hover(container)
+    expect(useAppStore.getState().notification).toBeNull();
+  });
 
-    vi.advanceTimersByTime(4000)
+  // ── Auto-dismiss ──────────────────────────────────────────────────────
 
-    expect(useAppStore.getState().notification).not.toBeNull()
-  })
-})
+  it("auto-dismisses a success notification after 4000ms", () => {
+    useAppStore.setState({
+      notification: { type: "success", message: "Auto dismiss test" },
+    });
+
+    render(<Notification />);
+
+    vi.advanceTimersByTime(4000);
+
+    expect(useAppStore.getState().notification).toBeNull();
+  });
+
+  it("does not auto-dismiss error notifications", () => {
+    useAppStore.setState({
+      notification: { type: "error", message: "Error stays" },
+    });
+
+    render(<Notification />);
+
+    vi.advanceTimersByTime(10_000);
+
+    expect(useAppStore.getState().notification).not.toBeNull();
+  });
+
+  // ── Hover pause ───────────────────────────────────────────────────────
+
+  it("pauses the auto-dismiss timer on hover", async () => {
+    // advanceTimers must be passed so userEvent can tick fake timers internally
+    const user = userEvent.setup({
+      advanceTimers: vi.advanceTimersByTime.bind(vi),
+    });
+
+    useAppStore.setState({
+      notification: { type: "success", message: "Hover test" },
+    });
+
+    render(<Notification />);
+
+    await user.hover(screen.getByRole("status"));
+
+    vi.advanceTimersByTime(4000);
+
+    expect(useAppStore.getState().notification).not.toBeNull();
+  });
+});
