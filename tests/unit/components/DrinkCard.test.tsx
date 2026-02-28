@@ -2,7 +2,8 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import DrinkCard from "@/components/DrinkCard";
 import type { Drink, RecipeDetail } from "@/types";
-import type { AppState } from "@/stores/useAppStore";
+// AppState is defined in selectors — import from there for consistency
+import type { AppState } from "@/stores/selectors";
 
 vi.mock("@/stores/useAppStore", () => ({
   useAppStore: vi.fn(),
@@ -10,12 +11,18 @@ vi.mock("@/stores/useAppStore", () => ({
 
 import { useAppStore } from "@/stores/useAppStore";
 
+// ─────────────────────────────────────────────
+// Action mocks
+// ─────────────────────────────────────────────
+
 const mockSelectRecipe = vi.fn();
 const mockAddFavorite = vi.fn();
 const mockRemoveFavorite = vi.fn();
 const mockSetNotification = vi.fn();
 
-/* ---------- Drink (card view) ---------- */
+// ─────────────────────────────────────────────
+// Fixtures
+// ─────────────────────────────────────────────
 
 const mockDrink: Drink = {
   idDrink: "123",
@@ -24,15 +31,12 @@ const mockDrink: Drink = {
   strCategory: "Cocktail",
 };
 
-/* ---------- RecipeDetail (full object) ---------- */
-
 const mockRecipeDetail: RecipeDetail = {
   idDrink: "123",
   strDrink: "Mojito",
   strDrinkThumb: "image.jpg",
   strInstructions: "Mix ingredients",
   strCategory: "Cocktail",
-
   strIngredient1: "Rum",
   strIngredient2: "Mint",
   strIngredient3: null,
@@ -48,7 +52,6 @@ const mockRecipeDetail: RecipeDetail = {
   strIngredient13: null,
   strIngredient14: null,
   strIngredient15: null,
-
   strMeasure1: "50ml",
   strMeasure2: "5 leaves",
   strMeasure3: null,
@@ -66,7 +69,9 @@ const mockRecipeDetail: RecipeDetail = {
   strMeasure15: null,
 };
 
-/* ---------- Store Setup ---------- */
+// ─────────────────────────────────────────────
+// Store helper
+// ─────────────────────────────────────────────
 
 function setupStore(overrides?: Partial<AppState>) {
   const mockedUseAppStore = useAppStore as unknown as Mock;
@@ -77,6 +82,12 @@ function setupStore(overrides?: Partial<AppState>) {
     removeFavorite: mockRemoveFavorite,
     setNotification: mockSetNotification,
     favorites: {},
+    // selectIsFavorite = (id) => (state) => !!state.favorites[id]
+    // The mock intercepts the full selector call, so it reads baseState.favorites.
+    // isFavorite is still required here to satisfy the AppState type shape.
+    isFavorite: (id: string) => Boolean(
+      ({ ...baseState, ...overrides } as AppState).favorites?.[id],
+    ),
   };
 
   mockedUseAppStore.mockImplementation(
@@ -85,7 +96,9 @@ function setupStore(overrides?: Partial<AppState>) {
   );
 }
 
-/* ---------- Tests ---------- */
+// ─────────────────────────────────────────────
+// Tests
+// ─────────────────────────────────────────────
 
 describe("DrinkCard", () => {
   beforeEach(() => {
@@ -108,19 +121,15 @@ describe("DrinkCard", () => {
     expect(mockSelectRecipe).toHaveBeenCalledWith("123");
   });
 
-  it("adds favorite when not already favorite", async () => {
+  it("adds favorite when not already a favorite", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue({
-      json: async () => ({
-        drinks: [mockRecipeDetail],
-      }),
+      json: async () => ({ drinks: [mockRecipeDetail] }),
     } as Response);
 
     render(<DrinkCard drink={mockDrink} />);
 
     fireEvent.click(
-      screen.getByRole("button", {
-        name: /add mojito to favorites/i,
-      }),
+      screen.getByRole("button", { name: /add mojito to favorites/i }),
     );
 
     await waitFor(() => {
@@ -132,17 +141,13 @@ describe("DrinkCard", () => {
     });
   });
 
-  it("removes favorite if already favorite", () => {
-    setupStore({
-      favorites: { "123": mockRecipeDetail },
-    });
+  it("removes favorite when already a favorite", () => {
+    setupStore({ favorites: { "123": mockRecipeDetail } });
 
     render(<DrinkCard drink={mockDrink} />);
 
     fireEvent.click(
-      screen.getByRole("button", {
-        name: /remove mojito from favorites/i,
-      }),
+      screen.getByRole("button", { name: /remove mojito from favorites/i }),
     );
 
     expect(mockRemoveFavorite).toHaveBeenCalledWith("123");
@@ -152,17 +157,13 @@ describe("DrinkCard", () => {
     );
   });
 
-  it("shows error notification if fetch fails", async () => {
-    vi.spyOn(globalThis, "fetch").mockRejectedValue(
-      new Error("Network error"),
-    );
+  it("shows error notification when fetch fails", async () => {
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("Network error"));
 
     render(<DrinkCard drink={mockDrink} />);
 
     fireEvent.click(
-      screen.getByRole("button", {
-        name: /add mojito to favorites/i,
-      }),
+      screen.getByRole("button", { name: /add mojito to favorites/i }),
     );
 
     await waitFor(() => {
