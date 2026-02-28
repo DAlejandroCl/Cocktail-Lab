@@ -1,18 +1,27 @@
 import { render, screen, fireEvent } from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
-/* ---------- Helper Component ---------- */
+// ─────────────────────────────────────────────
+// Helper component that throws
+// ─────────────────────────────────────────────
 
 const ThrowError: React.FC = () => {
   throw new Error("Test error");
 };
 
-/* ---------- Tests ---------- */
+// ─────────────────────────────────────────────
+// Tests
+// ─────────────────────────────────────────────
 
 describe("ErrorBoundary", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    // Silence the expected React error output so test output stays clean
+    vi.spyOn(console, "error").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it("renders children when no error occurs", () => {
@@ -25,7 +34,7 @@ describe("ErrorBoundary", () => {
     expect(screen.getByText("Safe Content")).toBeInTheDocument();
   });
 
-  it("renders fallback UI when error occurs and fallback is provided", () => {
+  it("renders custom fallback when error occurs and fallback prop is provided", () => {
     render(
       <ErrorBoundary fallback={<div>Custom Fallback</div>}>
         <ThrowError />
@@ -35,7 +44,7 @@ describe("ErrorBoundary", () => {
     expect(screen.getByText("Custom Fallback")).toBeInTheDocument();
   });
 
-  it("renders default error UI when error occurs", () => {
+  it("renders the default error UI when an error occurs", () => {
     render(
       <ErrorBoundary>
         <ThrowError />
@@ -43,46 +52,30 @@ describe("ErrorBoundary", () => {
     );
 
     expect(screen.getByRole("alert")).toBeInTheDocument();
-
-    expect(
-      screen.getByText("Something went wrong"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Something went wrong")).toBeInTheDocument();
   });
 
-  it("focuses the error title when error occurs", () => {
+  it("focuses the error heading when an error is caught", () => {
     render(
       <ErrorBoundary>
         <ThrowError />
       </ErrorBoundary>,
     );
 
-    const heading = screen.getByText("Something went wrong");
-
-    expect(heading).toHaveFocus();
+    expect(screen.getByText("Something went wrong")).toHaveFocus();
   });
 
-  it("calls window.location.reload when clicking Reload Page", () => {
-    const reloadSpy = vi
-      .spyOn(window.location, "reload")
-      .mockImplementation(() => {});
+  it("calls window.location.reload when the Reload Page button is clicked", () => {
+    const reloadMock = vi.fn();
+    const originalLocation = window.location;
 
-    render(
-      <ErrorBoundary>
-        <ThrowError />
-      </ErrorBoundary>,
-    );
-
-    fireEvent.click(
-      screen.getByRole("button", { name: /reload page/i }),
-    );
-
-    expect(reloadSpy).toHaveBeenCalled();
-  });
-
-  it("logs error to console when error is caught", () => {
-    const consoleSpy = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
+    // jsdom does not implement window.location.reload.
+    // vi.spyOn(window.location, "reload") fails because the property is
+    // non-configurable in jsdom. Object.defineProperty is the correct approach.
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: { ...originalLocation, reload: reloadMock },
+    });
 
     render(
       <ErrorBoundary>
@@ -90,6 +83,24 @@ describe("ErrorBoundary", () => {
       </ErrorBoundary>,
     );
 
-    expect(consoleSpy).toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: /reload page/i }));
+
+    expect(reloadMock).toHaveBeenCalledOnce();
+
+    // Restore original location so other tests are not affected
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: originalLocation,
+    });
+  });
+
+  it("logs the error to console when an error is caught", () => {
+    render(
+      <ErrorBoundary>
+        <ThrowError />
+      </ErrorBoundary>,
+    );
+
+    expect(console.error).toHaveBeenCalled();
   });
 });
