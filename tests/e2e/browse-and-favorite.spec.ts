@@ -3,7 +3,6 @@ import {
   expect,
   mockDefaultApi,
   mockLookupError,
-  DRINK,
   RECIPE_DETAIL,
 } from "./fixtures/test-fixtures";
 
@@ -12,9 +11,10 @@ test.describe("Browse and Favorite", () => {
     await mockDefaultApi(page);
   });
 
+  // ── Add from DrinkCard (home page) ─────────────────────────────────────
+
   test.describe("Add favorite from drink card", () => {
     test("clicking the heart button adds the drink to favorites", async ({
-      page,
       homePage,
     }) => {
       await homePage.goto();
@@ -62,6 +62,8 @@ test.describe("Browse and Favorite", () => {
       await homePage.expectErrorNotification(/unable to load cocktail details/i);
     });
   });
+
+  // ── Add favorite from the Recipe Modal ────────────────────────────────
 
   test.describe("Add favorite from the Recipe Modal", () => {
     test("favorite button in modal adds the drink", async ({
@@ -111,11 +113,12 @@ test.describe("Browse and Favorite", () => {
     });
   });
 
+  // ── Favorites page after adding ───────────────────────────────────────
+
   test.describe("Favorites page — after adding", () => {
     test("saved drink appears on the Favorites page", async ({
       page,
       homePage,
-      favoritesPage,
     }) => {
       await homePage.goto();
       await homePage.browseAll();
@@ -157,6 +160,8 @@ test.describe("Browse and Favorite", () => {
     });
   });
 
+  // ── Remove from home page ─────────────────────────────────────────────
+
   test.describe("Remove favorite from home page", () => {
     test("clicking the active heart button removes the drink", async ({
       homePage,
@@ -194,6 +199,8 @@ test.describe("Browse and Favorite", () => {
       await homePage.expectNotification(/removed from favorites/i);
     });
   });
+
+  // ── Remove from Favorites page ────────────────────────────────────────
 
   test.describe("Remove favorite from Favorites page", () => {
     test("removed drink disappears from the list", async ({
@@ -243,6 +250,8 @@ test.describe("Browse and Favorite", () => {
     });
   });
 
+  // ── Favorites page — empty state ──────────────────────────────────────
+
   test.describe("Favorites page — empty state", () => {
     test("shows empty state heading with no favorites", async ({ favoritesPage }) => {
       await favoritesPage.goto();
@@ -263,6 +272,8 @@ test.describe("Browse and Favorite", () => {
     });
   });
 
+  // ── Remove from modal ─────────────────────────────────────────────────
+
   test.describe("Remove favorite from the Recipe Modal", () => {
     test("toggling the favorite button in the modal removes the drink", async ({
       homePage,
@@ -278,7 +289,7 @@ test.describe("Browse and Favorite", () => {
       await homePage.viewRecipeButton(card).click();
       await recipeModal.expectVisible();
 
-      await recipeModal.toggleFavorite(); // Remove
+      await recipeModal.toggleFavorite();
 
       await recipeModal.expectFavoriteButtonLabel(/add to favorites/i);
     });
