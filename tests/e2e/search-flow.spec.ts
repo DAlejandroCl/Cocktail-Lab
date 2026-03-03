@@ -5,8 +5,10 @@ test.describe("Search flow", () => {
     await mockDefaultApi(page);
   });
 
+  // ── Browse All ─────────────────────────────────────────────────────────
+
   test.describe("Browse All Recipes", () => {
-    test("clicking Browse All loads drink cards", async ({ page, homePage }) => {
+    test("clicking Browse All loads drink cards", async ({ homePage }) => {
       await homePage.goto();
 
       await homePage.browseAll();
@@ -29,8 +31,9 @@ test.describe("Search flow", () => {
     });
 
     test("skeleton cards appear while loading", async ({ page, homePage }) => {
+
       await page.route("**/api/json/v1/1/random.php**", async (route) => {
-        await new Promise((r) => setTimeout(r, 300));
+        await new Promise((r) => setTimeout(r, 800));
         await route.fulfill({ json: { drinks: [DRINK] } });
       });
 
@@ -53,6 +56,8 @@ test.describe("Search flow", () => {
       await expect(homePage.resultsHeading).toBeVisible();
     });
   });
+
+  // ── Search by ingredient ───────────────────────────────────────────────
 
   test.describe("Search by ingredient", () => {
     test("typing an ingredient and clicking Search shows results", async ({ homePage }) => {
@@ -80,6 +85,8 @@ test.describe("Search flow", () => {
       await homePage.expectResultsVisible();
     });
   });
+
+  // ── Search by category ────────────────────────────────────────────────
 
   test.describe("Search by category", () => {
     test("selecting a category and clicking Search shows results", async ({ homePage }) => {
@@ -121,6 +128,8 @@ test.describe("Search flow", () => {
     });
   });
 
+  // ── Combined search ───────────────────────────────────────────────────
+
   test.describe("Combined ingredient + category search", () => {
     test("using both filters at once returns results", async ({ homePage }) => {
       await homePage.goto();
@@ -133,6 +142,8 @@ test.describe("Search flow", () => {
     });
   });
 
+  // ── Validation ────────────────────────────────────────────────────────
+
   test.describe("Empty-submit validation", () => {
     test("submitting with no filters shows an error notification", async ({ homePage }) => {
       await homePage.goto();
@@ -142,7 +153,7 @@ test.describe("Search flow", () => {
       await homePage.expectErrorNotification(/please enter an ingredient or select a category/i);
     });
 
-    test("focus moves to the ingredient input after empty submit", async ({ page, homePage }) => {
+    test("focus moves to the ingredient input after empty submit", async ({ homePage }) => {
       await homePage.goto();
 
       await homePage.submitEmptySearch();
@@ -152,7 +163,7 @@ test.describe("Search flow", () => {
 
     test("search button is disabled while loading", async ({ page, homePage }) => {
       await page.route("**/api/json/v1/1/random.php**", async (route) => {
-        await new Promise((r) => setTimeout(r, 300));
+        await new Promise((r) => setTimeout(r, 800));
         await route.fulfill({ json: { drinks: [DRINK] } });
       });
 
@@ -162,6 +173,8 @@ test.describe("Search flow", () => {
       await expect(homePage.searchButton).toBeDisabled();
     });
   });
+
+  // ── Empty results ─────────────────────────────────────────────────────
 
   test.describe("Empty results state", () => {
     test("info notification appears when search returns no drinks", async ({ page, homePage }) => {
@@ -182,6 +195,8 @@ test.describe("Search flow", () => {
       await expect(homePage.emptyStateHeading).toBeVisible();
     });
   });
+
+  // ── Recipe modal ──────────────────────────────────────────────────────
 
   test.describe("Recipe modal", () => {
     test("clicking View Recipe opens the modal", async ({ homePage, recipeModal }) => {
