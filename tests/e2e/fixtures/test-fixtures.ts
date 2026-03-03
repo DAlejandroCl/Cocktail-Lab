@@ -72,6 +72,7 @@ export const CATEGORIES = [
 // Playwright route intercepts replace the real CocktailDB calls.
 // ─────────────────────────────────────────────
 
+/** Intercepts all CocktailDB API calls with the default fixture data. */
 export async function mockDefaultApi(page: Page) {
   await page.route(
     "**/api/json/v1/1/list.php**",
@@ -140,14 +141,14 @@ type Fixtures = {
 };
 
 export const test = base.extend<Fixtures>({
-  homePage: async ({ page }, use) => {
-    await use(new HomePage(page));
+  homePage: async ({ page }, provide) => {
+    await provide(new HomePage(page));
   },
-  favoritesPage: async ({ page }, use) => {
-    await use(new FavoritesPage(page));
+  favoritesPage: async ({ page }, provide) => {
+    await provide(new FavoritesPage(page));
   },
-  recipeModal: async ({ page }, use) => {
-    await use(new RecipeModal(page));
+  recipeModal: async ({ page }, provide) => {
+    await provide(new RecipeModal(page));
   },
 });
 
