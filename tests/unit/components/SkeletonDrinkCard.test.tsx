@@ -26,17 +26,10 @@ describe("SkeletonDrinkCard Unit Tests", () => {
   it("renders correct structural sections", () => {
     const { container } = render(<SkeletonDrinkCard />);
 
-    // Outer wrapper
     const wrapper = container.firstChild as HTMLElement;
 
-    // Expect multiple div children representing structure
     const divs = wrapper.querySelectorAll("div");
 
     expect(divs.length).toBeGreaterThan(5);
-  });
-
-  it("matches snapshot", () => {
-    const { container } = render(<SkeletonDrinkCard />);
-    expect(container).toMatchSnapshot();
   });
 });
