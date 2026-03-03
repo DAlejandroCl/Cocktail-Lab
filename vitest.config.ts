@@ -22,6 +22,20 @@ export default defineConfig({
       './tests/setup/jest-axe-setup.ts'
     ],
     include: ['tests/**/*.{test,spec}.{ts,tsx}'],
+
+    // ── Reporters ────────────────────────────────────────────────────────
+    // 'verbose'  → per-test detail in the terminal
+    // 'json'     → machine-readable results (used by run-tests.mjs summary)
+    // 'junit'    → XML format compatible with GitHub Actions, GitLab CI, Jenkins
+    //
+    // The outputFile paths are relative to the project root.
+    // run-tests.mjs creates the reports/ directory before invoking vitest.
+    reporters: [
+      'verbose',
+      ['json',  { outputFile: 'reports/vitest/results.json' }],
+      ['junit', { outputFile: 'reports/vitest/results.xml'  }],
+    ],
+
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov', 'json'],
