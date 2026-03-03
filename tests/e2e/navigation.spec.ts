@@ -5,6 +5,8 @@ test.describe("Navigation", () => {
     await mockDefaultApi(page);
   });
 
+  // ── Initial load ───────────────────────────────────────────────────────
+
   test.describe("Home page ( / )", () => {
     test("loads the home page and shows the hero heading", async ({ page, homePage }) => {
       await homePage.goto();
@@ -35,6 +37,8 @@ test.describe("Navigation", () => {
     });
   });
 
+  // ── Header links ───────────────────────────────────────────────────────
+
   test.describe("Header navigation", () => {
     test("Home link is present", async ({ homePage }) => {
       await homePage.goto();
@@ -61,7 +65,7 @@ test.describe("Navigation", () => {
       await expect(page).toHaveURL("/favorites");
     });
 
-    test("clicking Home link from Favorites navigates back to /", async ({ page, homePage, favoritesPage }) => {
+    test("clicking Home link from Favorites navigates back to /", async ({ page, favoritesPage }) => {
       await favoritesPage.goto();
       await favoritesPage.goToHome();
 
@@ -99,6 +103,8 @@ test.describe("Navigation", () => {
     });
   });
 
+  // ── Search form visibility per route ──────────────────────────────────
+
   test.describe("Route-conditional content", () => {
     test("search form is hidden on the Favorites page", async ({ page, favoritesPage }) => {
       await favoritesPage.goto();
@@ -106,7 +112,7 @@ test.describe("Navigation", () => {
       await expect(page.getByRole("search")).not.toBeVisible();
     });
 
-    test("search form reappears after navigating back to /", async ({ page, homePage, favoritesPage }) => {
+    test("search form reappears after navigating back to /", async ({ page, favoritesPage }) => {
       await favoritesPage.goto();
       await expect(page.getByRole("search")).not.toBeVisible();
 
@@ -127,6 +133,8 @@ test.describe("Navigation", () => {
     });
   });
 
+  // ── Skip link ─────────────────────────────────────────────────────────
+
   test.describe("Skip link", () => {
     test("skip link is present and points to #main-content", async ({ page, homePage }) => {
       await homePage.goto();
@@ -141,6 +149,8 @@ test.describe("Navigation", () => {
       await expect(page.locator("#main-content")).toBeVisible();
     });
   });
+
+  // ── Browser history ───────────────────────────────────────────────────
 
   test.describe("Browser Back / Forward", () => {
     test("Back button returns to home after visiting favorites", async ({ page, homePage }) => {
