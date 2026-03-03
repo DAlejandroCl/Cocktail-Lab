@@ -8,17 +8,24 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "eslint .",
-    "test": "vitest",
-    "test:watch": "vitest --watch",
-    "test:ui": "vitest --ui",
-    "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui",
-    "test:e2e:debug": "playwright test --debug",
-    "test:e2e:report": "playwright show-report",
-    "test:ci": "vitest run --coverage && playwright test",
-    "test:all": "npm run test:run && npm run test:e2e"
+
+    "test":             "vitest",
+    "test:ui":          "vitest --ui",
+    "test:run":         "vitest run",
+    "test:coverage":    "vitest run --coverage",
+
+    "test:unit":        "vitest run tests/unit",
+    "test:a11y":        "vitest run tests/accessibility",
+    "test:integration": "vitest run tests/integration",
+
+    "test:e2e":         "playwright test",
+    "test:e2e:ui":      "playwright test --ui",
+    "test:e2e:debug":   "playwright test --debug",
+    "test:e2e:report":  "playwright show-report",
+
+    "test:all":         "node run-tests.mjs",
+    "test:all:bail":    "node run-tests.mjs --bail",
+    "test:ci":          "CI=true node run-tests.mjs --bail"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",
