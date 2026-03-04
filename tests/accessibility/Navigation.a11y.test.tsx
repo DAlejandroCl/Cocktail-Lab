@@ -64,6 +64,8 @@ describe("Layout — Accessibility", () => {
     await user.tab();
     expect(skipLink).toHaveFocus();
 
+    // Layout's onClick handler calls focus() on #main-content.
+    // userEvent.keyboard("{Enter}") triggers the click → handler fires → main is focused.
     await user.keyboard("{Enter}");
 
     expect(screen.getByRole("main")).toHaveFocus();
