@@ -200,10 +200,16 @@ describe("Header — Integration", () => {
       const trigger = screen.getByRole("button", { name: /all categories/i });
       await user.click(trigger);
 
+      // HeadlessUI v2 applies inert+aria-hidden to content outside the open
+      // Listbox, making screen.getByRole("option") unable to find the options.
+      // Query the DOM directly to bypass the accessibility-tree filter.
       await waitFor(() => {
-        expect(screen.getByRole("option", { name: /cocktail/i })).toBeInTheDocument();
-        expect(screen.getByRole("option", { name: /shot/i })).toBeInTheDocument();
-        expect(screen.getByRole("option", { name: /beer/i })).toBeInTheDocument();
+        const options = document.querySelectorAll('[role="option"]');
+        const labels = Array.from(options).map((o) => o.textContent ?? "");
+
+        expect(labels.some((l) => /cocktail/i.test(l))).toBe(true);
+        expect(labels.some((l) => /shot/i.test(l))).toBe(true);
+        expect(labels.some((l) => /beer/i.test(l))).toBe(true);
       });
     });
   });
