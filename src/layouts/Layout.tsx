@@ -6,9 +6,17 @@ import Notification from "../components/Notification";
 import ErrorBoundary from "../components/ErrorBoundary";
 
 export default function Layout() {
+  const handleSkipLink = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    const main = document.getElementById("main-content");
+    if (main) {
+      main.focus();
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
-      <a href="#main-content" className="skip-link">
+      <a href="#main-content" className="skip-link" onClick={handleSkipLink}>
         Skip to main content
       </a>
       <Header />
