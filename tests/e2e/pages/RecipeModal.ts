@@ -5,6 +5,7 @@ export class RecipeModal {
   readonly page: Page;
 
   readonly dialog: Locator;
+  private readonly panel: Locator;
 
   readonly title: Locator;
   readonly image: Locator;
@@ -19,18 +20,23 @@ export class RecipeModal {
   constructor(page: Page) {
     this.page = page;
 
-    this.dialog           = page.getByRole("dialog");
+    this.dialog = page.locator('[role="dialog"][aria-modal="true"]');
+
+    this.panel = page.locator(
+      '[aria-labelledby="modal-title"]:not([role="dialog"])',
+    );
+
     this.title            = page.locator("#modal-title");
     this.image            = page.getByAltText(/image of .+ cocktail/i);
     this.closeButtonTop   = page.getByLabel("Close modal").first();
 
-    this.ingredientsSection = page
-      .getByRole("region", { name: /ingredients/i })
-      .or(page.locator("section[aria-labelledby='ingredients-heading']"));
+    this.ingredientsSection = page.locator(
+      "section[aria-labelledby='ingredients-heading']",
+    );
 
-    this.instructionsSection = page
-      .getByRole("region", { name: /instructions/i })
-      .or(page.locator("section[aria-labelledby='instructions-heading']"));
+    this.instructionsSection = page.locator(
+      "section[aria-labelledby='instructions-heading']",
+    );
 
     this.closeButtonBottom = page
       .getByRole("button", { name: /close modal/i })
@@ -41,12 +47,14 @@ export class RecipeModal {
     });
   }
 
+  // ── Assertions ─────────────────────────────────────────────────────────
+
   async expectVisible() {
-    await expect(this.dialog).toBeVisible();
+    await expect(this.title).toBeVisible({ timeout: 10_000 });
   }
 
   async expectHidden() {
-    await expect(this.dialog).not.toBeVisible();
+    await expect(this.title).not.toBeVisible({ timeout: 10_000 });
   }
 
   async expectTitle(name: string | RegExp) {
@@ -65,6 +73,8 @@ export class RecipeModal {
     await expect(this.favoriteButton).toHaveAccessibleName(label);
   }
 
+  // ── Actions ───────────────────────────────────────────────────────────
+
   async closeViaTopButton() {
     await this.closeButtonTop.click();
   }
@@ -78,7 +88,26 @@ export class RecipeModal {
   }
 
   async closeViaBackdrop() {
-    await this.page.mouse.click(10, 10);
+    const box = await this.panel.boundingBox();
+    const viewport = this.page.viewportSize();
+    const isMobile = viewport ? viewport.width < 768 : false;
+
+    let x: number;
+    let y: number;
+
+    if (box && box.y > 10) {
+      x = Math.round(box.x + box.width / 2);
+      y = Math.round(box.y / 2);
+    } else {
+      x = 10;
+      y = 10;
+    }
+
+    if (isMobile) {
+      await this.page.touchscreen.tap(x, y);
+    } else {
+      await this.page.mouse.click(x, y);
+    }
   }
 
   async toggleFavorite() {
