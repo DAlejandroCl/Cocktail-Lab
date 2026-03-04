@@ -11,23 +11,25 @@ import { RecipeModal } from "../pages/RecipeModal";
 export const DRINK = {
   idDrink: "1",
   strDrink: "Mojito",
-  strDrinkThumb: "https://image.com/mojito.jpg",
+  strDrinkThumb: "https://www.thecocktaildb.com/images/media/drink/mojito.jpg",
   strCategory: "Cocktail",
 };
 
 export const DRINK_2 = {
   idDrink: "2",
   strDrink: "Daiquiri",
-  strDrinkThumb: "https://image.com/daiquiri.jpg",
+  strDrinkThumb: "https://www.thecocktaildb.com/images/media/drink/daiquiri.jpg",
   strCategory: "Cocktail",
 };
 
 export const RECIPE_DETAIL = {
   idDrink: "1",
   strDrink: "Mojito",
-  strDrinkThumb: "https://image.com/mojito.jpg",
+  strDrinkThumb: "https://www.thecocktaildb.com/images/media/drink/mojito.jpg",
   strInstructions: "Mix ingredients. Serve cold.",
   strCategory: "Cocktail",
+  strAlcoholic: "Alcoholic",
+  strGlass: "Highball glass",
   strIngredient1: "White rum",
   strIngredient2: "Lime juice",
   strIngredient3: null,
@@ -69,41 +71,41 @@ export const CATEGORIES = [
 
 // ─────────────────────────────────────────────
 // API mock helpers
-// Playwright route intercepts replace the real CocktailDB calls.
+// Use RegExp instead of glob patterns to guarantee interception of the
+// full absolute URLs that axios and fetch() send to thecocktaildb.com.
 // ─────────────────────────────────────────────
 
-/** Intercepts all CocktailDB API calls with the default fixture data. */
 export async function mockDefaultApi(page: Page) {
   await page.route(
-    "**/api/json/v1/1/list.php**",
+    /thecocktaildb\.com\/api\/json\/v1\/1\/list\.php/,
     async (route) => {
       await route.fulfill({ json: { drinks: CATEGORIES } });
     },
   );
 
   await page.route(
-    "**/api/json/v1/1/random.php**",
+    /thecocktaildb\.com\/api\/json\/v1\/1\/random\.php/,
     async (route) => {
       await route.fulfill({ json: { drinks: [DRINK] } });
     },
   );
 
   await page.route(
-    "**/api/json/v1/1/search.php**",
+    /thecocktaildb\.com\/api\/json\/v1\/1\/search\.php/,
     async (route) => {
       await route.fulfill({ json: { drinks: [DRINK] } });
     },
   );
 
   await page.route(
-    "**/api/json/v1/1/filter.php**",
+    /thecocktaildb\.com\/api\/json\/v1\/1\/filter\.php/,
     async (route) => {
       await route.fulfill({ json: { drinks: [DRINK] } });
     },
   );
 
   await page.route(
-    "**/api/json/v1/1/lookup.php**",
+    /thecocktaildb\.com\/api\/json\/v1\/1\/lookup\.php/,
     async (route) => {
       await route.fulfill({ json: { drinks: [RECIPE_DETAIL] } });
     },
@@ -111,23 +113,35 @@ export async function mockDefaultApi(page: Page) {
 }
 
 export async function mockEmptyResults(page: Page) {
-  await page.route("**/api/json/v1/1/random.php**", async (route) => {
-    await route.fulfill({ json: { drinks: null } });
-  });
+  await page.route(
+    /thecocktaildb\.com\/api\/json\/v1\/1\/random\.php/,
+    async (route) => {
+      await route.fulfill({ json: { drinks: null } });
+    },
+  );
 
-  await page.route("**/api/json/v1/1/filter.php**", async (route) => {
-    await route.fulfill({ json: { drinks: null } });
-  });
+  await page.route(
+    /thecocktaildb\.com\/api\/json\/v1\/1\/filter\.php/,
+    async (route) => {
+      await route.fulfill({ json: { drinks: null } });
+    },
+  );
 
-  await page.route("**/api/json/v1/1/search.php**", async (route) => {
-    await route.fulfill({ json: { drinks: null } });
-  });
+  await page.route(
+    /thecocktaildb\.com\/api\/json\/v1\/1\/search\.php/,
+    async (route) => {
+      await route.fulfill({ json: { drinks: null } });
+    },
+  );
 }
 
 export async function mockLookupError(page: Page) {
-  await page.route("**/api/json/v1/1/lookup.php**", async (route) => {
-    await route.fulfill({ status: 500, body: "Internal Server Error" });
-  });
+  await page.route(
+    /thecocktaildb\.com\/api\/json\/v1\/1\/lookup\.php/,
+    async (route) => {
+      await route.fulfill({ status: 500, body: "Internal Server Error" });
+    },
+  );
 }
 
 // ─────────────────────────────────────────────
