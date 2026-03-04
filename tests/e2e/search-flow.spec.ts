@@ -10,7 +10,6 @@ test.describe("Search flow", () => {
   test.describe("Browse All Recipes", () => {
     test("clicking Browse All loads drink cards", async ({ homePage }) => {
       await homePage.goto();
-
       await homePage.browseAll();
 
       await homePage.expectResultsVisible();
@@ -31,14 +30,14 @@ test.describe("Search flow", () => {
     });
 
     test("skeleton cards appear while loading", async ({ page, homePage }) => {
-
       await page.route("**/api/json/v1/1/random.php**", async (route) => {
         await new Promise((r) => setTimeout(r, 800));
         await route.fulfill({ json: { drinks: [DRINK] } });
       });
 
       await homePage.goto();
-      await homePage.browseAll();
+
+      await homePage.clickBrowseAll();
 
       await expect(homePage.skeletonCards.first()).toBeVisible();
 
@@ -62,7 +61,6 @@ test.describe("Search flow", () => {
   test.describe("Search by ingredient", () => {
     test("typing an ingredient and clicking Search shows results", async ({ homePage }) => {
       await homePage.goto();
-
       await homePage.searchByIngredient("Rum");
 
       await homePage.expectResultsVisible();
@@ -91,7 +89,6 @@ test.describe("Search flow", () => {
   test.describe("Search by category", () => {
     test("selecting a category and clicking Search shows results", async ({ homePage }) => {
       await homePage.goto();
-
       await homePage.searchByCategory("Cocktail");
 
       await homePage.expectResultsVisible();
@@ -99,7 +96,6 @@ test.describe("Search flow", () => {
 
     test("selected category name appears in the Listbox trigger", async ({ page, homePage }) => {
       await homePage.goto();
-
       await homePage.selectCategory("Cocktail");
 
       await expect(page.getByRole("button", { name: /cocktail/i })).toBeVisible();
@@ -107,7 +103,6 @@ test.describe("Search flow", () => {
 
     test("category dropdown lists all options from the API", async ({ page, homePage }) => {
       await homePage.goto();
-
       await homePage.categoryButton.click();
 
       await expect(page.getByRole("option", { name: "Cocktail" })).toBeVisible();
@@ -120,7 +115,10 @@ test.describe("Search flow", () => {
       await homePage.goto();
 
       await homePage.categoryButton.click();
-      await expect(page.getByRole("option", { name: "Cocktail" })).toBeVisible();
+
+      const listbox = page.getByRole("listbox");
+      await expect(listbox).toBeVisible();
+      await listbox.focus();
 
       await page.keyboard.press("Escape");
 
@@ -147,7 +145,6 @@ test.describe("Search flow", () => {
   test.describe("Empty-submit validation", () => {
     test("submitting with no filters shows an error notification", async ({ homePage }) => {
       await homePage.goto();
-
       await homePage.submitEmptySearch();
 
       await homePage.expectErrorNotification(/please enter an ingredient or select a category/i);
@@ -155,22 +152,22 @@ test.describe("Search flow", () => {
 
     test("focus moves to the ingredient input after empty submit", async ({ homePage }) => {
       await homePage.goto();
-
       await homePage.submitEmptySearch();
 
       await expect(homePage.ingredientInput).toBeFocused();
     });
 
-    test("search button is disabled while loading", async ({ page, homePage }) => {
+    test("search form shows aria-busy while loading", async ({ page, homePage }) => {
       await page.route("**/api/json/v1/1/random.php**", async (route) => {
         await new Promise((r) => setTimeout(r, 800));
         await route.fulfill({ json: { drinks: [DRINK] } });
       });
 
       await homePage.goto();
-      await homePage.browseAll();
 
-      await expect(homePage.searchButton).toBeDisabled();
+      await homePage.clickBrowseAll();
+
+      await expect(homePage.searchForm).toHaveAttribute("aria-busy", "true");
     });
   });
 
@@ -180,7 +177,6 @@ test.describe("Search flow", () => {
     test("info notification appears when search returns no drinks", async ({ page, homePage }) => {
       await mockEmptyResults(page);
       await homePage.goto();
-
       await homePage.searchByIngredient("xyzxyz");
 
       await homePage.expectNotification(/no cocktails found/i);
@@ -189,7 +185,6 @@ test.describe("Search flow", () => {
     test("empty state heading stays visible when no drinks are found", async ({ page, homePage }) => {
       await mockEmptyResults(page);
       await homePage.goto();
-
       await homePage.searchByIngredient("xyzxyz");
 
       await expect(homePage.emptyStateHeading).toBeVisible();
@@ -203,8 +198,7 @@ test.describe("Search flow", () => {
       await homePage.goto();
       await homePage.browseAll();
 
-      const card = homePage.firstCard();
-      await homePage.viewRecipeButton(card).click();
+      await homePage.viewRecipeButton(homePage.firstCard()).click();
 
       await recipeModal.expectVisible();
     });
