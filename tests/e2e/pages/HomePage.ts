@@ -1,29 +1,34 @@
 import type { Page, Locator } from "@playwright/test";
 import { expect } from "@playwright/test";
-
 export class HomePage {
   readonly page: Page;
 
+  // ── Navigation ──────────────────────────────────────────────────────────
   readonly homeLink: Locator;
   readonly favoritesLink: Locator;
   readonly logo: Locator;
 
+  // ── Hero section ────────────────────────────────────────────────────────
   readonly heroHeading: Locator;
   readonly heroSubtitle: Locator;
 
+  // ── Search form ─────────────────────────────────────────────────────────
   readonly searchForm: Locator;
   readonly ingredientInput: Locator;
   readonly categoryButton: Locator;
   readonly searchButton: Locator;
 
+  // ── Results section ─────────────────────────────────────────────────────
   readonly browseAllButton: Locator;
   readonly resultsHeading: Locator;
   readonly recipeCountLabel: Locator;
   readonly drinkCards: Locator;
   readonly skeletonCards: Locator;
 
+  // ── Empty state ─────────────────────────────────────────────────────────
   readonly emptyStateHeading: Locator;
 
+  // ── Notification ────────────────────────────────────────────────────────
   readonly notification: Locator;
 
   constructor(page: Page) {
@@ -36,7 +41,7 @@ export class HomePage {
     this.heroHeading  = page.getByRole("heading", { name: /discover your next/i });
     this.heroSubtitle = page.getByText(/timeless classics/i);
 
-    this.searchForm     = page.getByRole("search");
+    this.searchForm      = page.getByRole("search");
     this.ingredientInput = page.getByLabel(/search cocktails by ingredient/i);
     this.categoryButton  = page.getByRole("button", { name: /all categories/i });
     this.searchButton    = page.getByRole("button", { name: /^search$/i });
@@ -52,6 +57,8 @@ export class HomePage {
     this.notification = page.getByRole("status").or(page.getByRole("alert"));
   }
 
+  // ── Navigation helpers ───────────────────────────────────────────────────
+
   async goto() {
     await this.page.goto("/");
   }
@@ -59,6 +66,8 @@ export class HomePage {
   async goToFavorites() {
     await this.favoritesLink.click();
   }
+
+  // ── Search helpers ────────────────────────────────────────────────────────
 
   async searchByIngredient(ingredient: string) {
     await this.ingredientInput.fill(ingredient);
@@ -77,11 +86,18 @@ export class HomePage {
 
   async browseAll() {
     await this.browseAllButton.click();
+    await this.expectResultsVisible();
+  }
+
+  async clickBrowseAll() {
+    await this.browseAllButton.click();
   }
 
   async submitEmptySearch() {
     await this.searchButton.click();
   }
+
+  // ── Card helpers ──────────────────────────────────────────────────────────
 
   firstCard() {
     return this.drinkCards.first();
@@ -100,6 +116,8 @@ export class HomePage {
       name: /add .+ to favorites|remove .+ from favorites/i,
     });
   }
+
+  // ── Assertions ────────────────────────────────────────────────────────────
 
   async expectResultsVisible() {
     await expect(this.resultsHeading).toBeVisible();
