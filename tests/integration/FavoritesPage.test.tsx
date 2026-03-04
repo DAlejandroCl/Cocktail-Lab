@@ -222,9 +222,13 @@ describe("FavoritesPage — Integration", () => {
 
       await user.click(removeButton);
 
+      // When the last favorite is removed FavoritesPage's useEffect fires
+      // immediately and replaces "Removed from favorites" with the persistent
+      // empty-list notification. Assert the final settled state instead of
+      // the transient "Removed" message which may never be observable.
       await waitFor(() => {
         expect(useAppStore.getState().notification).toEqual({
-          message: "Removed from favorites",
+          message: "Your favorites list is empty",
           type: "info",
         });
       });
