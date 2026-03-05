@@ -19,6 +19,68 @@ const invalidFilters: SearchFilters = {
   ingredient: undefined,
 };
 
+// ─────────────────────────────────────────────
+// Fixtures that satisfy Zod schemas
+// ─────────────────────────────────────────────
+
+// DrinkAPIResponse requires: idDrink, strDrink, strDrinkThumb (url or string)
+// strCategory is optional.
+const validDrink = {
+  idDrink: "1",
+  strDrink: "Mojito",
+  strDrinkThumb: "https://image.com/mojito.jpg",
+  strCategory: "Cocktail",
+};
+
+// RecipeAPIResponseSchema requires all strIngredient/strMeasure fields
+// (nullableString: optional | null | string min 1 — undefined passes fine).
+const validRecipeDetail = {
+  idDrink: "1",
+  strDrink: "Mojito",
+  strDrinkThumb: "https://image.com/mojito.jpg",
+  strInstructions: "Mix ingredients. Serve cold.",
+  strCategory: "Cocktail",
+  strIngredient1: "White rum",
+  strIngredient2: "Lime juice",
+  strIngredient3: undefined,
+  strIngredient4: undefined,
+  strIngredient5: undefined,
+  strIngredient6: undefined,
+  strIngredient7: undefined,
+  strIngredient8: undefined,
+  strIngredient9: undefined,
+  strIngredient10: undefined,
+  strIngredient11: undefined,
+  strIngredient12: undefined,
+  strIngredient13: undefined,
+  strIngredient14: undefined,
+  strIngredient15: undefined,
+  strMeasure1: "50ml",
+  strMeasure2: "25ml",
+  strMeasure3: undefined,
+  strMeasure4: undefined,
+  strMeasure5: undefined,
+  strMeasure6: undefined,
+  strMeasure7: undefined,
+  strMeasure8: undefined,
+  strMeasure9: undefined,
+  strMeasure10: undefined,
+  strMeasure11: undefined,
+  strMeasure12: undefined,
+  strMeasure13: undefined,
+  strMeasure14: undefined,
+  strMeasure15: undefined,
+};
+
+// safeGet returns response.data, so axios.get must resolve with { data: <payload> }
+const drinkResponse = (drinks: unknown[] | null) => ({
+  data: { drinks },
+});
+
+const recipeResponse = (drinks: unknown[] | null) => ({
+  data: { drinks },
+});
+
 describe("recipeService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -56,29 +118,16 @@ describe("recipeService", () => {
   /* -------------------------------------------------- */
 
   it("returns recipe when API response is valid", async () => {
-    mockedAxios.get.mockResolvedValue({
-      data: {
-        drinks: [
-          {
-            idDrink: "123",
-            strDrink: "Mojito",
-            strCategory: "Cocktail",
-            strInstructions: "Mix.",
-          },
-        ],
-      },
-    });
+    mockedAxios.get.mockResolvedValue(recipeResponse([validRecipeDetail]));
 
-    const result = await getRecipeById("123");
+    const result = await getRecipeById("1");
 
-    expect(result.idDrink).toBe("123");
+    expect(result.idDrink).toBe("1");
     expect(result.strDrink).toBe("Mojito");
   });
 
   it("throws if recipe not found", async () => {
-    mockedAxios.get.mockResolvedValue({
-      data: { drinks: [] },
-    });
+    mockedAxios.get.mockResolvedValue(recipeResponse([]));
 
     await expect(getRecipeById("999")).rejects.toThrow("Recipe not found");
   });
@@ -94,40 +143,25 @@ describe("recipeService", () => {
   });
 
   it("returns recipes filtered by category", async () => {
-    mockedAxios.get.mockResolvedValue({
-      data: {
-        drinks: [
-          {
-            idDrink: "1",
-            strDrink: "Test",
-          },
-        ],
-      },
-    });
+    // searchByCategory uses filter.php which returns drinks without strCategory.
+    // getRecipes injects the category from the filter into each drink.
+    mockedAxios.get.mockResolvedValue(drinkResponse([validDrink]));
 
-    const result = await getRecipes({
-      category: "Cocktail",
-    });
+    const result = await getRecipes({ category: "Cocktail" });
 
+    // The service injects strCategory from the filter arg — verify the drink id.
+    expect(result[0].idDrink).toBe("1");
     expect(result[0].strCategory).toBe("Cocktail");
   });
 
   it("deduplicates results when searching by ingredient", async () => {
+    // getRecipes calls searchByName then searchByIngredient — two axios.get calls.
+    // Both return the same drink; deduplication should yield exactly 1 result.
     mockedAxios.get
-      .mockResolvedValueOnce({
-        data: {
-          drinks: [{ idDrink: "1", strDrink: "A" }],
-        },
-      })
-      .mockResolvedValueOnce({
-        data: {
-          drinks: [{ idDrink: "1", strDrink: "A" }],
-        },
-      });
+      .mockResolvedValueOnce(drinkResponse([validDrink]))
+      .mockResolvedValueOnce(drinkResponse([validDrink]));
 
-    const result = await getRecipes({
-      ingredient: "rum",
-    });
+    const result = await getRecipes({ ingredient: "rum" });
 
     expect(result.length).toBe(1);
   });
@@ -137,32 +171,25 @@ describe("recipeService", () => {
   /* -------------------------------------------------- */
 
   it("returns sorted unique random recipes", async () => {
+    const drinkB = { ...validDrink, idDrink: "2", strDrink: "Zombie" };
+    const drinkA = { ...validDrink, idDrink: "1", strDrink: "Aperol Spritz" };
+
     mockedAxios.get
-      .mockResolvedValueOnce({
-        data: {
-          drinks: [{ idDrink: "2", strDrink: "B" }],
-        },
-      })
-      .mockResolvedValueOnce({
-        data: {
-          drinks: [{ idDrink: "1", strDrink: "A" }],
-        },
-      });
+      .mockResolvedValueOnce(drinkResponse([drinkB]))
+      .mockResolvedValueOnce(drinkResponse([drinkA]));
 
     const result = await getRandomRecipes(2);
 
-    expect(result[0].strDrink).toBe("A");
+    expect(result[0].strDrink).toBe("Aperol Spritz");
     expect(result.length).toBe(2);
   });
 
   it("ignores invalid random responses", async () => {
+    // First response has data: null — safeGet returns null → skipped.
+    // Second response is valid — should produce 1 drink.
     mockedAxios.get
       .mockResolvedValueOnce({ data: null })
-      .mockResolvedValueOnce({
-        data: {
-          drinks: [{ idDrink: "1", strDrink: "Valid" }],
-        },
-      });
+      .mockResolvedValueOnce(drinkResponse([validDrink]));
 
     const result = await getRandomRecipes(2);
 
