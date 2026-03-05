@@ -164,19 +164,34 @@ describe("RecipeAPIResponseSchema", () => {
     expect(result.strIngredient1).toBe("Rum");
   });
 
-  it("transforms empty ingredient into null", () => {
+  it("transforms undefined ingredient into null", () => {
+    // nullableString is: z.string().min(1).nullable().optional().transform(...)
+    // undefined (field absent) is accepted by .optional() and the transform
+    // maps it to null. Empty string "" does NOT pass .min(1) before nullable()
+    // so "" is rejected — use undefined to test the absent-field → null path.
+    const result = RecipeAPIResponseSchema.parse(baseRecipe);
+
+    expect(result.strIngredient1).toBeNull();
+  });
+
+  it("transforms null ingredient into null", () => {
     const result = RecipeAPIResponseSchema.parse({
       ...baseRecipe,
-      strIngredient1: "",
+      strIngredient1: null,
     });
 
     expect(result.strIngredient1).toBeNull();
   });
 
-  it("transforms undefined ingredient into null", () => {
-    const result = RecipeAPIResponseSchema.parse(baseRecipe);
+  it("rejects an empty string ingredient (use null or omit instead)", () => {
+    // nullableString has .min(1) before .nullable(), so empty string is invalid.
+    // The API never sends ""; it sends null or omits the field entirely.
+    const result = RecipeAPIResponseSchema.safeParse({
+      ...baseRecipe,
+      strIngredient1: "",
+    });
 
-    expect(result.strIngredient1).toBeNull();
+    expect(result.success).toBe(false);
   });
 
   it("fails if strInstructions missing", () => {
