@@ -8,18 +8,28 @@ import { AppRoutes } from "@/router";
 /*                     Mocks                          */
 /* -------------------------------------------------- */
 
-vi.mock("@/layouts/Layout", () => ({
-  default: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="layout">{children}</div>
+vi.mock("@/stores/useAppStore", () => ({
+  useAppStore: vi.fn((selector: (s: object) => unknown) =>
+    selector({
+      categories: [],
+      drinks: { drinks: [] },
+      isLoading: false,
+      hasSearched: false,
+      notification: null,
+      favorites: {},
+      modal: false,
+      selectedRecipe: null,
+      fetchCategories: vi.fn(),
+      searchRecipes: vi.fn(),
+      selectRecipe: vi.fn(),
+      closeModal: vi.fn(),
+      addFavorite: vi.fn(),
+      removeFavorite: vi.fn(),
+      isFavorite: () => false,
+      setNotification: vi.fn(),
+      clearNotification: vi.fn(),
+    })
   ),
-}));
-
-vi.mock("@/views/IndexPage", () => ({
-  default: () => <div data-testid="index-page">Index Page</div>,
-}));
-
-vi.mock("@/views/FavoritesPage", () => ({
-  default: () => <div data-testid="favorites-page">Favorites Page</div>,
 }));
 
 /* ================================================== */
@@ -27,27 +37,32 @@ vi.mock("@/views/FavoritesPage", () => ({
 /* ================================================== */
 
 describe("AppRoutes", () => {
-  it("renders IndexPage on '/'", () => {
+  it("renders IndexPage on '/'", async () => {
     render(
       <MemoryRouter initialEntries={["/"]}>
-        <Suspense fallback={null}>
+        <Suspense fallback={<div>Loading...</div>}>
           <AppRoutes />
         </Suspense>
       </MemoryRouter>
     );
 
-    expect(screen.getByTestId("index-page")).toBeInTheDocument();
+    // "Ready to Mix" is the IndexPage empty-state heading — unique to that view
+    expect(
+      await screen.findByRole("heading", { name: /ready to mix/i })
+    ).toBeInTheDocument();
   });
 
-  it("renders FavoritesPage on '/favorites'", () => {
+  it("renders FavoritesPage on '/favorites'", async () => {
     render(
       <MemoryRouter initialEntries={["/favorites"]}>
-        <Suspense fallback={null}>
+        <Suspense fallback={<div>Loading...</div>}>
           <AppRoutes />
         </Suspense>
       </MemoryRouter>
     );
 
-    expect(screen.getByTestId("favorites-page")).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: /my favorites/i })
+    ).toBeInTheDocument();
   });
 });
