@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, act, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import Notification from "@/components/Notification";
 import { useAppStore } from "@/stores/useAppStore";
@@ -14,7 +14,6 @@ describe("Notification Component", () => {
     vi.useFakeTimers();
   });
 
-  // afterEach was previously missing from the vitest import
   afterEach(() => {
     vi.useRealTimers();
   });
@@ -53,7 +52,6 @@ describe("Notification Component", () => {
   // ── Close button ──────────────────────────────────────────────────────
 
   it("clears the notification when the close button is clicked", async () => {
-    // userEvent requires real timers; switch back for this interaction test
     vi.useRealTimers();
     const user = userEvent.setup();
 
@@ -79,7 +77,8 @@ describe("Notification Component", () => {
 
     render(<Notification />);
 
-    vi.advanceTimersByTime(4000);
+    // act must come from @testing-library/react, not vitest
+    act(() => { vi.advanceTimersByTime(4000); });
 
     expect(useAppStore.getState().notification).toBeNull();
   });
@@ -91,28 +90,26 @@ describe("Notification Component", () => {
 
     render(<Notification />);
 
-    vi.advanceTimersByTime(10_000);
+    act(() => { vi.advanceTimersByTime(10_000); });
 
     expect(useAppStore.getState().notification).not.toBeNull();
   });
 
   // ── Hover pause ───────────────────────────────────────────────────────
 
-  it("pauses the auto-dismiss timer on hover", async () => {
-    // advanceTimers must be passed so userEvent can tick fake timers internally
-    const user = userEvent.setup({
-      advanceTimers: vi.advanceTimersByTime.bind(vi),
-    });
-
+  it("pauses the auto-dismiss timer on hover", () => {
     useAppStore.setState({
       notification: { type: "success", message: "Hover test" },
     });
 
     render(<Notification />);
 
-    await user.hover(screen.getByRole("status"));
-
-    vi.advanceTimersByTime(4000);
+    // fireEvent is synchronous — no fake-timer conflicts unlike
+    // userEvent.setup({ advanceTimers: vi.advanceTimersByTime.bind(vi) })
+    // which evaluates the binding during Vitest's collect phase (before
+    // vi.useFakeTimers() runs) and causes a STACK_TRACE_ERROR.
+    act(() => { fireEvent.mouseEnter(screen.getByRole("status")); });
+    act(() => { vi.advanceTimersByTime(4000); });
 
     expect(useAppStore.getState().notification).not.toBeNull();
   });
