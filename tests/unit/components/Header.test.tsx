@@ -1,9 +1,8 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import Header from "@/components/Header";
-// AppState is defined in selectors — import from there for consistency
 import type { AppState } from "@/stores/selectors";
 
 vi.mock("@/stores/useAppStore", () => ({
@@ -77,10 +76,12 @@ describe("Header", () => {
     expect(screen.getByRole("link", { name: /favorites/i })).toBeInTheDocument();
   });
 
-  it("renders search form only on the home route", () => {
+  it("renders the search form on the home route", () => {
     renderHeader("/");
     expect(screen.getByRole("search")).toBeInTheDocument();
+  });
 
+  it("does not render the search form on other routes", () => {
     renderHeader("/favorites");
     expect(screen.queryByRole("search")).not.toBeInTheDocument();
   });
@@ -120,22 +121,28 @@ describe("Header", () => {
 
     renderHeader();
 
-    await user.click(screen.getByText("All Categories"));
-    await user.click(screen.getByText("Cocktail"));
+    // Open the Listbox
+    await user.click(screen.getByRole("button", { name: /all categories/i }));
+
+    // HeadlessUI v2 applies inert to the outer container when open — query
+    // the option directly from the DOM to bypass the accessibility-tree filter.
+    await waitFor(() => {
+      const options = document.querySelectorAll('[role="option"]');
+      expect(options.length).toBeGreaterThan(0);
+    });
+
+    const cocktailOption = Array.from(
+      document.querySelectorAll('[role="option"]'),
+    ).find((el) => el.textContent?.trim() === "Cocktail")!;
+
+    await user.click(cocktailOption);
+
     await user.click(screen.getByRole("button", { name: /search/i }));
 
     expect(mockSearchRecipes).toHaveBeenCalledWith({
       ingredient: "",
       category: "Cocktail",
     });
-  });
-
-  it("disables the search button while loading", () => {
-    setupStore({ isLoading: true });
-
-    renderHeader();
-
-    expect(screen.getByRole("button", { name: /search/i })).toBeDisabled();
   });
 
   it("does not call searchRecipes while loading", async () => {
@@ -148,5 +155,14 @@ describe("Header", () => {
     await user.click(screen.getByRole("button", { name: /search/i }));
 
     expect(mockSearchRecipes).not.toHaveBeenCalled();
+  });
+
+  it("shows aria-busy=true on the search form while loading", () => {
+    setupStore({ isLoading: true });
+
+    renderHeader();
+
+    // Header sets aria-busy on the form element, not disabled on the button.
+    expect(screen.getByRole("search")).toHaveAttribute("aria-busy", "true");
   });
 });
