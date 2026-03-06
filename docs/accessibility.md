@@ -24,7 +24,8 @@ The project uses `jest-axe` for automated accessibility audits integrated direct
 
 All page structure uses semantic HTML5 elements rather than relying on generic `<div>` containers:
 
-- `<header>`, `<nav>`, `<main>`, `<section>`, `<article>`, `<footer>` define page regions
+- `<header>` and `<nav>` define the navigation region
+- `<main>` wraps the primary page content
 - `<ul>` / `<li>` for lists of cocktails and ingredients
 - `<button>` for all interactive actions (never `<div onClick>`)
 - `<h1>` → `<h6>` hierarchy is maintained per page to produce a logical heading outline
@@ -39,9 +40,9 @@ All page structure uses semantic HTML5 elements rather than relying on generic `
 ### 2.3 Focus Management
 
 - Visible focus indicators are preserved (not removed via `outline: none` without replacement)
-- When navigating between routes (React Router), focus is managed to avoid disorientation:
-  - Page title and `<h1>` are updated on route change
-  - The main content area receives focus after navigation (where applicable)
+- The `<Modal>` implements a focus trap: when opened, focus moves into the dialog; Escape closes it and returns focus to the triggering element
+- `ErrorBoundary` programmatically focuses the error heading after catching a render error, ensuring screen reader users are immediately informed
+- Navigation links use React Router `<NavLink>` which applies `aria-current="page"` to the active route automatically
 
 ### 2.4 Color & Contrast
 
@@ -72,8 +73,8 @@ ARIA attributes are used only when native HTML semantics are insufficient:
 ### 2.7 Forms & Inputs
 
 - The search input has an associated `<label>` element (even if visually hidden with `sr-only` class)
-- Input errors are communicated via `aria-describedby` pointing to an error message element
 - The search field announces its purpose with a clear placeholder and label
+- The search input is the only form control in the application — it does not perform client-side validation and therefore does not use `aria-describedby` error messaging
 
 ### 2.8 Responsive & Mobile Accessibility
 
@@ -109,27 +110,34 @@ This catches:
 - Poor color contrast (where axe can detect it)
 - Invalid ARIA usage
 
-### 3.2 Automated — E2E Level (Playwright + axe-playwright)
+### 3.2 Automated — Integration Level (Vitest + jest-axe on full pages)
 
-End-to-end tests validate accessibility on full rendered pages in a real Chromium browser:
+Full page components (`IndexPage`, `FavoritesPage`) are rendered against the real Zustand store with MSW intercepting API calls, then audited with axe-core. This catches violations that only appear in the context of fully composed page state — heading hierarchy, landmark regions, ARIA on dynamically loaded content.
 
 ```ts
-import { checkA11y } from 'axe-playwright';
-
-test('Home page has no accessibility violations', async ({ page }) => {
-  await page.goto('/');
-  await checkA11y(page);
+it("IndexPage has no axe violations in loaded state", async () => {
+  server.use(/* MSW handler returning drinks */);
+  const { container } = render(<IndexPage />);
+  await waitFor(() => screen.getByRole("list"));
+  expect(await axe(container)).toHaveNoViolations();
 });
 ```
 
-Pages covered:
-- Home / category browse page
-- Search results page
-- Cocktail detail page
-- Favorites page
-- 404 / Not Found page
+### 3.3 Automated — E2E Level (Playwright — real Chromium browser)
 
-### 3.3 Manual Testing
+End-to-end tests run in Chromium with API calls intercepted via `page.route()`. Accessibility checks at this layer focus on behavioral flows that axe-core cannot detect:
+
+- **Keyboard navigation** — Tab order, Enter/Space activation, Escape to close Modal
+- **Focus management** — Modal focus trap, focus on error heading after ErrorBoundary catches, skip link activation in Layout
+- **Mobile touch targets** — Viewport-aware assertions for touch target sizes ≥ 44×44px
+- **Backdrop interactions** — `touchscreen.tap()` for modal dismiss on narrow viewports
+
+Pages with E2E accessibility coverage:
+- Home / browse and search page (`/`)
+- Favorites page (`/favorites`)
+- Modal overlay (recipe detail, opened from both pages)
+
+### 3.4 Manual Testing
 
 Automated tools catch ~30–40% of accessibility issues. Manual checks are also performed:
 
@@ -158,5 +166,5 @@ Automated tools catch ~30–40% of accessibility issues. Manual checks are also 
 - [WCAG 2.1 Guidelines](https://www.w3.org/TR/WCAG21/)
 - [WAI-ARIA Authoring Practices 1.2](https://www.w3.org/WAI/ARIA/apg/)
 - [jest-axe documentation](https://github.com/nickcolley/jest-axe)
-- [axe-playwright documentation](https://github.com/abhinaba-ghosh/axe-playwright)
+- [Playwright accessibility testing](https://playwright.dev/docs/accessibility-testing)
 - [Tailwind CSS accessibility considerations](https://tailwindcss.com/docs/screen-readers)
