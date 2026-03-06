@@ -20,8 +20,8 @@ function renderWithBoundary(children: React.ReactNode) {
 // ─────────────────────────────────────────────
 
 beforeEach(() => {
-  // Silence React's console.error output for expected boundary errors
   vi.spyOn(console, "error").mockImplementation(() => {});
+  document.body.focus();
 });
 
 afterEach(() => {
@@ -85,6 +85,20 @@ describe("ErrorBoundary — Integration", () => {
 
       expect(screen.queryByText("Everything is fine")).not.toBeInTheDocument();
     });
+
+    it("componentDidUpdate does not focus heading on a clean re-render", () => {
+      const { rerender } = renderWithBoundary(<p>First render</p>);
+
+      rerender(
+        <ErrorBoundary>
+          <p>Second render</p>
+        </ErrorBoundary>,
+      );
+
+      expect(
+        screen.queryByRole("heading", { name: /something went wrong/i }),
+      ).not.toBeInTheDocument();
+    });
   });
 
   describe("accessibility", () => {
@@ -109,6 +123,15 @@ describe("ErrorBoundary — Integration", () => {
       expect(
         screen.getByRole("heading", { name: /something went wrong/i }),
       ).toHaveAttribute("tabindex", "-1");
+    });
+
+    it("the error heading is focusable after the boundary catches an error", () => {
+      renderWithBoundary(<BrokenComponent />);
+
+      const heading = screen.getByRole("heading", { name: /something went wrong/i });
+
+      heading.focus();
+      expect(heading).toHaveFocus();
     });
 
     it("calls window.location.reload when the Reload button is clicked", async () => {
