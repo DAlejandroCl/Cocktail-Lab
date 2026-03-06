@@ -18,24 +18,34 @@ The app consumes the public [TheCocktailDB API](https://www.thecocktaildb.com/ap
 
 ## 🚀 Live Demo
 
-👉 [https://cocktail-lab-ecru.vercel.app](https://cocktail-lab-ecru.vercel.app)
+👉 [https://cocktail-lab-ecru.vercel.app](https://cocktail-lab-devacl.vercel.app)
 
 ---
 
 ## 📋 Table of Contents
 
-- [Features](#-core-features)
-- [Tech Stack](#-tech-stack)
-- [Architecture Overview](#-architecture-overview)
-- [Testing Strategy](#-testing-strategy)
-- [Project Structure](#-project-structure)
-- [Installation & Setup](#%EF%B8%8F-installation--local-setup)
-- [Running Tests](#-run-tests)
-- [Environment Variables](#-environment-variables)
-- [Engineering Focus](#-engineering-focus)
-- [API Reference](#-api-reference)
-- [Documentation](#-documentation)
-- [License](#-license)
+- [🍹 Cocktail Lab](#-cocktail-lab)
+  - [🚀 Live Demo](#-live-demo)
+  - [📋 Table of Contents](#-table-of-contents)
+  - [✨ Core Features](#-core-features)
+    - [🔎 Recipe Exploration](#-recipe-exploration)
+    - [📖 Detailed Recipe View](#-detailed-recipe-view)
+    - [❤️ Favorites System](#️-favorites-system)
+    - [🔔 User Feedback \& Stability](#-user-feedback--stability)
+    - [🎨 UI \& Experience](#-ui--experience)
+  - [🛠 Tech Stack](#-tech-stack)
+  - [🧠 Architecture Overview](#-architecture-overview)
+  - [🧪 Testing Strategy](#-testing-strategy)
+  - [🗂 Project Structure](#-project-structure)
+  - [⚙️ Installation \& Local Setup](#️-installation--local-setup)
+    - [Prerequisites](#prerequisites)
+    - [Steps](#steps)
+  - [🌐 Environment Variables](#-environment-variables)
+  - [🧪 Run Tests](#-run-tests)
+  - [🎯 Engineering Focus](#-engineering-focus)
+  - [📚 API Reference](#-api-reference)
+  - [📚 Documentation](#-documentation)
+  - [📄 License](#-license)
 
 ---
 
