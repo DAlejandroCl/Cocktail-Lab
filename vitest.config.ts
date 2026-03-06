@@ -22,6 +22,10 @@ export default defineConfig({
       './tests/setup/jest-axe-setup.ts'
     ],
     include: ['tests/**/*.{test,spec}.{ts,tsx}'],
+    exclude: [
+      'tests/e2e/**',       // ← Playwright specs — run via playwright test, not vitest
+      '**/node_modules/**',
+    ],
 
     // ── Reporters ────────────────────────────────────────────────────────
     // 'verbose'  → per-test detail in the terminal
