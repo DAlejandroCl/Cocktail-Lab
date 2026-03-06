@@ -1,9 +1,9 @@
 # 🍹 Cocktail Lab
 
-[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://cocktail-lab-devacl.vercel.app)
+[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://cocktail-lab-ecru.vercel.app)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-19.2-61DAFB?logo=react)](https://react.dev/)
-[![Vite](https://img.shields.io/badge/Vite-7.3-646CFF?logo=vite)](https://vitejs.dev/)
+[![Vite](https://img.shields.io/badge/Vite-7.2-646CFF?logo=vite)](https://vitejs.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-4.1-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
 [![Tested with Vitest](https://img.shields.io/badge/tested%20with-vitest-6E9F18?logo=vitest)](https://vitest.dev/)
 [![E2E Playwright](https://img.shields.io/badge/E2E-Playwright-2EAD33?logo=playwright)](https://playwright.dev/)
@@ -18,7 +18,7 @@ The app consumes the public [TheCocktailDB API](https://www.thecocktaildb.com/ap
 
 ## 🚀 Live Demo
 
-👉 [https://cocktail-lab-devacl.vercel.app](https://cocktail-lab-devacl.vercel.app)
+👉 [https://cocktail-lab-ecru.vercel.app](https://cocktail-lab-ecru.vercel.app)
 
 ---
 
@@ -51,7 +51,7 @@ The app consumes the public [TheCocktailDB API](https://www.thecocktaildb.com/ap
 - Drink name and thumbnail
 - Ingredients with measurements
 - Preparation instructions
-- Explicit API → Domain transformation layer
+- Modal overlay — no page navigation required
 
 ### ❤️ Favorites System
 - Add / remove drinks instantly
@@ -79,7 +79,7 @@ The app consumes the public [TheCocktailDB API](https://www.thecocktaildb.com/ap
 |------|---------|---------|
 | ⚛️ **React** | Component-based UI with functional components and hooks | 19.2 |
 | 🔷 **TypeScript** | Static typing across components, store, services, and domain models | 5.9 |
-| ⚡ **Vite** | Fast development server and optimized production builds | 7.3 |
+| ⚡ **Vite** | Fast development server and optimized production builds | 7.2 |
 | 🗂 **React Router DOM** | Multi-page routing with layout-based structure | 7.12 |
 | 🧠 **Zustand** | Global state management using the Slice Pattern | 5.0 |
 | 💾 **Zustand Persist** | Selective persistence of favorites via `localStorage` | - |
@@ -108,7 +108,7 @@ Views → Components → Store (Zustand Slices) → Selectors → Services → Z
 - **Selectors layer** — Optimized and controlled state access (prevents unnecessary re-renders)
 - **Services** — API communication via Axios
 - **Schemas (Zod)** — Runtime validation layer for external API responses
-- **Domain models** — Fully typed transformations from raw API data
+- **Domain models** — TypeScript types inferred directly from Zod schemas via `z.infer<>`, always in sync with runtime validation
 
 The global store is composed using the **Zustand Slice Pattern**, allowing independent features to scale without tightly coupling state logic.
 
@@ -120,13 +120,14 @@ The global store is composed using the **Zustand Slice Pattern**, allowing indep
 
 A complete multi-layer testing approach to validate both logic and user experience:
 
-| Layer | Tool | Focus |
-|-------|------|-------|
-| **Unit** | Vitest | Pure logic, slices, services, Zod schemas, utilities |
-| **Component** | Vitest + Testing Library | UI behavior in isolation |
-| **Integration** | Vitest + Testing Library | Feature-level behavior with mock APIs |
-| **E2E** | Playwright | Real user flows in a real browser |
-| **Accessibility** | jest-axe + Playwright | Automated WCAG validation |
+| Layer | Tool | Tests | Duration | Focus |
+|-------|------|:-----:|:--------:|-------|
+| **Unit — Stores** | Vitest | 44 | ~7.9s | Slices, actions, selectors |
+| **Unit — Components, Services & Utils** | Vitest + Testing Library | 102 | ~3.9s | UI behavior, services, schemas |
+| **Accessibility** | Vitest + jest-axe | 87 | ~2.6s | Automated WCAG audits per component |
+| **Integration** | Vitest + MSW | 129 | ~2.8s | Feature-level flows with real store |
+| **E2E** | Playwright | 340 | ~2m24s | Real user flows in Chromium |
+| **Total** | | **702** | **~2m41s** | **All 5 stages passing** |
 
 📄 Testing strategy summary → [`docs/testing-strategy-summary.md`](docs/testing-strategy-summary.md)  
 📄 Full strategy → [`docs/testing-strategy.md`](docs/testing-strategy.md)  
@@ -140,21 +141,20 @@ A complete multi-layer testing approach to validate both logic and user experien
 Cocktail-Lab/
 ├── src/
 │   ├── components/       # Reusable UI components
-│   ├── views/            # Page-level components (routes)
-│   ├── store/            # Zustand slices and store composition
-│   ├── selectors/        # Centralized state selectors
-│   ├── services/         # API communication layer (Axios)
-│   ├── schemas/          # Zod validation schemas
+│   ├── layouts/          # Shared page layout (Layout.tsx)
+│   ├── views/            # Page-level components (IndexPage, FavoritesPage)
+│   ├── stores/           # Zustand slices, selectors, and store composition
+│   ├── services/         # API communication layer (Axios + Zod)
+│   ├── utils/            # Zod schemas and shared utilities
 │   ├── types/            # TypeScript domain models
-│   └── utils/            # Shared utility functions
+│   └── router.tsx        # React Router configuration
 ├── tests/
 │   ├── unit/             # Pure logic tests
-│   ├── integration/      # Feature-level tests
+│   ├── integration/      # Feature-level tests with MSW
 │   ├── e2e/              # Playwright end-to-end tests
-│   └── accessibility/    # Accessibility audits
+│   └── accessibility/    # Automated axe-core accessibility audits
 ├── docs/                 # Architecture, testing strategy, accessibility docs
 ├── .github/workflows/    # CI/CD pipelines
-├── vite.config.ts
 ├── vitest.config.ts
 └── playwright.config.ts
 ```
@@ -204,17 +204,24 @@ This project uses the public TheCocktailDB API which does not require authentica
 ## 🧪 Run Tests
 
 ```bash
-# Unit & Integration tests (watch mode)
-npm run test
+# All 5 stages in sequence — prints the summary table
+npm run test:all
 
-# Run once with coverage report
+# Individual stages
+npm run test:unit         # Unit tests (stores, components, services, utils)
+npm run test:a11y         # Accessibility audits (axe-core)
+npm run test:integration  # Integration tests with MSW
+npm run test:e2e          # Playwright E2E tests
+
+# Coverage report (enforces configured thresholds)
 npm run test:coverage
 
-# E2E tests (requires dev server or build)
-npm run test:e2e
+# Watch mode during development
+npm run test
 
-# E2E tests with UI mode
-npx playwright test --ui
+# Playwright interactive UI / debug
+npm run test:e2e:ui
+npm run test:e2e:debug
 ```
 
 ---
