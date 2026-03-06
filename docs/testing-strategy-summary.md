@@ -1,300 +1,125 @@
-# 📋 TESTING STRATEGY - RESUMEN EJECUTIVO
+# 📋 Testing Strategy — Quick Reference
 
-## 🎯 VISIÓN GENERAL
-
-Este documento complementa la estrategia completa de testing con las **5 recomendaciones profesionales** sugeridas para elevar el proyecto a nivel enterprise.
-
----
-
-## ✅ MEJORAS IMPLEMENTADAS
-
-### 1️⃣ **Testing Philosophy** - Madurez Profesional
-
-**Antes:** Lista directa de herramientas sin contexto  
-**Ahora:** Filosofía clara que guía todas las decisiones
-
-**Principios Clave:**
-```
-✅ Test behavior, not implementation
-✅ Prefer accessibility-first queries  
-✅ Avoid testing internal state
-✅ Write tests that give confidence
-✅ Test like a user
-✅ Make tests maintainable
-✅ Balance speed vs confidence
-```
-
-**Impacto:**
-- Tests que sobreviven refactors ✅
-- Mejor accesibilidad automática ✅
-- Menos tests frágiles ✅
-- Mayor ROI en tiempo de testing ✅
+> **702 tests · 5 stages · all passing**  
+> Full details → [`docs/testing-strategy.md`](testing-strategy.md)
 
 ---
 
-### 2️⃣ **Coverage Strategy** - Criterio Profesional
+## Suite at a Glance
 
-**Antes:** Sin targets definidos  
-**Ahora:** Estrategia por tiers con justificación
+| Stage | Tool | Files | Tests | Duration |
+|-------|------|:-----:|:-----:|:--------:|
+| Unit — Stores | Vitest | 4 | 44 | ~7.9s |
+| Unit — Components, Services & Utils | Vitest | 10 | 102 | ~3.9s |
+| Accessibility | Vitest + jest-axe | 9 | 87 | ~2.6s |
+| Integration | Vitest + MSW | 7 | 129 | ~2.8s |
+| E2E | Playwright | 3 | 340 | ~2m24s |
+| **Total** | | **33** | **702** | **~2m41s** |
 
-**Targets Definidos:**
-
-| Tier | Componente | Coverage | Razón |
-|------|-----------|----------|-------|
-| **TIER 1** | Utils, Schemas, Services, Stores | 95-100% | Crítico, bugs afectan toda la app |
-| **TIER 2** | Components, Pages | 80-90% | Importante, UI principal |
-| **TIER 3** | UI Presentacional | 60-75% | No obsesionarse, bajo riesgo |
-
-**Key Insight:**
-> "100% coverage ≠ 0% bugs. Better 80% of critical things than 100% of trivial."
-
-**Métricas que importan MÁS que coverage:**
-1. Mutation Testing Score (bugs detectados)
-2. Test Execution Time (< 5s feedback)
-3. Flakiness Rate (0% intermittente)
-4. Bug Escape Rate (bugs pre-deploy)
-5. Refactor Safety (survive cambios)
+```
+npm run test:all   →  runs all 5 stages in sequence, prints this table
+```
 
 ---
 
-### 3️⃣ **Mocking Strategy** - Enfoque Multi-Layer
+## Philosophy (7 Principles)
 
-**Antes:** Sin estrategia clara de mocks  
-**Ahora:** MSW como estándar de la industria
-
-**Estrategia por Layer:**
-
-```
-Unit Tests       → NO mocks (pure functions)
-Component Tests  → Mock stores + hooks
-Integration      → Mock API with MSW ⭐
-E2E Tests        → Mock external only
-```
-
-**Por qué MSW > fetch mocks tradicionales:**
-
-✅ Intercepta a nivel de red (service worker)  
-✅ Mismo código para tests Y desarrollo  
-✅ Funciona con axios, fetch, cualquier cliente  
-✅ Fácil simular errores realistas (500, 429, timeout)  
-✅ No acoplado a implementación  
-
-**Handlers Incluidos:**
-- Happy paths (búsqueda, detalles, categorías)
-- Error handlers (500, 429, timeout, malformed)
-- Factories con Faker.js para data realista
+1. **Test behavior, not implementation** — assert what users see, not internal state shape or CSS classes
+2. **Accessibility-first queries** — `getByRole` → `getByLabelText` → `getByText`; `getByTestId` as last resort
+3. **Avoid testing internal state** — `store.getState()` only when no observable UI equivalent exists
+4. **Make tests deterministic** — fake timers controlled per test, MSW reset after every test, fresh store per test
+5. **Scale mocking to the layer** — each layer has a defined mocking boundary; nothing is mocked below it
+6. **Balance speed against confidence** — Vitest stages under 18s; E2E separate to keep dev feedback fast
+7. **Write tests that survive refactors** — tests break when behavior changes, not when internals are renamed
 
 ---
 
-### 4️⃣ **Accessibility Testing** - Nivel Serio
+## Mocking Strategy
 
-**Antes:** Solo testing funcional  
-**Ahora:** WCAG 2.1 Level AA compliance
-
-**Áreas Cubiertas:**
-
-#### ⌨️ **Keyboard Navigation**
-```typescript
-✅ Tab navigation entre elementos
-✅ Enter/Space para activar
-✅ Escape para cerrar modales
-✅ Shift+Tab para navegación reversa
-```
-
-#### 🎯 **Focus Management**
-```typescript
-✅ Focus trap en modales
-✅ Focus return al trigger después de cerrar
-✅ Auto-focus en primer elemento
-✅ Visible focus indicators
-```
-
-#### 📢 **ARIA Live Regions**
-```typescript
-✅ role="status" para notificaciones
-✅ role="alert" para errores
-✅ aria-live="polite" para updates
-✅ Screen reader announcements
-```
-
-#### 🎨 **Color Contrast**
-```typescript
-✅ Text < 18pt: 4.5:1 ratio
-✅ Text ≥ 18pt: 3:1 ratio
-✅ Interactive: 3:1 ratio
-✅ Automated testing con Axe
-```
-
-**Herramientas:**
-- `jest-axe` para violations automáticas
-- `@axe-core/playwright` para E2E a11y
-- `@testing-library` queries enforzando accesibilidad
+| Layer | What is mocked | How |
+|-------|---------------|-----|
+| Unit — slices | Nothing | Pure store in isolation (`zustand/vanilla`) |
+| Unit — services | HTTP client | `vi.mock("axios")` |
+| Unit — schemas | Nothing | Pure Zod functions |
+| Unit — components | Global state | `vi.mock` + selector intercept pattern |
+| Accessibility | Global state (where needed) | Same as components |
+| Integration | Network | MSW `setupServer` — Node level |
+| E2E | Network | `page.route()` — browser level |
 
 ---
 
-### 5️⃣ **Continuous Integration** - Oro para Portfolio
+## Coverage
 
-**Antes:** Sin CI documentado  
-**Ahora:** Pipeline completo production-ready
+Thresholds enforced by `vitest.config.ts` — `npm run test:coverage` fails if any is not met.
 
-**GitHub Actions Workflow:**
+| Scope | Threshold | Actual |
+|-------|:---------:|:------:|
+| Zod schemas (`utils/`) | 100% | **100%** |
+| Zustand slices (`stores/`) | ≥ 95% | **100%** |
+| Service layer (`services/`) | ≥ 90% stmts / ≥ 85% branches | **95% / 87%** |
+| Components (`components/`) | ≥ 75% stmts / ≥ 70% branches | **97.6% avg** |
+| Global minimum | ≥ 80% stmts / ≥ 75% branches | **97.95% / 91.59%** |
 
-```yaml
-┌─────────────────┐
-│ 1. Lint         │ ← ESLint + TypeScript
-├─────────────────┤
-│ 2. Test         │ ← Unit + Integration (coverage)
-├─────────────────┤
-│ 3. Build        │ ← Bundle size check
-├─────────────────┤
-│ 4. E2E          │ ← Playwright (preview)
-├─────────────────┤
-│ 5. A11y         │ ← Axe violations
-├─────────────────┤
-│ 6. Performance  │ ← Lighthouse CI
-└─────────────────┘
-```
+Three files have branches below 100% for structural reasons — not missing tests:
 
-**Branch Protection:**
-- ✅ Require PR antes de merge
-- ✅ Require 1 approval
-- ✅ Require ALL checks passing
-- ✅ No bypass allowed
+- **`Layout.tsx` (50% branches)** — skip link DOM edge case unreachable in jsdom without scroll position manipulation
+- **`Notification.tsx` (82% branches)** — `prefersReducedMotion` branch; `window.matchMedia` not implemented in happy-dom; affects CSS classes only
+- **`recipeService.ts` (87% branches)** — `!data`/`!parsed.success` guards in private helpers reachable only through `getRecipes`; equivalent paths in public API fully covered
 
-**Pre-commit Hooks:**
+---
+
+## Accessibility Testing
+
+| Component | axe audit | ARIA roles | Keyboard nav | Focus management |
+|-----------|:---------:|:----------:|:------------:|:----------------:|
+| DrinkCard | ✓ | ✓ | ✓ | — |
+| ErrorBoundary | ✓ | ✓ | — | ✓ |
+| FavoritesPage | ✓ | ✓ | — | — |
+| Header | ✓ | ✓ | ✓ | ✓ |
+| IndexPage | ✓ | ✓ | — | — |
+| Layout | ✓ | ✓ | — | ✓ skip link |
+| Modal | ✓ | ✓ | ✓ | ✓ |
+| Navigation | ✓ | ✓ | ✓ | — |
+| Notification | ✓ | ✓ | ✓ | — |
+| SkeletonDrinkCard | ✓ | ✓ | — | — |
+
+---
+
+## npm Scripts
+
 ```bash
-✅ ESLint --fix
-✅ Prettier --write  
-✅ Run related tests
-✅ Commitlint (conventional commits)
+# Full suite
+npm run test:all          # all 5 stages + summary table
+npm run test:all:bail     # stop on first stage failure
+npm run test:ci           # CI=true + bail (used in GitHub Actions)
+
+# Individual stages
+npm run test:unit         # unit tests (stores, components, services, utils)
+npm run test:a11y         # accessibility audits (axe-core)
+npm run test:integration  # integration tests with MSW
+npm run test:e2e          # Playwright — real Chromium
+
+# Coverage
+npm run test:coverage     # enforces thresholds; HTML report → coverage/
+
+# Development
+npm run test              # Vitest watch mode
+npm run test:e2e:ui       # Playwright interactive UI
+npm run test:e2e:debug    # Playwright headed + debugger
 ```
 
-**Automatizaciones:**
-- Codecov para coverage reports
-- PR comments con coverage delta
-- Slack notifications en failures
-- Dependabot para updates
-- Lighthouse scores en cada build
-
-**Success Metrics:**
-```
-⏱️ Pipeline: < 10 min total
-📊 Coverage: > 80% overall
-🎯 Success: > 95% PRs passing
-🚀 Deploy: Multiple times/day
-```
-
 ---
 
-## 📊 IMPACTO FINAL
+## Key Implementation Notes
 
-### **ANTES:**
-- ❌ Sin filosofía de testing clara
-- ❌ Sin targets de coverage
-- ❌ Mocks básicos con fetch
-- ❌ Accesibilidad no testeada
-- ❌ CI/CD no documentado
+**HeadlessUI v2 `inert` on open Listbox** — when the category dropdown is open, HeadlessUI applies `inert=""` to the surrounding layout container. Testing Library cannot find `[role="option"]` through the accessibility tree. Workaround: `document.querySelectorAll('[role="option"]')` directly.
 
-### **DESPUÉS:**
-- ✅ 7 principios profesionales guiando tests
-- ✅ Coverage strategy por tiers (95/85/70%)
-- ✅ MSW para API mocking robusto
-- ✅ WCAG 2.1 Level AA compliance
-- ✅ GitHub Actions pipeline completo
+**`waitFor` + fake timers** — `waitFor` polls via `setInterval`, which never advances with fake timers active. After `act(() => vi.advanceTimersByTime(N))`, read `useAppStore.getState()` directly instead.
 
----
+**`userEvent.setup({ advanceTimers })`** — the `.bind(vi)` expression is evaluated at collect phase before `beforeEach` runs, throwing `STACK_TRACE_ERROR`. Use `fireEvent` for all interactions inside fake-timer tests.
 
-## 🎓 NIVEL DE PROFESIONALIDAD
+**`vi.mock` + `React.lazy`** — `vi.mock("@/views/IndexPage")` does not intercept `lazy(() => import("./views/IndexPage"))` — the alias is resolved differently at runtime. Solution: let the real views load and mock `useAppStore` instead.
 
-### **Antes: ⭐⭐⭐ (3/5)**
-- Tests básicos funcionales
-- Sin estrategia clara
-- Portfolio entry-level
+**MSW fixtures must satisfy Zod** — `RecipeService` passes all responses through `safeGet`, which runs Zod schemas. A fixture missing required fields causes `safeParse` to fail silently, returning an empty array with no error. Every mock fixture includes `idDrink`, `strDrink`, and `strDrinkThumb` as a valid URL.
 
-### **Después: ⭐⭐⭐⭐⭐ (5/5)**
-- Testing philosophy documentada
-- Coverage strategy justificada
-- MSW + Playwright + Axe
-- CI/CD automation completa
-- **Portfolio senior-level** ✅
-
----
-
-## 🚀 PRÓXIMOS PASOS
-
-### **Semana 1: Fundamentos**
-1. Setup Testing Philosophy como README
-2. Configurar MSW handlers
-3. Implementar coverage thresholds
-4. Tests de schemas (100%)
-
-### **Semana 2: Core Testing**
-5. Tests de services (90%+)
-6. Tests de stores (95%+)
-7. Component tests con a11y
-8. Accessibility audit completo
-
-### **Semana 3: Integration**
-9. Page integration tests
-10. E2E critical paths
-11. Focus management tests
-12. Keyboard navigation tests
-
-### **Semana 4: CI/CD**
-13. GitHub Actions setup
-14. Branch protection rules
-15. Husky pre-commit hooks
-16. Lighthouse CI
-17. Codecov integration
-
----
-
-## 📈 ROI ESPERADO
-
-**Tiempo Invertido:** 4 semanas  
-**Beneficios:**
-
-1. **Confianza en Deploys:** 95%+ → 0 rollbacks
-2. **Velocidad de Desarrollo:** +30% (refactors seguros)
-3. **Bug Detection:** 80% detectados pre-deploy
-4. **Accesibilidad:** WCAG AA compliant
-5. **Portfolio Impact:** Senior-level showcase
-6. **Interview Talking Points:** 10+ temas avanzados
-
----
-
-## 🎯 CONCLUSIÓN
-
-Este plan de testing eleva Cocktail Lab de un proyecto estudiantil a una aplicación **production-ready** con:
-
-✅ Testing philosophy madura  
-✅ Coverage strategy profesional  
-✅ MSW para API mocking robusto  
-✅ WCAG 2.1 Level AA compliance  
-✅ CI/CD pipeline automatizado completo  
-
-**Resultado:** Portfolio piece que demuestra experiencia senior en testing, accesibilidad y DevOps. 🚀
-
----
-
-## 📚 DOCUMENTOS RELACIONADOS
-
-1. **TESTING_STRATEGY_COMPLETO.md** - Guía completa (1800+ líneas)
-   - Testing Philosophy (7 principios)
-   - Coverage Strategy (targets por tier)
-   - Mocking Strategy (MSW setup)
-   - Accessibility Testing (WCAG AA)
-   - Continuous Integration (GitHub Actions)
-   - Librerías de Testing (10 herramientas)
-   - Configuración Inicial (setup completo)
-   - Estrategia por Fases (6 fases)
-   - Ejemplos Prácticos (20+ test files)
-
-2. **COCKTAIL_LAB_AUDIT.md** - Audit anterior con mejoras generales
-
----
-
-**Autor:** DevACL  
-**Proyecto:** Cocktail Lab  
-**Stack:** React 19 + TypeScript + Vite + Zustand + Tailwind  
-**Fecha:** Febrero 2026
+**`act` import** — `act` does not exist in Vitest. Always import from `@testing-library/react`.
