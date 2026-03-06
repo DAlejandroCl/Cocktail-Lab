@@ -78,7 +78,7 @@ Each test layer has a defined mocking boundary. Nothing is mocked below that bou
 
 ### 1.6 Balance speed against confidence
 
-The Vitest stages complete in under 21 seconds combined. E2E tests run separately and exercise the real server. This separation allows fast feedback during development without sacrificing coverage of critical user flows.
+The Vitest stages complete in under 18 seconds combined. E2E tests run separately and exercise the real server. This separation allows fast feedback during development without sacrificing coverage of critical user flows.
 
 ### 1.7 Write tests that survive refactors
 
@@ -92,12 +92,12 @@ Tests are written against public-facing behavior, not internal structure. Intern
 
 | Stage | Tool | Files | Tests | Duration |
 |-------|------|-------|-------|----------|
-| Unit — Stores | Vitest | 4 | 44 | ~1.4s ¹ |
-| Unit — Components, Services & Utils | Vitest | 10 | 102 | ~2.4s |
-| Accessibility | Vitest + jest-axe | 9 | 87 | ~2.5s |
-| Integration | Vitest + MSW | 7 | 129 | ~2.6s |
-| E2E | Playwright | 3 | 340 | ~2m03s |
-| **Total** | | **33** | **702** | **~2m12s** |
+| Unit — Stores | Vitest | 4 | 44 | ~7.9s ¹ |
+| Unit — Components, Services & Utils | Vitest | 10 | 102 | ~3.9s |
+| Accessibility | Vitest + jest-axe | 9 | 87 | ~2.6s |
+| Integration | Vitest + MSW | 7 | 129 | ~2.8s |
+| E2E | Playwright | 3 | 340 | ~2m24s |
+| **Total** | | **33** | **702** | **~2m41s** |
 
 ### Confirmed passing output
 
@@ -105,19 +105,19 @@ Tests are written against public-facing behavior, not internal structure. Intern
 ════════════════════════════════════════════════════════════
   TEST SUITE SUMMARY
 ════════════════════════════════════════════════════════════
-  ✔ PASSED   Unit — Stores                            1.4s
-  ✔ PASSED   Unit — Components, Services & Utils      2.4s
-  ✔ PASSED   Accessibility (axe-core)                 2.5s
-  ✔ PASSED   Integration                              2.6s
-  ✔ PASSED   E2E (Playwright)                       2m03s
+  ✔ PASSED   Unit — Stores                            7.9s
+  ✔ PASSED   Unit — Components, Services & Utils      3.9s
+  ✔ PASSED   Accessibility (axe-core)                 2.6s
+  ✔ PASSED   Integration                              2.8s
+  ✔ PASSED   E2E (Playwright)                       2m24s
 ────────────────────────────────────────────────────────────
-  5 passed   total 2m12s
+  5 passed   total 2m41s
   Reports saved to: reports/
   All stages passed.
 ════════════════════════════════════════════════════════════
 ```
 
-> ¹ The Stores stage accounts for most of the Vitest setup time (~7s) — `happy-dom` environment initialization, `setupFiles` execution, and the MSW server lifecycle. The 44 tests themselves run in under 1s. This overhead is fixed per Vitest invocation regardless of test count; it would be amortized by merging all Vitest stages into a single run, at the cost of losing granular stage-level pass/fail reporting in the summary.
+> ¹ The Stores stage accounts for most of the Vitest setup time (~7.9s) — `happy-dom` environment initialization, `setupFiles` execution, and the MSW server lifecycle. The 44 tests themselves run in under 1s. This overhead is fixed per Vitest invocation regardless of test count; it would be amortized by merging all Vitest stages into a single run, at the cost of losing granular stage-level pass/fail reporting in the summary.
 
 ### File tree
 
@@ -788,7 +788,7 @@ All 702 tests pass (362 Vitest + 340 Playwright). All configured thresholds are 
 - **Test flakiness rate** — 0 intermittent failures across all runs
 - **Refactor safety** — internal renames do not break tests
 - **Bug detection** — tests catch regressions before they reach users
-- **Execution time** — Vitest stages under 21s combined; E2E under 3 minutes
+- **Execution time** — Vitest stages under 18s combined; E2E under 3 minutes
 
 ---
 
