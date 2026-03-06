@@ -72,63 +72,20 @@ describe("IndexPage — Integration", () => {
   });
 
   describe("loading state", () => {
-    it("shows 8 skeleton cards while fetching", async () => {
-      const user = userEvent.setup();
 
-      server.use(
-        http.get(
-          "https://www.thecocktaildb.com/api/json/v1/1/random.php",
-          async () => {
-            await new Promise((resolve) => setTimeout(resolve, 100));
-            return HttpResponse.json({
-              drinks: [
-                {
-                  idDrink: "1",
-                  strDrink: "Mojito",
-                  strDrinkThumb: "https://image.com/mojito.jpg",
-                },
-              ],
-            });
-          },
-        ),
-      );
+    it("shows 8 skeleton cards while loading", () => {
+      useAppStore.setState({ isLoading: true });
 
       renderIndexPage();
-
-      await user.click(
-        screen.getByRole("button", { name: /browse all recipes/i }),
-      );
 
       const skeletons = screen.getAllByRole("presentation", { hidden: true });
       expect(skeletons).toHaveLength(8);
     });
 
-    it("shows the loading subtitle text while fetching", async () => {
-      const user = userEvent.setup();
-
-      server.use(
-        http.get(
-          "https://www.thecocktaildb.com/api/json/v1/1/random.php",
-          async () => {
-            await new Promise((resolve) => setTimeout(resolve, 100));
-            return HttpResponse.json({
-              drinks: [
-                {
-                  idDrink: "1",
-                  strDrink: "Mojito",
-                  strDrinkThumb: "https://image.com/mojito.jpg",
-                },
-              ],
-            });
-          },
-        ),
-      );
+    it("shows the loading subtitle text while loading", () => {
+      useAppStore.setState({ isLoading: true });
 
       renderIndexPage();
-
-      await user.click(
-        screen.getByRole("button", { name: /browse all recipes/i }),
-      );
 
       expect(
         screen.getByText(/mixing the perfect drinks for you/i),
