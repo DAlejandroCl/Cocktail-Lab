@@ -59,11 +59,9 @@ Views are route-level components. Each view corresponds to a URL route defined i
 
 Views do **not** contain business logic or direct API calls.
 
-**Examples:**
-- `HomeView` — Browse cocktails by category
-- `SearchView` — Search cocktails by name or ingredient
-- `DetailView` — Full recipe for a single cocktail
-- `FavoritesView` — User's saved cocktails
+**Views in this project:**
+- `IndexPage` — Browse and search cocktails by category or ingredient; opens recipe detail as a Modal overlay
+- `FavoritesPage` — Saved cocktails with remove action and detail access via Modal
 
 ### 2.2 Components (Reusable UI)
 
@@ -71,26 +69,27 @@ Located in `src/components/`
 
 Components are pure, reusable UI building blocks. They receive data via props and emit events via callbacks. Components are **not** aware of the global store and do not call the API directly.
 
-**Examples:**
-- `CocktailCard` — Card with thumbnail, name, and favorites toggle
-- `CocktailGrid` — Responsive grid layout for a list of cocktails
-- `CategorySelector` — Horizontal scrollable category filter
-- `SkeletonCard` — Loading placeholder
-- `Notification` — Global toast notification
-- `ErrorBoundary` — UI crash isolation
+**Components in this project:**
+- `DrinkCard` — Card with thumbnail, name, category, and favorites toggle
+- `Header` — Navigation bar with search input and HeadlessUI category selector
+- `Modal` — Recipe detail overlay with ingredients, instructions, and favorites action
+- `Notification` — Global toast with auto-dismiss and hover-pause behavior
+- `SkeletonDrinkCard` — Loading placeholder for the drink grid
+- `ErrorBoundary` — UI crash isolation with accessible fallback and focus management
 
 ### 2.3 Store — Zustand Slice Pattern
 
-Located in `src/store/`
+Located in `src/stores/`
 
 The global state is composed from independent **slices**, each responsible for a distinct feature domain. The slices are merged into a single Zustand store using the Slice Pattern.
 
 ```
-store/
-├── index.ts              ← Composed store (merges all slices)
-├── cocktailSlice.ts      ← Cocktail browsing & search state
-├── favoritesSlice.ts     ← Favorites management + persistence
-└── notificationSlice.ts  ← Global notification state
+stores/
+├── useAppStore.ts        ← Composed store (merges all slices, applies persist middleware)
+├── recipeSlice.ts        ← Recipe browsing, search, loading and error state
+├── favoritesSlice.ts     ← Favorites management + localStorage persistence
+├── notificationSlice.ts  ← Global notification state
+└── selectors.ts          ← Derived state selectors (co-located with store)
 ```
 
 **Slice responsibilities:**
@@ -104,14 +103,14 @@ Each slice can be developed, tested, and reasoned about independently. Slices do
 
 ### 2.4 Selectors Layer
 
-Located in `src/selectors/`
+Located in `src/stores/selectors.ts` (co-located with the store)
 
-Selectors are functions that derive computed state from the store. They are the **only** way components access global state.
+Selectors are typed functions that derive computed state from the store. Components call `useAppStore` with a selector to subscribe only to the data they need, preventing unnecessary re-renders.
 
 ```ts
 // Example selector
-export const selectFavoriteIds = (state: StoreState) =>
-  state.favorites.map((f) => f.idDrink);
+export const selectFavoriteCount = (state: AppState) =>
+  Object.keys(state.favorites).length;
 ```
 
 **Benefits:**
@@ -137,17 +136,17 @@ Services throw typed errors on validation failure, which the store catches and r
 
 ### 2.6 Schemas (Zod)
 
-Located in `src/schemas/`
+Located in `src/utils/recipes-schemas.ts`
 
-Zod schemas define the **expected shape** of every API response. They serve as a runtime contract between the external API and the application's type system.
+Zod schemas define the **expected shape** of every API response. They serve as a runtime contract between the external API and the application's type system. TypeScript domain types in `src/types/index.ts` are inferred directly from these schemas using `z.infer<>`.
 
 ```ts
-// Example
-const DrinkSchema = z.object({
+// Example — DrinkAPIResponse schema
+const DrinkAPIResponse = z.object({
   idDrink: z.string(),
   strDrink: z.string(),
-  strDrinkThumb: z.string().url().nullable(),
-  // ...
+  strDrinkThumb: z.string().url().or(z.string().min(1)),
+  strCategory: z.string().optional(),
 });
 ```
 
@@ -155,18 +154,18 @@ If TheCocktailDB returns an unexpected structure (the API is unreliable and inco
 
 ### 2.7 Domain Models (TypeScript Types)
 
-Located in `src/types/`
+Located in `src/types/index.ts`
 
-Domain models are the application's internal representation of data. They are distinct from API response shapes, which are often inconsistently named or structured.
-
-The transformation from API response → Domain model happens in the service layer, ensuring no raw API data leaks into the application.
+Domain types are inferred directly from Zod schemas using `z.infer<>`. This means the runtime validation layer and the static type system are always in sync — there is no separate type definition to maintain.
 
 ```ts
-// API response field   →   Domain model field
-strDrink               →   name
-strDrinkThumb          →   thumbnail
-strInstructions        →   instructions
+// Types derived from schemas — never written manually
+export type Drink       = z.infer<typeof DrinkAPIResponse>;
+export type RecipeDetail = z.infer<typeof RecipeAPIResponseSchema>;
+export type SearchFilters = z.infer<typeof SearchFiltersSchema>;
 ```
+
+The API uses `strDrink`, `idDrink`, `strIngredient1`…`strIngredient15` naming. These field names are preserved inside the typed domain objects — transformation happens at the UI layer when displaying data, not at the model boundary.
 
 ---
 
@@ -192,10 +191,6 @@ User Interaction
   (validates response)
       │
       ▼
-  Domain Transformation
-  (API shape → typed model)
-      │
-      ▼
   Store State Update
       │
       ▼
@@ -209,17 +204,25 @@ User Interaction
 
 ## 4. Routing Architecture
 
-React Router DOM v6 is configured with a **layout-based** structure:
+React Router DOM v7 is configured with a **layout-based** structure. Both views are lazy-loaded with `React.lazy()`, which gives automatic code splitting and suspense boundaries.
+
+```tsx
+// src/router.tsx
+const IndexPage    = lazy(() => import("./views/IndexPage"));
+const FavoritesPage = lazy(() => import("./views/FavoritesPage"));
+
+<Route element={<Layout />}>
+  <Route index    element={<IndexPage />} />
+  <Route path="favorites" element={<FavoritesPage />} />
+</Route>
+```
 
 ```
-/                    →  HomeView       (browse by category)
-/search              →  SearchView     (search by name/ingredient)
-/cocktail/:id        →  DetailView     (recipe detail)
-/favorites           →  FavoritesView  (saved cocktails)
-*                    →  NotFoundView   (404 fallback)
+/            →  IndexPage      (browse by category, search by ingredient or name)
+/favorites   →  FavoritesPage  (saved cocktails)
 ```
 
-All routes share a common `<RootLayout>` that renders the `<Header>`, `<Notification>`, and `<ErrorBoundary>`.
+Recipe detail is rendered as a `<Modal>` overlay on top of the current route — there is no separate `/cocktail/:id` page. All routes share the `<Layout>` shell which renders `<Header>`, `<Modal>`, `<Notification>`, and wraps everything in `<ErrorBoundary>`.
 
 ---
 
@@ -285,7 +288,7 @@ Without centralized selectors, each component would independently subscribe to s
 
 ### Why a separate Domain model from API shape?
 
-The CocktailDB API uses inconsistent, prefixed naming (`strDrink`, `idDrink`). Transforming to clean domain models in the service layer keeps the rest of the codebase decoupled from the API's quirks.
+The CocktailDB API uses inconsistent, prefixed naming (`strDrink`, `idDrink`, `strIngredient1`…`strIngredient15`). Rather than manually remapping these fields, domain types are inferred directly from Zod schemas via `z.infer<>`. This keeps the runtime validation layer and the static type system permanently in sync — there is no separate type definition to maintain or drift from the API shape. The component layer handles display-time formatting (e.g. filtering out null ingredient slots) rather than doing it at parse time.
 
 ---
 
@@ -293,15 +296,14 @@ The CocktailDB API uses inconsistent, prefixed naming (`strDrink`, `idDrink`). T
 
 ```
 src/
-├── components/       # Stateless reusable UI components
-├── views/            # Route-level page components
-├── store/            # Zustand store composition + slices
-├── selectors/        # Derived state selectors
-├── services/         # API communication (Axios + Zod)
-├── schemas/          # Zod validation schemas
-├── types/            # TypeScript domain models / interfaces
-├── utils/            # Shared utility functions
-├── hooks/            # Custom React hooks (if applicable)
-├── router/           # React Router configuration
-└── main.tsx          # Application entry point
+├── components/       # Reusable UI components (DrinkCard, Header, Modal, etc.)
+├── layouts/          # Shared page shell (Layout.tsx — renders Header, Modal, Notification, ErrorBoundary)
+├── views/            # Route-level pages (IndexPage, FavoritesPage)
+├── stores/           # Zustand slices, composed store, and selectors
+├── services/         # API communication (RecipeService — Axios + safeGet + Zod)
+├── utils/            # Zod schemas (recipes-schemas.ts)
+├── types/            # TypeScript domain types (inferred from Zod schemas)
+├── router.tsx        # BrowserRouter + lazy-loaded route definitions
+├── main.tsx          # Application entry point
+└── index.css         # Global styles (Tailwind base)
 ```

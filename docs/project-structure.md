@@ -61,14 +61,24 @@ Cocktail-Lab/
 │   │   └── SkeletonDrinkCard.a11y.test.tsx
 │   │
 │   ├── e2e/
+│   │   ├── fixtures/
+│   │   │   └── test-fixtures.ts
+│   │   ├── pages/
+│   │   │   ├── FavoritesPage.ts
+│   │   │   ├── HomePage.ts
+│   │   │   └── RecipeModal.ts
 │   │   ├── browse-and-favorite.spec.ts
 │   │   ├── navigation.spec.ts
 │   │   └── search-flow.spec.ts
 │   │
 │   ├── integration/
+│   │   ├── ErrorBoundary.test.tsx
 │   │   ├── FavoritesFlow.test.tsx
 │   │   ├── FavoritesPage.test.tsx
-│   │   └── IndexPage.test.tsx
+│   │   ├── Header.test.tsx
+│   │   ├── IndexPage.test.tsx
+│   │   ├── Modal.test.tsx
+│   │   └── Notification.test.tsx
 │   │
 │   ├── mocks/
 │   │   ├── factories.ts
@@ -89,7 +99,7 @@ Cocktail-Lab/
 │       │   └── SkeletonDrinkCard.test.tsx
 │       │
 │       ├── layouts/
-│       │   └── layout.test.ts
+│       │   └── Layout.test.tsx
 │       │
 │       ├── services/
 │       │   └── RecipeService.test.ts
@@ -98,7 +108,7 @@ Cocktail-Lab/
 │       │   ├── favoritesSlice.test.ts
 │       │   ├── notificationSlice.test.ts
 │       │   ├── recipeSlice.test.ts
-│       │   └── selectors.test.tsx
+│       │   └── selectors.test.ts
 │       │
 │       ├── utils/
 │       │   └── recipes-schemas.test.ts
