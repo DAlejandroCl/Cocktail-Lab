@@ -18,7 +18,7 @@ The app consumes the public [TheCocktailDB API](https://www.thecocktaildb.com/ap
 
 ## 🚀 Live Demo
 
-👉 [https://cocktail-lab-ecru.vercel.app](https://cocktail-lab-devacl.vercel.app)
+👉 [https://cocktail-lab-devacl.vercel.app](https://cocktail-lab-devacl.vercel.app)
 
 ---
 
