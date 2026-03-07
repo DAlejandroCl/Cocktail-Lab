@@ -6,7 +6,7 @@ import {
   getRecipeById,
   getRandomRecipes,
 } from "@/services/recipeService";
-import type { SearchFilters } from "@/types";
+import type { SearchFilters, Drink } from "@/types";
 
 vi.mock("axios");
 
@@ -197,7 +197,7 @@ describe("recipeService", () => {
 
       const result = await getRecipes({ ingredient: "Rum" });
 
-      expect(result.some(d => d.idDrink === "1")).toBe(true);
+      expect(result.some((d: Drink) => d.idDrink === "1")).toBe(true);
     });
 
     it("returns empty array when searchByName schema fails (branch L133)", async () => {
@@ -206,7 +206,7 @@ describe("recipeService", () => {
 
       const result = await getRecipes({ ingredient: "Rum" });
 
-      expect(result.some(d => d.idDrink === "1")).toBe(true);
+      expect(result.some((d: Drink) => d.idDrink === "1")).toBe(true);
     });
 
     it("handles null drinks in searchByName (nullish branch L138)", async () => {
@@ -224,7 +224,7 @@ describe("recipeService", () => {
 
       const result = await getRecipes({ ingredient: "Rum" });
 
-      expect(result.some(d => d.idDrink === "1")).toBe(true);
+      expect(result.some((d: Drink) => d.idDrink === "1")).toBe(true);
     });
 
     it("returns empty array when searchByIngredient schema fails (branch L149)", async () => {
@@ -233,7 +233,7 @@ describe("recipeService", () => {
 
       const result = await getRecipes({ ingredient: "Rum" });
 
-      expect(result.some(d => d.idDrink === "1")).toBe(true);
+      expect(result.some((d: Drink) => d.idDrink === "1")).toBe(true);
     });
 
     it("handles null drinks in searchByIngredient (nullish branch L154)", async () => {
@@ -302,7 +302,7 @@ describe("recipeService", () => {
 
       const result = await getRecipes({ ingredient: "Rum", category: "Cocktail" });
 
-      expect(result.every(d => d.strCategory === "Cocktail")).toBe(true);
+      expect(result.every((d: Drink) => d.strCategory === "Cocktail")).toBe(true);
     });
 
     it("returns empty array when no drinks match the category after filtering", async () => {
@@ -414,7 +414,7 @@ describe("recipeService", () => {
 
       const result = await getRandomRecipes(2);
 
-      expect(result.some(d => d.idDrink === "1")).toBe(true);
+      expect(result.some((d: Drink) => d.idDrink === "1")).toBe(true);
     });
 
     it("returns empty array when all responses are null", async () => {
@@ -456,7 +456,7 @@ describe("recipeService", () => {
 
       const result = await getRecipes({ ingredient: "Rum" });
 
-      expect(result.every(d => d.idDrink)).toBe(true);
+      expect(result.every((d: Drink) => d.idDrink)).toBe(true);
     });
   });
 });
