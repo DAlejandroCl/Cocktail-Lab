@@ -9,12 +9,12 @@
 
 | Stage | Tool | Files | Tests | Duration |
 |-------|------|:-----:|:-----:|:--------:|
-| Unit — Stores | Vitest | 4 | 44 | ~7.9s |
-| Unit — Components, Services & Utils | Vitest | 10 | 102 | ~3.9s |
-| Accessibility | Vitest + jest-axe | 9 | 87 | ~2.6s |
-| Integration | Vitest + MSW | 7 | 129 | ~2.8s |
-| E2E | Playwright | 3 | 340 | ~2m24s |
-| **Total** | | **33** | **702** | **~2m41s** |
+| Unit — Stores | Vitest | 4 | 44 | ~13.9s |
+| Unit — Components, Services & Utils | Vitest | 10 | 102 | ~4.1s |
+| Accessibility | Vitest + jest-axe | 9 | 87 | ~2.9s |
+| Integration | Vitest + MSW | 7 | 129 | ~2.9s |
+| E2E | Playwright | 3 | 340 | ~2m32s |
+| **Total** | | **33** | **702** | **~2m56s** |
 
 ```
 npm run test:all   →  runs all 5 stages in sequence, prints this table
@@ -29,7 +29,7 @@ npm run test:all   →  runs all 5 stages in sequence, prints this table
 3. **Avoid testing internal state** — `store.getState()` only when no observable UI equivalent exists
 4. **Make tests deterministic** — fake timers controlled per test, MSW reset after every test, fresh store per test
 5. **Scale mocking to the layer** — each layer has a defined mocking boundary; nothing is mocked below it
-6. **Balance speed against confidence** — Vitest stages under 18s; E2E separate to keep dev feedback fast
+6. **Balance speed against confidence** — Vitest stages under 25s; E2E separate to keep dev feedback fast
 7. **Write tests that survive refactors** — tests break when behavior changes, not when internals are renamed
 
 ---
