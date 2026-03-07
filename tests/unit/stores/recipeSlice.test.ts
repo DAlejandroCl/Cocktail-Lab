@@ -6,7 +6,9 @@ import {
 } from "@/stores/recipeSlice";
 
 // ─────────────────────────────────────────────
-// Mock recipeService
+// Mock recipeService — must be declared before
+// the named imports so TypeScript resolves the
+// module through the mock factory at compile time
 // ─────────────────────────────────────────────
 
 vi.mock("@/services/recipeService", () => ({
