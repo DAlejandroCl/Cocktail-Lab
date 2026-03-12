@@ -103,6 +103,17 @@ export default function Header() {
               >
                 Favorites
               </NavLink>
+
+              <NavLink
+                to="/ai"
+                className={({ isActive }) =>
+                  isActive
+                    ? "text-sm font-semibold text-white uppercase tracking-widest border-b-2 border-primary pb-1"
+                    : "text-sm font-semibold text-white/70 hover:text-primary transition-colors uppercase tracking-widest"
+                }
+              >
+                AI Generator
+              </NavLink>
             </nav>
           </div>
         </div>
