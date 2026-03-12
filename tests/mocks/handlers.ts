@@ -1,7 +1,7 @@
 import { http, HttpResponse } from "msw";
 
 // ─────────────────────────────────────────────
-// Inline fixtures for handlers
+// Inline fixtures
 // ─────────────────────────────────────────────
 
 const DEFAULT_DRINK = {
@@ -48,86 +48,109 @@ const DEFAULT_RECIPE_DETAIL = {
   strMeasure15: null,
 };
 
+export const DEFAULT_AI_RECIPE_RESPONSE = {
+  recipe: {
+    strDrink: "Midnight Velvet",
+    strDrinkThumb: "https://www.thecocktaildb.com/images/media/drink/tquyyt1451299548.jpg",
+    strCategory: "Cocktail",
+    strInstructions:
+      "Combine all ingredients in a shaker with ice. Shake for 15 seconds. Double-strain into a chilled glass.",
+    ingredients: [
+      { name: "Vodka",        measure: "2 oz"  },
+      { name: "Lime juice",   measure: "3/4 oz" },
+      { name: "Simple syrup", measure: "1/2 oz" },
+      { name: "Egg white",    measure: "1"      },
+    ],
+  },
+};
+
 // ─────────────────────────────────────────────
 // Handlers
 // ─────────────────────────────────────────────
 
 export const handlers = [
 
-  http.get(
-    "https://www.thecocktaildb.com/api/json/v1/1/filter.php",
-    ({ request }) => {
-      const url = new URL(request.url);
-      const ingredient = url.searchParams.get("i");
-      const category = url.searchParams.get("c");
+  // ── CocktailDB — filter (ingredient / category) ───────────────────────
 
-      if (ingredient === "empty") {
-        return HttpResponse.json({ drinks: null });
-      }
+  http.get("https://www.thecocktaildb.com/api/json/v1/1/filter.php", ({ request }) => {
+    const url = new URL(request.url);
+    const ingredient = url.searchParams.get("i");
+    const category   = url.searchParams.get("c");
 
-      return HttpResponse.json({
-        drinks: [
-          {
-            ...DEFAULT_DRINK,
-            strCategory: category ?? "Cocktail",
-          },
-        ],
-      });
-    },
+    if (ingredient === "empty") {
+      return HttpResponse.json({ drinks: null });
+    }
+
+    return HttpResponse.json({
+      drinks: [{ ...DEFAULT_DRINK, strCategory: category ?? "Cocktail" }],
+    });
+  }),
+
+  // ── CocktailDB — search ───────────────────────────────────────────────
+
+  http.get("https://www.thecocktaildb.com/api/json/v1/1/search.php", ({ request }) => {
+    const url  = new URL(request.url);
+    const name = url.searchParams.get("s");
+
+    if (!name || name === "empty") {
+      return HttpResponse.json({ drinks: null });
+    }
+
+    return HttpResponse.json({ drinks: [DEFAULT_DRINK] });
+  }),
+
+  // ── CocktailDB — lookup by id ─────────────────────────────────────────
+
+  http.get("https://www.thecocktaildb.com/api/json/v1/1/lookup.php", ({ request }) => {
+    const url = new URL(request.url);
+    const id  = url.searchParams.get("i");
+
+    if (!id) {
+      return HttpResponse.json({ drinks: null }, { status: 400 });
+    }
+
+    return HttpResponse.json({ drinks: [{ ...DEFAULT_RECIPE_DETAIL, idDrink: id }] });
+  }),
+
+  // ── CocktailDB — category list ────────────────────────────────────────
+
+  http.get("https://www.thecocktaildb.com/api/json/v1/1/list.php", () =>
+    HttpResponse.json({
+      drinks: [
+        { strCategory: "Cocktail" },
+        { strCategory: "Shot"     },
+        { strCategory: "Beer"     },
+        { strCategory: "Shake"    },
+      ],
+    }),
   ),
 
-  http.get(
-    "https://www.thecocktaildb.com/api/json/v1/1/search.php",
-    ({ request }) => {
-      const url = new URL(request.url);
-      const name = url.searchParams.get("s");
+  // ── CocktailDB — random ───────────────────────────────────────────────
 
-      if (!name || name === "empty") {
-        return HttpResponse.json({ drinks: null });
-      }
-
-      return HttpResponse.json({
-        drinks: [DEFAULT_DRINK],
-      });
-    },
+  http.get("https://www.thecocktaildb.com/api/json/v1/1/random.php", () =>
+    HttpResponse.json({ drinks: [DEFAULT_DRINK] }),
   ),
 
-  http.get(
-    "https://www.thecocktaildb.com/api/json/v1/1/lookup.php",
-    ({ request }) => {
-      const url = new URL(request.url);
-      const id = url.searchParams.get("i");
+  // ── AI Recipe Generator ───────────────────────────────────────────────
 
-      if (!id) {
-        return HttpResponse.json({ drinks: null }, { status: 400 });
-      }
+  http.post("/api/ai/generate-recipe", async ({ request }) => {
+    let body: { ingredients?: unknown };
 
-      return HttpResponse.json({
-        drinks: [{ ...DEFAULT_RECIPE_DETAIL, idDrink: id }],
-      });
-    },
-  ),
+    try {
+      body = await request.json() as { ingredients?: unknown };
+    } catch {
+      return HttpResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
 
-  http.get(
-    "https://www.thecocktaildb.com/api/json/v1/1/list.php",
-    () => {
-      return HttpResponse.json({
-        drinks: [
-          { strCategory: "Cocktail" },
-          { strCategory: "Shot" },
-          { strCategory: "Beer" },
-          { strCategory: "Shake" },
-        ],
-      });
-    },
-  ),
+    const { ingredients } = body;
 
-  http.get(
-    "https://www.thecocktaildb.com/api/json/v1/1/random.php",
-    () => {
-      return HttpResponse.json({
-        drinks: [DEFAULT_DRINK],
-      });
-    },
-  ),
+    if (!Array.isArray(ingredients) || ingredients.length === 0) {
+      return HttpResponse.json(
+        { error: "At least one ingredient is required." },
+        { status: 422 },
+      );
+    }
+
+    return HttpResponse.json(DEFAULT_AI_RECIPE_RESPONSE);
+  }),
 ];
