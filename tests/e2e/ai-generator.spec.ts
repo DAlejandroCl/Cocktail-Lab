@@ -23,7 +23,6 @@ test.describe("AI Recipe Generator", () => {
       await expect(page.getByRole("heading", { name: /ai recipe generator/i })).toBeVisible();
     });
 
-    // ✅ Fix: removed unused `page` — URL assertion via aiGeneratorPage.page
     test("AI Generator nav link navigates to /ai", async ({ homePage, aiGeneratorPage }) => {
       await homePage.goto();
       await aiGeneratorPage.goViaNavLink();
@@ -244,7 +243,6 @@ test.describe("AI Recipe Generator", () => {
       ).toContainText(/added to favorites/i);
     });
 
-    // ✅ Fix: removed unused `page` — assertion via aiGeneratorPage.page
     test("saving as creation disables the Save Creation button", async ({ aiGeneratorPage }) => {
       await aiGeneratorPage.goto();
       await aiGeneratorPage.addIngredientsAndGenerate(["Bourbon"]);
