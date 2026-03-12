@@ -1,49 +1,58 @@
 import type { RecipeDetail } from "@/types";
 import type { Drink } from "@/types";
+import type { GeneratedRecipe } from "@/stores/generateAISlice";
 
 // ─────────────────────────────────────────────
-// Drink factory (list card)
+// Counters
 // ─────────────────────────────────────────────
 
 let drinkIdCounter = 1;
 
+export function resetFactoryCounters() {
+  drinkIdCounter = 1;
+}
+
+// ─────────────────────────────────────────────
+// Drink factory  (list card — minimal shape)
+// ─────────────────────────────────────────────
+
 export function makeDrink(overrides: Partial<Drink> = {}): Drink {
   const id = String(drinkIdCounter++);
-
   return {
-    idDrink: id,
-    strDrink: `Test Drink ${id}`,
+    idDrink:       id,
+    strDrink:      `Test Drink ${id}`,
     strDrinkThumb: `https://image.com/drink-${id}.jpg`,
-    strCategory: "Cocktail",
+    strCategory:   "Cocktail",
     ...overrides,
   };
 }
 
+export function makeDrinks(count: number, overrides: Partial<Drink> = {}): Drink[] {
+  return Array.from({ length: count }, () => makeDrink(overrides));
+}
+
 // ─────────────────────────────────────────────
-// RecipeDetail factory (full recipe)
+// RecipeDetail factory  (full recipe modal)
 // ─────────────────────────────────────────────
 
-export function makeRecipeDetail(
-  overrides: Partial<RecipeDetail> = {},
-): RecipeDetail {
+export function makeRecipeDetail(overrides: Partial<RecipeDetail> = {}): RecipeDetail {
   const id = String(drinkIdCounter++);
-
   return {
-    idDrink: id,
-    strDrink: `Test Recipe ${id}`,
-    strDrinkThumb: `https://image.com/recipe-${id}.jpg`,
-    strInstructions: "Mix all ingredients and serve.",
-    strCategory: "Cocktail",
+    idDrink:          id,
+    strDrink:         `Test Recipe ${id}`,
+    strDrinkThumb:    `https://image.com/recipe-${id}.jpg`,
+    strInstructions:  "Mix all ingredients and serve.",
+    strCategory:      "Cocktail",
 
-    strIngredient1: "Rum",
-    strIngredient2: "Lime juice",
-    strIngredient3: null,
-    strIngredient4: null,
-    strIngredient5: null,
-    strIngredient6: null,
-    strIngredient7: null,
-    strIngredient8: null,
-    strIngredient9: null,
+    strIngredient1:  "Rum",
+    strIngredient2:  "Lime juice",
+    strIngredient3:  null,
+    strIngredient4:  null,
+    strIngredient5:  null,
+    strIngredient6:  null,
+    strIngredient7:  null,
+    strIngredient8:  null,
+    strIngredient9:  null,
     strIngredient10: null,
     strIngredient11: null,
     strIngredient12: null,
@@ -51,15 +60,15 @@ export function makeRecipeDetail(
     strIngredient14: null,
     strIngredient15: null,
 
-    strMeasure1: "50ml",
-    strMeasure2: "25ml",
-    strMeasure3: null,
-    strMeasure4: null,
-    strMeasure5: null,
-    strMeasure6: null,
-    strMeasure7: null,
-    strMeasure8: null,
-    strMeasure9: null,
+    strMeasure1:  "50ml",
+    strMeasure2:  "25ml",
+    strMeasure3:  null,
+    strMeasure4:  null,
+    strMeasure5:  null,
+    strMeasure6:  null,
+    strMeasure7:  null,
+    strMeasure8:  null,
+    strMeasure9:  null,
     strMeasure10: null,
     strMeasure11: null,
     strMeasure12: null,
@@ -71,20 +80,30 @@ export function makeRecipeDetail(
   };
 }
 
-export function resetFactoryCounters() {
-  drinkIdCounter = 1;
+// ─────────────────────────────────────────────
+// GeneratedRecipe factory  (AI-created recipe)
+// ─────────────────────────────────────────────
+
+export function makeGeneratedRecipe(
+  overrides: Partial<GeneratedRecipe> = {},
+): GeneratedRecipe {
+  const base = makeRecipeDetail();
+  return {
+    ...base,
+    idDrink:         `ai-test-${base.idDrink}`,
+    strDrink:        `AI Cocktail ${base.idDrink}`,
+    strInstructions: "AI-crafted: mix, shake, and enjoy.",
+    isAIGenerated:   true,
+    generatedAt:     new Date().toISOString(),
+    userIngredients: ["Vodka", "Lime juice"],
+    ...overrides,
+  };
 }
 
 // ─────────────────────────────────────────────
 // Collection helpers
 // ─────────────────────────────────────────────
 
-export function makeDrinks(count: number, overrides: Partial<Drink> = {}): Drink[] {
-  return Array.from({ length: count }, () => makeDrink(overrides));
-}
-
-export function toFavoritesMap(
-  recipes: RecipeDetail[],
-): Record<string, RecipeDetail> {
+export function toFavoritesMap(recipes: RecipeDetail[]): Record<string, RecipeDetail> {
   return Object.fromEntries(recipes.map((r) => [r.idDrink, r]));
 }
