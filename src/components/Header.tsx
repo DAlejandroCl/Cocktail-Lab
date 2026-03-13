@@ -1,91 +1,147 @@
-import { useMemo } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import ThemeToggle from "./ThemeToggle";
 
 /* ─────────────────────────────────────────────────────────────
-   NAV LINK STYLES
+   NAV LINKS CONFIG
 ───────────────────────────────────────────────────────────── */
 
-function navLinkClass(isActive: boolean): string {
-  const base =
-    "text-xs font-bold uppercase tracking-widest transition-colors duration-200 pb-0.5";
-  return isActive
-    ? `${base} text-brand border-b-2 border-brand`
-    : `${base} text-[var(--text-secondary)] hover:text-[var(--text-primary)]`;
+const NAV_LINKS = [
+  { to: "/",          label: "Home",         end: true  },
+  { to: "/favorites", label: "Favorites",    end: false },
+  { to: "/ai",        label: "AI Generator", end: false },
+] as const;
+
+const NAV_LINKS_MOBILE = [
+  { to: "/",          label: "Home", end: true  },
+  { to: "/favorites", label: "Favs", end: false },
+  { to: "/ai",        label: "AI",   end: false },
+] as const;
+
+/* ─────────────────────────────────────────────────────────────
+   ANIMATED NAV
+   Underline geometry lives in useState — never in refs.
+   useEffect reads refs inside its callback (allowed) and
+   calls setState there. No ref access during render at all.
+───────────────────────────────────────────────────────────── */
+
+interface AnimatedNavProps {
+  links: typeof NAV_LINKS | typeof NAV_LINKS_MOBILE;
+  className?: string;
+}
+
+function AnimatedNav({ links, className = "" }: AnimatedNavProps) {
+  const location  = useLocation();
+  const navRef    = useRef<HTMLDivElement>(null);
+  const linkRefs  = useRef<Map<string, HTMLAnchorElement>>(new Map());
+  const [underline, setUnderline] = useState<{ left: number; width: number } | null>(null);
+
+  useEffect(() => {
+    // All ref access lives inside the effect callback — never during render
+    const rafId = requestAnimationFrame(() => {
+      const nav = navRef.current;
+      if (!nav) return;
+
+      const activeLink = links.find((l) =>
+        l.end
+          ? location.pathname === l.to
+          : location.pathname.startsWith(l.to),
+      );
+
+      if (!activeLink) {
+        setUnderline(null);
+        return;
+      }
+
+      const activeEl = linkRefs.current.get(activeLink.to);
+      if (!activeEl) return;
+
+      const navRect    = nav.getBoundingClientRect();
+      const activeRect = activeEl.getBoundingClientRect();
+
+      setUnderline({
+        left:  activeRect.left - navRect.left,
+        width: activeRect.width,
+      });
+    });
+
+    return () => cancelAnimationFrame(rafId);
+  }, [location.pathname, links]);
+
+  return (
+    <div ref={navRef} className={`nav-animated ${className}`}>
+      {links.map((link) => {
+        const isActive = link.end
+          ? location.pathname === link.to
+          : location.pathname.startsWith(link.to);
+
+        return (
+          <NavLink
+            key={link.to}
+            to={link.to}
+            end={link.end}
+            ref={(el) => {
+              if (el) linkRefs.current.set(link.to, el);
+              else linkRefs.current.delete(link.to);
+            }}
+            className={isActive ? "nav-link nav-link--active" : "nav-link"}
+          >
+            {link.label}
+          </NavLink>
+        );
+      })}
+
+      {/* Underline: position comes from useState, never from refs */}
+      {underline && (
+        <span
+          className="nav-underline"
+          style={{ left: underline.left, width: underline.width }}
+        />
+      )}
+    </div>
+  );
 }
 
 /* ─────────────────────────────────────────────────────────────
-   HEADER — Sticky navbar only.
+   LOGO
+   "Lab" letters animate one by one on hover via CSS classes.
+   The parent link handles scale on click.
+   All styles live in index.css — zero inline styles here.
+───────────────────────────────────────────────────────────── */
+
+function Logo() {
+  return (
+    <Link to="/" className="logo-link">
+      <span className="logo-cocktail">Cocktail</span>
+      <span className="logo-lab" aria-label="Lab">
+        <span className="logo-lab__letter" data-letter="L" aria-hidden="true">L</span>
+        <span className="logo-lab__letter" data-letter="a" aria-hidden="true">a</span>
+        <span className="logo-lab__letter" data-letter="b" aria-hidden="true">b</span>
+      </span>
+    </Link>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   HEADER
 ───────────────────────────────────────────────────────────── */
 
 export default function Header() {
   const location = useLocation();
-
-  const isHome = useMemo(
-    () => location.pathname === "/",
-    [location.pathname],
-  );
+  const isHome   = location.pathname === "/";
 
   return (
-    <header
-      style={{
-        background: "var(--bg-overlay)",
-        backdropFilter: "blur(20px) saturate(160%)",
-        WebkitBackdropFilter: "blur(20px) saturate(160%)",
-        borderBottom: isHome ? "none" : "1px solid var(--border-subtle)",
-        position: "sticky",
-        top: 0,
-        zIndex: 50,
-      }}
-    >
+    <header className={isHome ? "site-header" : "site-header site-header--bordered"}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
 
-          <Link
-            to="/"
-            className="flex items-center gap-2 group select-none shrink-0"
-          >
-            <span
-              className="text-xl font-serif font-bold tracking-tight transition-opacity duration-200 group-hover:opacity-80"
-              style={{ color: "var(--text-primary)" }}
-            >
-              Cocktail
-              <span className="text-brand font-serif italic"> Lab</span>
-            </span>
-          </Link>
+          <Logo />
 
-          <nav
-            className="hidden md:flex items-center gap-8"
-            aria-label="Main navigation"
-          >
-            <NavLink to="/" end className={({ isActive }) => navLinkClass(isActive)}>
-              Home
-            </NavLink>
-            <NavLink to="/favorites" className={({ isActive }) => navLinkClass(isActive)}>
-              Favorites
-            </NavLink>
-            <NavLink to="/ai" className={({ isActive }) => navLinkClass(isActive)}>
-              AI Generator
-            </NavLink>
-          </nav>
+          <AnimatedNav links={NAV_LINKS} className="hidden md:flex gap-8" />
 
           <div className="flex items-center gap-4">
             <ThemeToggle />
-
-            <nav
-              className="flex md:hidden items-center gap-5"
-              aria-label="Mobile navigation"
-            >
-              <NavLink to="/" end className={({ isActive }) => navLinkClass(isActive)}>
-                Home
-              </NavLink>
-              <NavLink to="/favorites" className={({ isActive }) => navLinkClass(isActive)}>
-                Favs
-              </NavLink>
-              <NavLink to="/ai" className={({ isActive }) => navLinkClass(isActive)}>
-                AI
-              </NavLink>
-            </nav>
+            <AnimatedNav links={NAV_LINKS_MOBILE} className="flex md:hidden gap-5" />
           </div>
 
         </div>
