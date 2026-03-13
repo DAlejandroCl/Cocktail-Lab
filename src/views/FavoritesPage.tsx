@@ -1,8 +1,15 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAppStore } from "../stores/useAppStore";
 import DrinkCard from "../components/DrinkCard";
+import SortSelector from "../components/SortSelector";
+import {
+  sortFavorites,
+  SORT_OPTIONS_FAVORITES,
+  type SortOptionFavorites,
+} from "../utils/sortRecipes";
 import {
   selectFavoritesMap,
+  selectFavoriteOrder,
   selectSetNotification,
 } from "../stores/selectors";
 
@@ -60,12 +67,20 @@ function FavoritesEmptyState() {
 ───────────────────────────────────────────────────────────── */
 
 export default function FavoritesPage() {
-  const favorites = useAppStore(selectFavoritesMap);
+  const favorites     = useAppStore(selectFavoritesMap);
+  const favoriteOrder = useAppStore(selectFavoriteOrder);
   const setNotification = useAppStore(selectSetNotification);
+
+  const [sortOption, setSortOption] = useState<SortOptionFavorites>("recently-added");
 
   const favoritesArray = useMemo(
     () => Object.values(favorites),
     [favorites],
+  );
+
+  const sortedFavorites = useMemo(
+    () => sortFavorites(favoritesArray, sortOption, favoriteOrder),
+    [favoritesArray, sortOption, favoriteOrder],
   );
 
   const hasFavorites = favoritesArray.length > 0;
@@ -79,8 +94,10 @@ export default function FavoritesPage() {
   return (
     <section className="relative min-h-[60vh]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-24">
+
+        {/* ── Page header ── */}
         <div
-          className="flex items-end justify-between mb-8 pb-5"
+          className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 pb-5"
           style={{ borderBottom: "1px solid var(--border-subtle)" }}
         >
           <div>
@@ -90,7 +107,6 @@ export default function FavoritesPage() {
             >
               My Favorites
             </h1>
-
             {hasFavorites && (
               <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
                 {favoritesArray.length}{" "}
@@ -98,11 +114,20 @@ export default function FavoritesPage() {
               </p>
             )}
           </div>
+
+          {hasFavorites && (
+            <SortSelector
+              options={SORT_OPTIONS_FAVORITES}
+              value={sortOption}
+              onChange={setSortOption}
+            />
+          )}
         </div>
 
+        {/* ── Grid ── */}
         {hasFavorites ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 lg:gap-6">
-            {favoritesArray.map((drink, index) => (
+            {sortedFavorites.map((drink, index) => (
               <div
                 key={drink.idDrink}
                 className="animate-fade-up"
