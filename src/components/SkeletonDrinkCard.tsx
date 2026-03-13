@@ -1,35 +1,52 @@
+/* ─────────────────────────────────────────────────────────────
+   SKELETON DRINK CARD — Loading placeholder with shimmer
+───────────────────────────────────────────────────────────── */
+
 export default function SkeletonDrinkCard() {
   return (
     <div
       aria-hidden="true"
       role="presentation"
-      className="glass-card rounded-2xl overflow-hidden relative animate-pulse"
+      style={{
+        borderRadius: "var(--radius-card)",
+        overflow: "hidden",
+        background: "var(--bg-card)",
+        border: "1px solid var(--border-card)",
+        boxShadow: "var(--shadow-card)",
+      }}
     >
       <div
-        className="absolute inset-0 rounded-2xl pointer-events-none"
+        className="animate-pulse"
         style={{
-          background:
-            "radial-gradient(circle at 50% 0%, rgba(251, 146, 60, 0.08), transparent 70%)",
+          aspectRatio: "4/3",
+          background: "var(--bg-subtle)",
         }}
       />
 
-      <div className="relative aspect-4/5 overflow-hidden bg-white/5">
-        <div className="absolute inset-0 bg-linear-to-b from-black/50 via-transparent to-black/30" />
-
-        <div className="absolute top-3 left-3 right-3 flex justify-between z-10">
-          <div className="h-6 w-20 rounded-full bg-white/20 backdrop-blur-md" />
-
-          <div className="w-10 h-10 rounded-lg bg-white/20 backdrop-blur-md" />
-        </div>
-      </div>
-
-      <div className="relative p-5 bg-transparent backdrop-blur-md border-t border-white/10">
-        <div className="space-y-2 mb-4">
-          <div className="h-4 w-3/4 mx-auto rounded-md bg-white/20" />
-          <div className="h-4 w-1/2 mx-auto rounded-md bg-white/15" />
-        </div>
-
-        <div className="h-11 w-full rounded-xl bg-white/20" />
+      <div
+        className="p-4 space-y-3"
+        style={{ borderTop: "1px solid var(--border-card)" }}
+      >
+        <div
+          className="animate-pulse h-4 rounded-lg mx-auto"
+          style={{
+            width: "70%",
+            background: "var(--bg-subtle)",
+          }}
+        />
+        <div
+          className="animate-pulse h-4 rounded-lg mx-auto"
+          style={{
+            width: "45%",
+            background: "var(--bg-subtle)",
+          }}
+        />
+        <div
+          className="animate-pulse h-10 rounded-lg mt-2"
+          style={{
+            background: "var(--bg-subtle)",
+          }}
+        />
       </div>
     </div>
   );
