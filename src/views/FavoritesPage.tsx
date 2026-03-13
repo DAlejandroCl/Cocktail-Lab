@@ -6,13 +6,66 @@ import {
   selectSetNotification,
 } from "../stores/selectors";
 
+/* ─────────────────────────────────────────────────────────────
+   EMPTY STATE
+───────────────────────────────────────────────────────────── */
+
+function FavoritesEmptyState() {
+  return (
+    <div className="flex flex-col items-center justify-center py-24 text-center">
+      <div
+        className="w-24 h-24 rounded-full flex items-center justify-center mb-8"
+        style={{
+          background: "var(--bg-subtle)",
+          border: "1px solid var(--border-subtle)",
+        }}
+      >
+        <svg
+          className="w-10 h-10"
+          style={{ color: "var(--color-brand)" }}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+          />
+        </svg>
+      </div>
+
+      <h2
+        className="text-2xl font-serif font-bold mb-3"
+        style={{ color: "var(--text-primary)" }}
+      >
+        No Favorites Yet
+      </h2>
+
+      <p
+        className="text-sm font-normal max-w-sm leading-relaxed"
+        style={{ color: "var(--text-secondary)" }}
+      >
+        Start exploring recipes and save your favorites by clicking the heart
+        icon on any cocktail card.
+      </p>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   MAIN COMPONENT
+───────────────────────────────────────────────────────────── */
+
 export default function FavoritesPage() {
   const favorites = useAppStore(selectFavoritesMap);
   const setNotification = useAppStore(selectSetNotification);
 
   const favoritesArray = useMemo(
     () => Object.values(favorites),
-    [favorites]
+    [favorites],
   );
 
   const hasFavorites = favoritesArray.length > 0;
@@ -24,16 +77,22 @@ export default function FavoritesPage() {
   }, [hasFavorites, setNotification]);
 
   return (
-    <div className="relative min-h-screen">
-      <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 pt-12">
-        <div className="flex items-end justify-between mb-10 border-b border-white/10 pb-6">
+    <section className="relative min-h-[60vh]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-24">
+        <div
+          className="flex items-end justify-between mb-8 pb-5"
+          style={{ borderBottom: "1px solid var(--border-subtle)" }}
+        >
           <div>
-            <h2 className="text-2xl font-bold text-white uppercase tracking-tighter">
+            <h1
+              className="text-xl font-bold uppercase tracking-tighter"
+              style={{ color: "var(--text-primary)" }}
+            >
               My Favorites
-            </h2>
+            </h1>
 
             {hasFavorites && (
-              <p className="text-slate-400 text-sm mt-1">
+              <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
                 {favoritesArray.length}{" "}
                 {favoritesArray.length === 1 ? "recipe" : "recipes"} saved
               </p>
@@ -42,44 +101,21 @@ export default function FavoritesPage() {
         </div>
 
         {hasFavorites ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 lg:gap-6">
             {favoritesArray.map((drink, index) => (
               <div
                 key={drink.idDrink}
                 className="animate-fade-up"
                 style={{ animationDelay: `${index * 0.05}s` }}
               >
-                <DrinkCard drink={drink} />
+                <DrinkCard drink={drink} index={index} />
               </div>
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-32 text-center">
-            <div className="glass-panel rounded-full p-8 mb-6">
-              <svg
-                className="w-16 h-16 text-primary"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                />
-              </svg>
-            </div>
-            <h2 className="text-2xl font-bold text-white mb-3 font-serif">
-              No Favorites Yet
-            </h2>
-            <p className="text-slate-400 text-center max-w-md font-light mb-8">
-              Start exploring recipes and save your favorites by clicking the
-              heart icon on any cocktail card.
-            </p>
-          </div>
+          <FavoritesEmptyState />
         )}
-      </main>
-    </div>
+      </div>
+    </section>
   );
 }
