@@ -9,11 +9,49 @@ import {
   selectIsFavorite,
 } from "../stores/selectors";
 
-type DrinkCardProps = {
-  drink: Drink;
-};
+/* ─────────────────────────────────────────────────────────────
+   TYPES
+───────────────────────────────────────────────────────────── */
 
-function DrinkCardComponent({ drink }: DrinkCardProps) {
+interface DrinkCardProps {
+  drink: Drink;
+  index?: number;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   HEART ICON
+───────────────────────────────────────────────────────────── */
+
+function HeartIcon({
+  filled,
+  className,
+}: {
+  filled: boolean;
+  className?: string;
+}) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill={filled ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth={filled ? 0 : 2}
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+      />
+    </svg>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   DRINK CARD COMPONENT
+───────────────────────────────────────────────────────────── */
+
+function DrinkCardComponent({ drink, index = 0 }: DrinkCardProps) {
   const selectRecipe = useAppStore(selectSelectRecipe);
   const addFavorite = useAppStore(selectAddFavorite);
   const removeFavorite = useAppStore(selectRemoveFavorite);
@@ -22,6 +60,7 @@ function DrinkCardComponent({ drink }: DrinkCardProps) {
 
   const [isAnimating, setIsAnimating] = useState(false);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
 
   const handleFavoriteClick = useCallback(
     async (e: React.MouseEvent) => {
@@ -37,21 +76,18 @@ function DrinkCardComponent({ drink }: DrinkCardProps) {
       }
 
       setIsLoadingDetails(true);
-
       try {
         const response = await fetch(
           `https://www.thecocktaildb.com/api/json/v1/1/lookup.php?i=${drink.idDrink}`,
         );
         const data = await response.json();
-
         if (data.drinks?.[0]) {
           addFavorite(data.drinks[0]);
           setNotification("Added to favorites", "success");
         } else {
           setNotification("Unable to load cocktail details", "error");
         }
-      } catch (error) {
-        console.error(error);
+      } catch {
         setNotification("Unable to load cocktail details", "error");
       } finally {
         setIsLoadingDetails(false);
@@ -66,30 +102,77 @@ function DrinkCardComponent({ drink }: DrinkCardProps) {
 
   return (
     <article
-      className="glass-card animate-card-enter rounded-2xl overflow-hidden relative"
+      className="animate-card-enter"
+      style={{
+        animationDelay: `${index * 0.06}s`,
+        borderRadius: "var(--radius-card)",
+        overflow: "hidden",
+        background: "var(--bg-card)",
+        border: "1px solid var(--border-card)",
+        boxShadow: "var(--shadow-card)",
+        display: "flex",
+        flexDirection: "column",
+        transition:
+          "box-shadow 0.28s var(--ease-out-soft), transform 0.28s var(--ease-out-soft)",
+        cursor: "default",
+      }}
+      onMouseEnter={(e) => {
+        const el = e.currentTarget as HTMLElement;
+        el.style.boxShadow = "var(--shadow-card-hover)";
+        el.style.transform = "translateY(-3px)";
+      }}
+      onMouseLeave={(e) => {
+        const el = e.currentTarget as HTMLElement;
+        el.style.boxShadow = "var(--shadow-card)";
+        el.style.transform = "translateY(0)";
+      }}
       aria-labelledby={`drink-title-${drink.idDrink}`}
-      aria-describedby={
-        drink.strCategory ? `drink-category-${drink.idDrink}` : undefined
-      }
     >
-      <div className="relative aspect-4/5 overflow-hidden">
+      <div className="relative overflow-hidden" style={{ aspectRatio: "4/3" }}>
+        {!imgLoaded && (
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 animate-pulse"
+            style={{ background: "var(--bg-subtle)" }}
+          />
+        )}
+
         <img
           src={drink.strDrinkThumb}
           alt={drink.strDrink}
           loading="lazy"
+          onLoad={() => setImgLoaded(true)}
           className="w-full h-full object-cover transition-transform duration-700"
+          style={{
+            opacity: imgLoaded ? 1 : 0,
+            transition: "opacity 0.4s ease, transform 0.7s ease",
+          }}
         />
 
-        <div className="absolute inset-0 bg-linear-to-b from-black/60 via-transparent to-black/40"></div>
+        <div
+          aria-hidden="true"
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, transparent 40%, rgba(0,0,0,0.25) 100%)",
+          }}
+        />
 
         <div className="absolute top-3 left-3 right-3 flex items-start justify-between z-10">
-          {drink.strCategory && (
+          {drink.strCategory ? (
             <span
-              id={`drink-category-${drink.idDrink}`}
-              className="inline-flex items-center px-3 py-1.5 rounded-full text-[10px] font-bold tracking-wider uppercase shadow-xl backdrop-blur-md bg-primary/95 text-navy-deep border border-primary/30"
+              className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider"
+              style={{
+                background: "var(--color-brand)",
+                color: "#ffffff",
+                backdropFilter: "blur(8px)",
+                letterSpacing: "0.08em",
+              }}
             >
               {drink.strCategory}
             </span>
+          ) : (
+            <span />
           )}
 
           <button
@@ -103,34 +186,21 @@ function DrinkCardComponent({ drink }: DrinkCardProps) {
                 ? `Remove ${drink.strDrink} from favorites`
                 : `Add ${drink.strDrink} to favorites`
             }
-            className={`favorite-button w-10 h-10 rounded-lg border border-white/30 flex items-center justify-center shadow-lg backdrop-blur-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-black ${
-              isFavorite ? "is-active" : "bg-black/40"
-            } ${isAnimating ? "animate-heart-pop" : ""} ${
-              isLoadingDetails ? "opacity-50 cursor-wait" : ""
-            }`}
+            className={`favorite-btn ${isFavorite ? "is-active" : ""} ${isAnimating ? "scale-110" : ""} ${isLoadingDetails ? "opacity-50 cursor-wait" : ""}`}
           >
-            <svg
-              aria-hidden="true"
-              className="w-4 h-4 transition-all duration-300"
-              fill={isFavorite ? "currentColor" : "none"}
-              stroke="currentColor"
-              strokeWidth={2}
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-              />
-            </svg>
+            <HeartIcon filled={isFavorite} className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      <div className="relative p-5 backdrop-blur-xl bg-white/10 border-t border-white/20">
+      <div
+        className="flex flex-col gap-4 p-4 flex-1"
+        style={{ borderTop: "1px solid var(--border-card)" }}
+      >
         <h3
           id={`drink-title-${drink.idDrink}`}
-          className="text-lg font-semibold text-white leading-tight mb-4 line-clamp-2 min-h-14 text-center"
+          className="text-base font-bold leading-snug text-center line-clamp-2 min-h-11"
+          style={{ color: "var(--text-primary)" }}
         >
           {drink.strDrink}
         </h3>
@@ -138,10 +208,7 @@ function DrinkCardComponent({ drink }: DrinkCardProps) {
         <button
           type="button"
           onClick={handleSelectRecipe}
-          aria-describedby={
-            drink.strCategory ? `drink-category-${drink.idDrink}` : undefined
-          }
-          className="button-primary w-full h-11 bg-primary text-navy-deep font-bold rounded-xl text-sm tracking-wide active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-black transition-all duration-300 flex items-center justify-center gap-2"
+          className="btn-brand w-full h-10 rounded-lg text-sm mt-auto"
         >
           View Recipe
         </button>
