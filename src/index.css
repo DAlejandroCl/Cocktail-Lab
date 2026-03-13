@@ -87,6 +87,7 @@
   --text-secondary:   rgba(240, 242, 248, 0.65);
   --text-muted:       rgba(240, 242, 248, 0.38);
   --text-on-brand:    var(--color-surface-dark-50);
+  /* Override: btn-brand text must always be white regardless of theme */
 
   --shadow-card:      0 2px 16px rgba(0, 0, 0, 0.45), 0 1px 4px rgba(0, 0, 0, 0.3);
   --shadow-card-hover: 0 8px 40px rgba(0, 0, 0, 0.6), 0 2px 12px rgba(0, 0, 0, 0.4);
@@ -157,7 +158,11 @@
 
 /* ─────────────────────────────────────────────────────────────
    COMPONENT CLASSES — Reusable design patterns
+   Wrapped in @layer components so Tailwind v4 respects
+   cascade order: base < components < utilities
 ───────────────────────────────────────────────────────────── */
+
+@layer components {
 
 .card-base {
   background: var(--bg-card);
@@ -190,7 +195,7 @@
   gap: 0.5rem;
   padding: 0.75rem 1.75rem;
   background: var(--color-brand);
-  color: var(--text-on-brand);
+  color: #ffffff;
   font-family: var(--font-sans);
   font-weight: 700;
   font-size: 0.9rem;
@@ -236,6 +241,58 @@
   background: var(--bg-subtle);
   color: var(--text-primary);
   border-color: var(--border-brand);
+}
+
+.btn-clear {
+  position: relative;
+  overflow: hidden;
+  background: transparent;
+  color: var(--color-brand);
+  border: 1.5px solid var(--border-brand);
+  border-radius: 0.75rem;
+  cursor: pointer;
+  transition: color 0.25s var(--ease-out-soft),
+              border-color 0.25s var(--ease-out-soft),
+              box-shadow 0.25s var(--ease-out-soft);
+}
+
+/* Pseudo-element that fills on hover and drains on click */
+.btn-clear::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--color-brand);
+  border-radius: inherit;
+  transform: scaleY(0);
+  transform-origin: bottom;
+  transition: transform 0.3s var(--ease-out-soft);
+}
+
+.btn-clear:hover:not(:disabled) {
+  color: #ffffff;
+  border-color: var(--color-brand);
+  box-shadow: 0 4px 16px rgba(242, 127, 13, 0.35);
+}
+
+.btn-clear:hover:not(:disabled)::before {
+  transform: scaleY(1);
+}
+
+.btn-clear:active:not(:disabled) {
+  box-shadow: 0 1px 4px rgba(242, 127, 13, 0.2);
+}
+
+/* On click: drain the fill upward back to empty */
+.btn-clear:active:not(:disabled)::before {
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 0.28s var(--ease-out-smooth);
+}
+
+/* Icon sits above the fill layer */
+.btn-clear > * {
+  position: relative;
+  z-index: 1;
 }
 
 .favorite-btn {
@@ -333,8 +390,9 @@
   border-radius: 10px;
 }
 
+
 /* ─────────────────────────────────────────────────────────────
-   ANIMATIONS
+   ANIMATIONS — @keyframes must live outside @layer
 ───────────────────────────────────────────────────────────── */
 
 @keyframes heart-pop {
@@ -383,6 +441,11 @@
   }
 }
 
+.hero-full-height {
+  min-height: calc(100vh - 64px);
+  min-height: calc(100dvh - 64px);
+}
+
 /* ─────────────────────────────────────────────────────────────
    INGREDIENT TAG — Used in GenerateAI view
 ───────────────────────────────────────────────────────────── */
@@ -405,3 +468,185 @@
   background: rgba(242, 127, 13, 0.2);
   border-color: rgba(242, 127, 13, 0.4);
 }
+
+/* ─────────────────────────────────────────────────────────────
+   SITE HEADER
+───────────────────────────────────────────────────────────── */
+
+.site-header {
+  background: var(--bg-overlay);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  box-shadow: 0 1px 0 rgba(242, 127, 13, 0.18),
+              0 2px 12px rgba(0, 0, 0, 0.06);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.site-header--bordered {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+:root.dark .site-header {
+  /* In dark mode the orange line is too vivid — use a soft white border instead */
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.07),
+              0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   ANIMATED NAV
+───────────────────────────────────────────────────────────── */
+
+.nav-animated {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.nav-link {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding-bottom: 0.5rem;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.nav-link:hover {
+  color: var(--text-primary);
+}
+
+.nav-link--active {
+  color: var(--color-brand);
+}
+
+.nav-underline {
+  position: absolute;
+  bottom: 0;
+  height: 2px;
+  background: var(--color-brand);
+  border-radius: 9999px;
+  transition: left 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   LOGO — CocktailLab
+   "Lab" letters bounce up one by one on hover.
+   Scale on click applied to the whole link.
+───────────────────────────────────────────────────────────── */
+
+@keyframes letter-bounce {
+  0%   { transform: translateY(0); }
+  30%  { transform: translateY(-6px); }
+  65%  { transform: translateY(2px); }
+  100% { transform: translateY(0); }
+}
+
+.logo-link {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.18em;
+  text-decoration: none;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.logo-link:hover {
+  transform: scale(1.06);
+}
+
+.logo-link:active {
+  transform: scale(0.94);
+  transition: transform 0.1s ease;
+}
+
+.logo-cocktail {
+  font-family: var(--font-serif);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.logo-lab {
+  font-family: var(--font-serif);
+  font-size: 1.4rem;
+  font-weight: 700;
+  font-style: italic;
+  color: var(--color-brand);
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.logo-lab__letter {
+  display: inline-block;
+  animation: none;
+}
+
+/* Letter bounce — longer duration for smoother feel */
+.logo-link:hover .logo-lab__letter:nth-child(1) {
+  animation: letter-bounce 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0ms both;
+}
+
+.logo-link:hover .logo-lab__letter:nth-child(2) {
+  animation: letter-bounce 0.6s cubic-bezier(0.16, 1, 0.3, 1) 120ms both;
+}
+
+.logo-link:hover .logo-lab__letter:nth-child(3) {
+  animation: letter-bounce 0.6s cubic-bezier(0.16, 1, 0.3, 1) 240ms both;
+}
+
+
+/* ─────────────────────────────────────────────────────────────
+   SCROLL TO TOP — fixed button, mirrors HeroSection arrow style
+───────────────────────────────────────────────────────────── */
+
+@keyframes scroll-bounce-up {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-4px); }
+}
+
+.scroll-to-top {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  color: var(--color-brand);
+  opacity: 0;
+  transform: translateY(12px);
+  pointer-events: none;
+  transition: opacity 0.3s var(--ease-out-soft),
+              transform 0.3s var(--ease-out-soft);
+}
+
+.scroll-to-top--visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.scroll-to-top svg {
+  animation: scroll-bounce-up 1.6s ease-in-out infinite;
+}
+
+.scroll-to-top svg:nth-child(1) { animation-delay: 0s; }
+.scroll-to-top svg:nth-child(2) { animation-delay: 0.18s; }
+.scroll-to-top svg:nth-child(3) { animation-delay: 0.36s; }
+
+.scroll-to-top:hover svg {
+  animation-play-state: paused;
+  transform: translateY(-3px);
+}
+
+} /* end @layer components */
