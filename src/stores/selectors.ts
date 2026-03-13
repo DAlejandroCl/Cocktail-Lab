@@ -25,6 +25,7 @@ export const selectHasSearched     = (s: AppState) => s.hasSearched;
 // ─── Favorites ────────────────────────────────────────────────────────────────
 
 export const selectFavoritesMap    = (s: AppState) => s.favorites;
+export const selectFavoriteOrder   = (s: AppState) => s.favoriteOrder;
 export const selectAddFavorite     = (s: AppState) => s.addFavorite;
 export const selectRemoveFavorite  = (s: AppState) => s.removeFavorite;
 export const selectIsFavorite      = (id: string) => (s: AppState) => !!s.favorites[id];
