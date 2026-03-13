@@ -14,39 +14,47 @@ Cocktail-Lab/
 │
 ├── src/
 │   ├── components/
-│   │   ├── DrinkCard.tsx
-│   │   ├── ErrorBoundary.tsx
-│   │   ├── Header.tsx
-│   │   ├── Modal.tsx
-│   │   ├── Notification.tsx
-│   │   └── SkeletonDrinkCard.tsx
+│   │   ├── DrinkCard.tsx          # Drink card with image, category badge, favorites toggle
+│   │   ├── ErrorBoundary.tsx      # UI crash isolation with accessible fallback
+│   │   ├── Header.tsx             # Sticky navbar with AnimatedNav underline and Logo
+│   │   ├── HeroSection.tsx        # Full-height hero with SearchForm and scroll arrow
+│   │   ├── Modal.tsx              # Recipe detail overlay (ingredients + instructions)
+│   │   ├── Notification.tsx       # Global toast with auto-dismiss
+│   │   ├── SearchForm.tsx         # Search by ingredient + category dropdown + clear button
+│   │   ├── SkeletonDrinkCard.tsx  # Loading placeholder for the drink grid
+│   │   ├── SortSelector.tsx       # Generic pill-group sort selector
+│   │   └── ThemeToggle.tsx        # Light / dark mode toggle
 │   │
 │   ├── layouts/
-│   │   └── Layout.tsx
+│   │   └── Layout.tsx             # Root shell: Header, Modal, Notification, ErrorBoundary
 │   │
 │   ├── services/
-│   │   └── RecipeService.ts
+│   │   └── recipeService.ts       # Axios HTTP client + Zod-validated API calls
 │   │
 │   ├── stores/
-│   │   ├── favoritesSlice.ts
-│   │   ├── notificationSlice.ts
-│   │   ├── recipeSlice.ts
-│   │   ├── selectors.ts
-│   │   └── useAppStore.ts
+│   │   ├── favoritesSlice.ts      # Favorites map + favoriteOrder timestamps + persistence
+│   │   ├── generateAISlice.ts     # AI recipe generation state
+│   │   ├── notificationSlice.ts   # Global toast queue
+│   │   ├── recipeSlice.ts         # Recipe browsing, search, loading, modal state
+│   │   ├── selectors.ts           # Typed derived-state selectors
+│   │   ├── useAppStore.ts         # Composed Zustand store (all slices merged)
+│   │   └── useThemeStore.ts       # Theme preference store (light/dark)
 │   │
 │   ├── types/
-│   │   └── index.ts
+│   │   └── index.ts               # TypeScript domain types (inferred from Zod schemas)
 │   │
 │   ├── utils/
-│   │   └── recipes-schemas.ts
+│   │   ├── recipes-schemas.ts     # Zod schemas for all API responses
+│   │   └── sortRecipes.ts         # Pure sort functions + SortOption / SortOptionFavorites types
 │   │
 │   ├── views/
-│   │   ├── FavoritesPage.tsx
-│   │   └── IndexPage.tsx
+│   │   ├── FavoritesPage.tsx      # Saved cocktails with sort selector
+│   │   ├── GenerateAI.tsx         # AI-powered cocktail generator
+│   │   └── IndexPage.tsx          # Home: HeroSection + results grid + sort + scroll-to-top
 │   │
-│   ├── index.css
-│   ├── main.tsx
-│   └── router.tsx
+│   ├── index.css                  # Global styles (Tailwind v4 @theme + @layer components)
+│   ├── main.tsx                   # Application entry point
+│   └── router.tsx                 # BrowserRouter + lazy-loaded route definitions
 │
 ├── tests/
 │   ├── accessibility/
@@ -64,9 +72,11 @@ Cocktail-Lab/
 │   │   ├── fixtures/
 │   │   │   └── test-fixtures.ts
 │   │   ├── pages/
+│   │   │   ├── AIGeneratorPage.ts
 │   │   │   ├── FavoritesPage.ts
 │   │   │   ├── HomePage.ts
 │   │   │   └── RecipeModal.ts
+│   │   ├── ai-generator.spec.ts
 │   │   ├── browse-and-favorite.spec.ts
 │   │   ├── navigation.spec.ts
 │   │   └── search-flow.spec.ts
@@ -75,6 +85,7 @@ Cocktail-Lab/
 │   │   ├── ErrorBoundary.test.tsx
 │   │   ├── FavoritesFlow.test.tsx
 │   │   ├── FavoritesPage.test.tsx
+│   │   ├── GenerateAI.test.tsx
 │   │   ├── Header.test.tsx
 │   │   ├── IndexPage.test.tsx
 │   │   ├── Modal.test.tsx
@@ -106,6 +117,7 @@ Cocktail-Lab/
 │       │
 │       ├── stores/
 │       │   ├── favoritesSlice.test.ts
+│       │   ├── generateAISlice.test.ts
 │       │   ├── notificationSlice.test.ts
 │       │   ├── recipeSlice.test.ts
 │       │   └── selectors.test.ts
@@ -122,5 +134,9 @@ Cocktail-Lab/
 ├── .gitignore
 ├── package.json
 ├── playwright.config.ts
+├── tsconfig.json
+├── tsconfig.app.json
+├── tsconfig.node.json
+├── vite.config.ts
 └── vitest.config.ts
 ```
