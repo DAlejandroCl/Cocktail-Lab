@@ -12,12 +12,15 @@ import {
   selectClearNotification,
 } from "../stores/selectors";
 
+/* ─────────────────────────────────────────────────────────────
+   NOTIFICATION TOAST COMPONENT
+───────────────────────────────────────────────────────────── */
+
 export default function Notification() {
   const notification = useAppStore(selectNotification);
   const clearNotification = useAppStore(selectClearNotification);
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const isError = notification?.type === "error";
 
   const prefersReducedMotion =
@@ -31,37 +34,57 @@ export default function Notification() {
     }
   };
 
-  const getDurationByType = (type?: string) => {
-    switch (type) {
-      case "success":
-        return 4000;
-      case "info":
-        return 6000;
-      default:
-        return null;
-    }
+  const getDuration = (type?: string): number | null => {
+    if (type === "success") return 4000;
+    if (type === "info") return 5000;
+    return null;
   };
 
   useEffect(() => {
     if (!notification) return;
-
-    const duration = getDurationByType(notification.type);
-
+    const duration = getDuration(notification.type);
     if (!duration) return;
-
     stopTimer();
-
-    timerRef.current = setTimeout(() => {
-      clearNotification();
-    }, duration);
-
-    return () => stopTimer();
+    timerRef.current = setTimeout(clearNotification, duration);
+    return stopTimer;
   }, [notification, clearNotification]);
 
-  if (!notification || !notification.message) return null;
+  const restartTimer = () => {
+    if (!notification || isError) return;
+    const duration = getDuration(notification.type);
+    if (duration) {
+      timerRef.current = setTimeout(clearNotification, duration);
+    }
+  };
+
+  if (!notification?.message) return null;
+
+  const iconMap = {
+    success: (
+      <CheckCircleIcon
+        className="w-5 h-5"
+        style={{ color: "#4ade80" }}
+        aria-hidden="true"
+      />
+    ),
+    error: (
+      <XCircleIcon
+        className="w-5 h-5"
+        style={{ color: "#f87171" }}
+        aria-hidden="true"
+      />
+    ),
+    info: (
+      <InformationCircleIcon
+        className="w-5 h-5"
+        style={{ color: "var(--color-brand)" }}
+        aria-hidden="true"
+      />
+    ),
+  };
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-9999 flex items-start justify-end p-6">
+    <div className="pointer-events-none fixed inset-0 z-9999 flex items-start justify-end p-4 sm:p-6">
       <Transition
         show={!!notification}
         as={Fragment}
@@ -71,90 +94,64 @@ export default function Notification() {
             : "transform ease-out duration-300 transition"
         }
         enterFrom={
-          prefersReducedMotion
-            ? ""
-            : "translate-y-4 opacity-0 scale-95"
+          prefersReducedMotion ? "" : "translate-y-3 opacity-0 scale-95"
         }
-        enterTo={
-          prefersReducedMotion
-            ? ""
-            : "translate-y-0 opacity-100 scale-100"
-        }
-        leave={
-          prefersReducedMotion
-            ? ""
-            : "transition ease-in duration-200"
-        }
+        enterTo={prefersReducedMotion ? "" : "translate-y-0 opacity-100 scale-100"}
+        leave={prefersReducedMotion ? "" : "transition ease-in duration-200"}
         leaveFrom={prefersReducedMotion ? "" : "opacity-100 scale-100"}
-        leaveTo={prefersReducedMotion ? "" : "opacity-0 scale-95"}
+        leaveTo={prefersReducedMotion ? "" : "opacity-0 scale-90"}
       >
         <div
           role={isError ? "alert" : "status"}
           aria-live={isError ? "assertive" : "polite"}
           aria-atomic="true"
           onMouseEnter={stopTimer}
-          onMouseLeave={() => {
-            if (!isError) {
-              const duration = getDurationByType(notification.type);
-              if (duration) {
-                timerRef.current = setTimeout(() => {
-                  clearNotification();
-                }, duration);
-              }
-            }
-          }}
+          onMouseLeave={restartTimer}
           onFocus={stopTimer}
-          onBlur={() => {
-            if (!isError) {
-              const duration = getDurationByType(notification.type);
-              if (duration) {
-                timerRef.current = setTimeout(() => {
-                  clearNotification();
-                }, duration);
-              }
-            }
-          }}
-          className="pointer-events-auto w-full max-w-sm rounded-2xl shadow-2xl border border-white/10 backdrop-blur-xl relative overflow-hidden focus-within:ring-2 focus-within:ring-primary"
+          onBlur={restartTimer}
+          className="pointer-events-auto w-full max-w-sm rounded-2xl overflow-hidden"
           style={{
-            background: "rgba(15, 23, 42, 0.9)",
+            background: "var(--bg-card)",
+            border: "1px solid var(--border-subtle)",
+            boxShadow:
+              "0 8px 32px rgba(0,0,0,0.18), 0 0 0 1px rgba(242, 127, 13, 0.15)",
           }}
         >
-          <div className="absolute inset-0 rounded-2xl ring-1 ring-primary/30 shadow-lg shadow-primary/20 pointer-events-none" />
-
-          <div className="p-5 flex items-start gap-4 relative">
-            <div className="shrink-0" aria-hidden="true">
-              {notification.type === "success" && (
-                <CheckCircleIcon className="w-6 h-6 text-green-400" />
-              )}
-              {notification.type === "error" && (
-                <XCircleIcon className="w-6 h-6 text-red-400" />
-              )}
-              {notification.type === "info" && (
-                <InformationCircleIcon className="w-6 h-6 text-primary" />
-              )}
+          <div className="flex items-start gap-3 p-4">
+            <div className="shrink-0 mt-0.5">
+              {iconMap[notification.type as keyof typeof iconMap] ??
+                iconMap.info}
             </div>
 
-            <div className="flex-1">
-              <p
-                id="notification-message"
-                className="text-white text-sm font-semibold tracking-wide"
-              >
-                {notification.message}
-              </p>
-            </div>
+            <p
+              id="notification-message"
+              className="flex-1 text-sm font-semibold leading-relaxed"
+              style={{ color: "var(--text-primary)" }}
+            >
+              {notification.message}
+            </p>
 
             <button
               onClick={() => {
                 stopTimer();
                 clearNotification();
               }}
-              aria-label="Close notification"
+              aria-label="Dismiss notification"
               aria-describedby="notification-message"
-              className="text-white/40 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
+              className="shrink-0 rounded-lg p-0.5 transition-colors duration-200"
+              style={{ color: "var(--text-muted)" }}
             >
-              <XMarkIcon className="w-5 h-5" aria-hidden="true" />
+              <XMarkIcon className="w-4 h-4" aria-hidden="true" />
             </button>
           </div>
+
+          <div
+            aria-hidden="true"
+            style={{
+              height: "2px",
+              background: `linear-gradient(to right, var(--color-brand), transparent)`,
+            }}
+          />
         </div>
       </Transition>
     </div>
