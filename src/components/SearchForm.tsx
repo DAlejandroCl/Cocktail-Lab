@@ -23,14 +23,11 @@ interface SearchFormProps {
   categories: string[];
   isLoading: boolean;
   onSubmit: (filters: SearchFilters) => void;
-  /** When provided, a successful search will smooth-scroll to this element */
   resultsRef?: React.RefObject<HTMLElement | null>;
 }
 
 /* ─────────────────────────────────────────────────────────────
    CLEAR BUTTON
-   State-driven fill animation — no imperative DOM manipulation.
-   Fill layer is a real <span> controlled by hovered/pressed state.
 ───────────────────────────────────────────────────────────── */
 
 function ClearButton({ disabled, onClick }: { disabled: boolean; onClick: () => void }) {
@@ -40,7 +37,6 @@ function ClearButton({ disabled, onClick }: { disabled: boolean; onClick: () => 
   const isHovered = hovered && !disabled;
   const isPressed = pressed && !disabled;
 
-  // Derive visual state
   const bg     = isHovered ? "#f27f0d" : "transparent";
   const border = isHovered ? "#f27f0d" : "rgba(242,127,13,0.35)";
   const shadow = isHovered && !isPressed ? "0 4px 16px rgba(242,127,13,0.3)" : "none";
@@ -152,7 +148,6 @@ export default function SearchForm({
         className="glass-panel rounded-2xl p-1.5 flex flex-col sm:flex-row items-stretch gap-1.5"
         style={{ boxShadow: "0 8px 40px rgba(0,0,0,0.1)" }}
       >
-        {/* ── Text input ── */}
         <div className="flex-1 relative flex items-center">
           <MagnifyingGlassIcon
             className="absolute left-4 w-4 h-4 pointer-events-none shrink-0"
@@ -174,14 +169,12 @@ export default function SearchForm({
           />
         </div>
 
-        {/* ── Divider ── */}
         <div
           className="hidden sm:block w-px self-stretch my-1.5"
           style={{ background: "var(--border-subtle)" }}
           aria-hidden="true"
         />
 
-        {/* ── Category dropdown (custom Listbox) ── */}
         <div className="relative sm:w-48">
           <Listbox
             value={filters.category}
@@ -261,25 +254,24 @@ export default function SearchForm({
           </Listbox>
         </div>
 
-        {/* ── Divider (before action buttons) ── */}
         <div
           className="hidden sm:block w-px self-stretch my-1.5"
           style={{ background: "var(--border-subtle)" }}
           aria-hidden="true"
         />
 
-        {/* ── Submit ── */}
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="btn-brand h-12 px-6 sm:px-7 rounded-xl shrink-0"
-        >
-          <SparklesIcon className="w-4 h-4" aria-hidden="true" />
-          Search
-        </button>
+        <div className="flex flex-row gap-1.5 sm:contents">
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="btn-brand h-12 px-6 sm:px-7 rounded-xl shrink-0 flex-1 sm:flex-none"
+          >
+            <SparklesIcon className="w-4 h-4" aria-hidden="true" />
+            Search
+          </button>
 
-        {/* ── Clear — always visible, disabled when no filters ── */}
-        <ClearButton disabled={!hasFilters} onClick={handleClear} />
+          <ClearButton disabled={!hasFilters} onClick={handleClear} />
+        </div>
       </div>
     </form>
   );
