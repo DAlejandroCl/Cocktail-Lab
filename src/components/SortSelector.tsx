@@ -13,8 +13,6 @@ interface SortSelectorProps<T extends string> {
 
 /* ─────────────────────────────────────────────────────────────
    SORT SELECTOR — horizontal pill group
-   Generic over T so it works with both SortOption
-   and SortOptionFavorites without casting.
 ───────────────────────────────────────────────────────────── */
 
 export default function SortSelector<T extends string>({
@@ -32,7 +30,6 @@ export default function SortSelector<T extends string>({
         {label}
       </span>
 
-      {/* Scrollable pill row on mobile, wraps on desktop */}
       <div
         className="flex items-center gap-1.5 overflow-x-auto pb-0.5"
         role="group"

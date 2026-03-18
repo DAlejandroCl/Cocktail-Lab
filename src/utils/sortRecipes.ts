@@ -38,8 +38,6 @@ export const SORT_OPTIONS_FAVORITES: SortOptionConfig<SortOptionFavorites>[] = [
 
 /* ─────────────────────────────────────────────────────────────
    SORT FUNCTION
-   Works on any array that satisfies the Drink shape
-   (both Drink and RecipeDetail are compatible).
 ───────────────────────────────────────────────────────────── */
 
 export function sortDrinks<T extends Drink>(
@@ -71,7 +69,6 @@ export function sortDrinks<T extends Drink>(
 
 /* ─────────────────────────────────────────────────────────────
    SORT FUNCTION — Favorites variant
-   "recently-added" uses the FavoriteOrder timestamp record.
 ───────────────────────────────────────────────────────────── */
 
 export function sortFavorites<T extends Drink>(
