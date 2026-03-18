@@ -447,6 +447,194 @@
 }
 
 /* ─────────────────────────────────────────────────────────────
+   HERO — Dual asymmetric glow
+───────────────────────────────────────────────────────────── */
+
+.hero-glow-a,
+.hero-glow-b {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 50%;
+  z-index: 0;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.hero-glow-a {
+  width: clamp(320px, 60vw, 600px);
+  height: clamp(260px, 50vw, 480px);
+  background: radial-gradient(ellipse, rgba(242,127,13,0.11) 0%, rgba(242,127,13,0.04) 50%, transparent 70%);
+}
+
+/* glow-b not used in central mode — hidden */
+.hero-glow-b { display: none; }
+
+:root.dark .hero-glow-a {
+  background: radial-gradient(ellipse, rgba(242,127,13,0.20) 0%, rgba(242,100,13,0.07) 50%, transparent 70%);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   HERO — Ticker strips
+───────────────────────────────────────────────────────────── */
+
+.hero-ticker {
+  width: 100%;
+  overflow: hidden;
+  padding: 8px 0;
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+  border-top: 1px solid rgba(139,90,43,0.18);
+  border-bottom: 1px solid rgba(139,90,43,0.18);
+  background: rgba(139,90,43,0.05);
+}
+
+:root.dark .hero-ticker {
+  border-top-color:    rgba(242,127,13,0.2);
+  border-bottom-color: rgba(242,127,13,0.2);
+  background:          rgba(242,127,13,0.06);
+}
+
+.hero-ticker__track {
+  display: flex;
+  width: max-content;
+  animation: hero-ticker-fwd 22s linear infinite;
+}
+
+.hero-ticker__track--rev {
+  animation: hero-ticker-rev 22s linear infinite;
+}
+
+@keyframes hero-ticker-fwd {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+@keyframes hero-ticker-rev {
+  from { transform: translateX(-50%); }
+  to   { transform: translateX(0); }
+}
+
+.hero-ticker__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 0.75rem;
+  letter-spacing: 0.09em;
+  white-space: nowrap;
+  color: rgba(242,127,13,0.45);
+}
+
+:root.dark .hero-ticker__item {
+  color: rgba(242,127,13,0.38);
+}
+
+.hero-ticker__dot {
+  display: inline-block;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: rgba(242,127,13,0.35);
+}
+
+:root.dark .hero-ticker__dot {
+  background: rgba(242,127,13,0.3);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   HERO — Bubbles
+───────────────────────────────────────────────────────────── */
+
+@keyframes bubble-rise {
+  0%   { transform: translateY(0) translateX(0); opacity: 0; }
+  8%   { opacity: 1; }
+  85%  { opacity: 0.75; }
+  100% { transform: translateY(-100vh) translateX(var(--d, 5px)); opacity: 0; }
+}
+
+@keyframes bubble-frag-fly {
+  0%   { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--fx, 20px), var(--fy, -30px)) scale(0); opacity: 0; }
+}
+
+@keyframes bubble-ring-expand {
+  0%   { transform: scale(0.4); opacity: 0.9; }
+  100% { transform: scale(3.2); opacity: 0; }
+}
+
+.bubble {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: auto;
+  cursor: pointer;
+  animation: bubble-rise linear infinite;
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bubble--fill {
+  background: rgba(242,127,13,0.10);
+  border: 1px solid rgba(242,127,13,0.24);
+}
+
+.bubble--outline {
+  background: transparent;
+  border: 1.5px solid rgba(242,127,13,0.20);
+}
+
+.bubble--glow {
+  background: rgba(242,127,13,0.07);
+  box-shadow: 0 0 10px rgba(242,127,13,0.16);
+}
+
+:root.dark .bubble--fill {
+  background: rgba(242,127,13,0.13);
+  border-color: rgba(242,127,13,0.30);
+}
+
+:root.dark .bubble--outline {
+  border-color: rgba(242,127,13,0.24);
+}
+
+:root.dark .bubble--glow {
+  background: rgba(242,127,13,0.09);
+  box-shadow: 0 0 14px rgba(242,127,13,0.25);
+}
+
+.bubble-ring {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  border: 2px solid rgba(242,127,13,0.55);
+  animation: bubble-ring-expand 0.4s cubic-bezier(0.16,1,0.3,1) forwards;
+}
+
+.bubble-frag {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  width: 6px; height: 6px;
+  background: rgba(242,127,13,0.75);
+  animation: bubble-frag-fly var(--dur, 0.5s) cubic-bezier(0.16,1,0.3,1) forwards;
+}
+
+:root.dark .bubble-frag {
+  background: rgba(242,160,60,0.85);
+  box-shadow: 0 0 4px rgba(242,127,13,0.6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bubble,
+  .hero-ticker__track,
+  .hero-ticker__track--rev {
+    animation: none !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
    INGREDIENT TAG — Used in GenerateAI view
 ───────────────────────────────────────────────────────────── */
 
@@ -604,30 +792,117 @@
    SCROLL TO TOP — fixed button, mirrors HeroSection arrow style
 ───────────────────────────────────────────────────────────── */
 
-@keyframes scroll-bounce-up {
+/* ─────────────────────────────────────────────────────────────
+   SCROLL CIRCLE BUTTONS — shared design token for both
+   .scroll-arrow (hero, points down) and .scroll-to-top (fixed, points up)
+───────────────────────────────────────────────────────────── */
+
+@keyframes scroll-bounce-down {
   0%, 100% { transform: translateY(0); }
-  50%       { transform: translateY(-4px); }
+  50%       { transform: translateY(5px); }
 }
 
+@keyframes scroll-bounce-up {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-5px); }
+}
+
+/* ── Shared circle base ── */
+.scroll-arrow,
+.scroll-to-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: 9999px;
+  background: var(--color-brand);
+  border: none;
+  cursor: pointer;
+  color: #ffffff;
+  box-shadow: var(--shadow-brand);
+  transition: box-shadow 0.25s var(--ease-out-soft),
+              transform 0.25s var(--ease-out-soft),
+              filter 0.25s ease;
+}
+
+.scroll-arrow:hover,
+.scroll-to-top:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 8px 32px rgba(242, 127, 13, 0.55);
+}
+
+.scroll-arrow:active,
+.scroll-to-top:active {
+  transform: scale(0.93);
+  transition: transform 0.1s ease;
+  filter: brightness(0.95);
+}
+
+/* ── Shared label ── */
+.scroll-arrow__label,
+.scroll-to-top__label {
+  font-size: 0.55rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.75);
+  line-height: 1;
+}
+
+.scroll-arrow:hover .scroll-arrow__label,
+.scroll-to-top:hover .scroll-to-top__label {
+  color: #ffffff;
+}
+
+/* ── Shared chevron base ── */
+.scroll-arrow__chevron,
+.scroll-to-top__chevron {
+  width: 1rem;
+  height: 1rem;
+  margin-top: -4px;
+}
+
+/* ── Scroll arrow (hero) — chevrons bounce DOWN ── */
+.scroll-arrow {
+  position: relative;
+  z-index: 10;
+  flex-shrink: 0;
+}
+
+.scroll-arrow:hover {
+  transform: none;
+}
+
+.scroll-arrow:active {
+  transform: scale(0.93);
+}
+
+.scroll-arrow__chevron--0 { opacity: 0.45; animation: scroll-bounce-down 1.6s ease-in-out 0s infinite; }
+.scroll-arrow__chevron--1 { opacity: 0.72; animation: scroll-bounce-down 1.6s ease-in-out 0.18s infinite; }
+.scroll-arrow__chevron--2 { opacity: 1;    animation: scroll-bounce-down 1.6s ease-in-out 0.36s infinite; }
+
+.scroll-arrow:hover .scroll-arrow__chevron--0,
+.scroll-arrow:hover .scroll-arrow__chevron--1,
+.scroll-arrow:hover .scroll-arrow__chevron--2 {
+  animation-play-state: paused;
+}
+
+/* ── Scroll to top (fixed) — chevrons bounce UP ── */
 .scroll-to-top {
   position: fixed;
   bottom: 2rem;
   right: 2rem;
   z-index: 40;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0.5rem;
-  color: var(--color-brand);
   opacity: 0;
-  transform: translateY(12px);
+  transform: translateY(16px);
   pointer-events: none;
   transition: opacity 0.3s var(--ease-out-soft),
-              transform 0.3s var(--ease-out-soft);
+              transform 0.3s var(--ease-out-soft),
+              border-color 0.25s ease,
+              box-shadow 0.25s var(--ease-out-soft);
 }
 
 .scroll-to-top--visible {
@@ -636,17 +911,45 @@
   pointer-events: auto;
 }
 
-.scroll-to-top svg {
-  animation: scroll-bounce-up 1.6s ease-in-out infinite;
+.scroll-to-top:hover {
+  transform: translateY(0);
 }
 
-.scroll-to-top svg:nth-child(1) { animation-delay: 0s; }
-.scroll-to-top svg:nth-child(2) { animation-delay: 0.18s; }
-.scroll-to-top svg:nth-child(3) { animation-delay: 0.36s; }
+.scroll-to-top:active {
+  transform: scale(0.93);
+}
 
-.scroll-to-top:hover svg {
+.scroll-to-top__chevron {
+  width: 1rem;
+  height: 1rem;
+  margin-bottom: -4px;
+}
+
+.scroll-to-top__chevron--0 { opacity: 1;    animation: scroll-bounce-up 1.6s ease-in-out 0s infinite; }
+.scroll-to-top__chevron--1 { opacity: 0.72; animation: scroll-bounce-up 1.6s ease-in-out 0.18s infinite; }
+.scroll-to-top__chevron--2 { opacity: 0.45; animation: scroll-bounce-up 1.6s ease-in-out 0.36s infinite; }
+
+.scroll-to-top:hover .scroll-to-top__chevron--0,
+.scroll-to-top:hover .scroll-to-top__chevron--1,
+.scroll-to-top:hover .scroll-to-top__chevron--2 {
   animation-play-state: paused;
-  transform: translateY(-3px);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   LOAD MORE SPINNER — infinite scroll indicator
+───────────────────────────────────────────────────────────── */
+
+@keyframes spin-brand {
+  to { transform: rotate(360deg); }
+}
+
+.load-more-spinner {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  border: 2.5px solid var(--border-brand);
+  border-top-color: var(--color-brand);
+  animation: spin-brand 0.7s linear infinite;
 }
 
 } /* end @layer components */
