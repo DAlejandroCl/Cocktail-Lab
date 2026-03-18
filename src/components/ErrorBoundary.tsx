@@ -59,7 +59,6 @@ export default class ErrorBoundary extends React.Component<Props, State> {
             role="alert"
             aria-labelledby="error-title"
           >
-            {/* Icon */}
             <div className="flex justify-center mb-7">
               <div
                 className="w-16 h-16 rounded-2xl flex items-center justify-center"
@@ -86,7 +85,6 @@ export default class ErrorBoundary extends React.Component<Props, State> {
               </div>
             </div>
 
-            {/* Heading */}
             <h2
               id="error-title"
               ref={this.errorRef}
@@ -97,7 +95,6 @@ export default class ErrorBoundary extends React.Component<Props, State> {
               Something went wrong
             </h2>
 
-            {/* Description */}
             <p
               className="text-sm leading-relaxed mb-8 max-w-sm mx-auto"
               style={{ color: "var(--text-secondary)" }}
@@ -106,7 +103,6 @@ export default class ErrorBoundary extends React.Component<Props, State> {
               try reloading the page.
             </p>
 
-            {/* Reload button */}
             <button
               onClick={this.handleReload}
               className="btn-brand px-10 h-12 rounded-xl"
