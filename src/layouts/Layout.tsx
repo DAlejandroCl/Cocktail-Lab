@@ -8,7 +8,6 @@ import { useThemeStore } from "../stores/useThemeStore";
 
 /* ─────────────────────────────────────────────────────────────
    LAYOUT — Root layout component
-   Handles theme sync, skip-to-content link, and page structure
 ───────────────────────────────────────────────────────────── */
 
 export default function Layout() {
