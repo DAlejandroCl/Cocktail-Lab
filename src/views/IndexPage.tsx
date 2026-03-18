@@ -72,14 +72,14 @@ function EmptyState({ onBrowseAll }: { onBrowseAll: () => void }) {
 
 function ResultsHeader({
   count,
+  visibleCount,
   isLoading,
   hasDrinks,
-  onViewAll,
 }: {
   count: number;
+  visibleCount: number;
   isLoading: boolean;
   hasDrinks: boolean;
-  onViewAll: () => void;
 }) {
   return (
     <div>
@@ -89,11 +89,15 @@ function ResultsHeader({
       >
         {hasDrinks ? "Results" : "Featured Mixes"}
       </h2>
+
       {hasDrinks && !isLoading && (
         <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-          {count} {count === 1 ? "recipe" : "recipes"} found
+          {visibleCount < count
+            ? `Showing ${visibleCount} of ${count} recipes`
+            : `${count} ${count === 1 ? "recipe" : "recipes"} found`}
         </p>
       )}
+
       {isLoading && (
         <p
           className="text-xs mt-0.5 animate-fade-in"
@@ -102,37 +106,12 @@ function ResultsHeader({
           Mixing the perfect drinks…
         </p>
       )}
-      {hasDrinks && !isLoading && (
-        <button
-          onClick={onViewAll}
-          className="flex items-center gap-1 text-xs font-bold uppercase tracking-widest transition-colors duration-200 mt-1"
-          style={{ color: "var(--color-brand)", letterSpacing: "0.1em" }}
-        >
-          View All
-          <svg
-            className="w-3 h-3"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2.5}
-              d="M9 5l7 7-7 7"
-            />
-          </svg>
-        </button>
-      )}
     </div>
   );
 }
 
 /* ─────────────────────────────────────────────────────────────
    SCROLL TO TOP BUTTON
-   Appears once the results section enters the viewport.
-   Uses IntersectionObserver — no scroll event listeners.
 ───────────────────────────────────────────────────────────── */
 
 function ScrollToTop({ triggerRef }: { triggerRef: React.RefObject<HTMLElement | null> }) {
@@ -141,7 +120,6 @@ function ScrollToTop({ triggerRef }: { triggerRef: React.RefObject<HTMLElement |
   useEffect(() => {
     const el = triggerRef.current;
     if (!el) return;
-
     const observer = new IntersectionObserver(
       ([entry]) => setVisible(entry.isIntersecting),
       { threshold: 0 },
@@ -150,23 +128,18 @@ function ScrollToTop({ triggerRef }: { triggerRef: React.RefObject<HTMLElement |
     return () => observer.disconnect();
   }, [triggerRef]);
 
-  const handleClick = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
   return (
     <button
       type="button"
-      onClick={handleClick}
+      onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
       aria-label="Scroll back to top"
       className={`scroll-to-top${visible ? " scroll-to-top--visible" : ""}`}
     >
       <span className="flex flex-col items-center" aria-hidden="true">
-        {[2, 1, 0].map((i) => (
+        {[0, 1, 2].map((i) => (
           <svg
             key={i}
-            className="w-5 h-5 -mb-1"
-            style={{ opacity: 0.3 + i * 0.3 }}
+            className={`scroll-to-top__chevron scroll-to-top__chevron--${i}`}
             fill="none"
             stroke="currentColor"
             strokeWidth={2.5}
@@ -176,7 +149,85 @@ function ScrollToTop({ triggerRef }: { triggerRef: React.RefObject<HTMLElement |
           </svg>
         ))}
       </span>
+      <span className="scroll-to-top__label">Top</span>
     </button>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   DRINK GRID
+   - Always paginates via infinite scroll regardless of search type
+   - Spinner shown below grid while next batch is pending
+   - gridKey from parent forces remount on new dataset / sort change
+───────────────────────────────────────────────────────────── */
+
+const INITIAL_VISIBLE = 20;
+const LOAD_MORE_STEP  = 20;
+
+interface DrinkGridProps {
+  drinks: ReturnType<typeof sortDrinks>;
+  gridKey: string;
+  onVisibleCountChange: (count: number) => void;
+}
+
+function DrinkGrid({ drinks: sortedDrinks, onVisibleCountChange }: DrinkGridProps) {
+  const [visibleCount,  setVisibleCount]  = useState(INITIAL_VISIBLE);
+  const [showSkeletons, setShowSkeletons] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const loadingRef   = useRef(false);
+
+  const hasMore       = visibleCount < sortedDrinks.length;
+  const skeletonCount = Math.min(LOAD_MORE_STEP, sortedDrinks.length - visibleCount);
+
+  const visibleDrinks = useMemo(
+    () => sortedDrinks.slice(0, visibleCount),
+    [sortedDrinks, visibleCount],
+  );
+
+  useEffect(() => {
+    onVisibleCountChange(Math.min(visibleCount, sortedDrinks.length));
+  }, [visibleCount, sortedDrinks.length, onVisibleCountChange]);
+
+  useEffect(() => {
+    if (!hasMore) return;
+
+    const handleScroll = () => {
+      if (loadingRef.current) return;
+      if (!containerRef.current) return;
+
+      const { bottom } = containerRef.current.getBoundingClientRect();
+      const threshold  = window.innerHeight + 300;
+
+      if (bottom <= threshold) {
+        loadingRef.current = true;
+        setShowSkeletons(true);
+
+        // One rAF to let React paint the skeletons, then load the next batch
+        requestAnimationFrame(() => {
+          setVisibleCount((prev) => Math.min(prev + LOAD_MORE_STEP, sortedDrinks.length));
+          setShowSkeletons(false);
+          loadingRef.current = false;
+        });
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasMore, sortedDrinks.length]);
+
+  return (
+    <div ref={containerRef}>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 lg:gap-5">
+        {visibleDrinks.map((drink, index) => (
+          <DrinkCard key={drink.idDrink} drink={drink} index={index} />
+        ))}
+
+        {showSkeletons && Array.from({ length: skeletonCount }).map((_, i) => (
+          <SkeletonDrinkCard key={`sk-${i}`} />
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -193,10 +244,10 @@ export default function IndexPage() {
   const categories      = useAppStore((s) => s.categories);
   const fetchCategories = useAppStore((s) => s.fetchCategories);
 
-  // Ref passed to HeroSection so the scroll arrow can target this section
   const resultsRef = useRef<HTMLElement>(null);
 
-  const [sortOption, setSortOption] = useState<SortOption>("default");
+  const [sortOption,   setSortOption]   = useState<SortOption>("default");
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE);
 
   const hasDrinks = useMemo(
     () => drinks.drinks.length > 0,
@@ -208,6 +259,9 @@ export default function IndexPage() {
     [drinks.drinks, sortOption],
   );
 
+  // gridKey forces DrinkGrid remount (resetting visibleCount) on new data or sort
+  const gridKey = `${drinks.drinks.map((d) => d.idDrink).join(",")}-${sortOption}`;
+
   useEffect(() => {
     fetchCategories();
   }, [fetchCategories]);
@@ -218,7 +272,6 @@ export default function IndexPage() {
     }
   }, [drinks.drinks, isLoading, hasSearched, setNotification]);
 
-  // Scroll to results only when a search completes successfully with results
   useEffect(() => {
     if (hasSearched && !isLoading && drinks.drinks.length > 0) {
       resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -231,7 +284,6 @@ export default function IndexPage() {
 
   return (
     <div style={{ background: "var(--bg-base)" }}>
-      {/* Hero — full viewport height, contains SearchForm */}
       <HeroSection
         categories={categories}
         isLoading={isLoading}
@@ -239,13 +291,11 @@ export default function IndexPage() {
         resultsRef={resultsRef}
       />
 
-      {/* Visual separator */}
       <div
         className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
         style={{ borderTop: "1px solid var(--border-subtle)" }}
       />
 
-      {/* Results section — scroll target for the hero arrow */}
       <section
         ref={resultsRef}
         className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 pb-24"
@@ -257,9 +307,9 @@ export default function IndexPage() {
         >
           <ResultsHeader
             count={drinks.drinks.length}
+            visibleCount={visibleCount}
             isLoading={isLoading}
             hasDrinks={hasDrinks}
-            onViewAll={handleBrowseAll}
           />
           {hasDrinks && !isLoading && (
             <SortSelector
@@ -272,22 +322,22 @@ export default function IndexPage() {
 
         {isLoading ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 lg:gap-5">
-            {Array.from({ length: 10 }).map((_, i) => (
+            {Array.from({ length: 20 }).map((_, i) => (
               <SkeletonDrinkCard key={i} />
             ))}
           </div>
         ) : hasDrinks ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 lg:gap-5">
-            {sortedDrinks.map((drink, index) => (
-              <DrinkCard key={drink.idDrink} drink={drink} index={index} />
-            ))}
-          </div>
+          <DrinkGrid
+            key={gridKey}
+            gridKey={gridKey}
+            drinks={sortedDrinks}
+            onVisibleCountChange={setVisibleCount}
+          />
         ) : (
           <EmptyState onBrowseAll={handleBrowseAll} />
         )}
       </section>
 
-      {/* Scroll-to-top — fixed bottom-right, appears when results are visible */}
       <ScrollToTop triggerRef={resultsRef} />
     </div>
   );
