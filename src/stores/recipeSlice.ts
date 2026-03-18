@@ -3,7 +3,7 @@ import {
   getCategories,
   getRecipeById,
   getRecipes,
-  getRandomRecipes,
+  getBrowseRecipes,
 } from "../services/recipeService";
 import type {
   Category,
@@ -26,7 +26,7 @@ export type RecipesSliceType = {
   closeModal: () => void;
 };
 
-export const createRecipesSlice: StateCreator<RecipesSliceType> = (set) => ({
+export const createRecipesSlice: StateCreator<RecipesSliceType> = (set, get) => ({
   categories: [],
   drinks: { drinks: [] },
   selectedRecipe: null,
@@ -50,10 +50,10 @@ export const createRecipesSlice: StateCreator<RecipesSliceType> = (set) => ({
       let drinks: Drink[] = [];
 
       if (!filters.category && !filters.ingredient) {
-        drinks = await getRandomRecipes(150);
+        const categories = get().categories;
+        drinks = await getBrowseRecipes(categories);
       } else {
         drinks = await getRecipes(filters);
-
         drinks.sort((a, b) => a.strDrink.localeCompare(b.strDrink));
       }
 
@@ -76,9 +76,6 @@ export const createRecipesSlice: StateCreator<RecipesSliceType> = (set) => ({
   },
 
   closeModal: () => {
-    set({
-      modal: false,
-      selectedRecipe: null,
-    });
+    set({ modal: false, selectedRecipe: null });
   },
 });
