@@ -2,9 +2,6 @@ import type { StateCreator } from "zustand";
 import type { RecipeDetail } from "../types";
 
 export type FavoritesMap = Record<string, RecipeDetail>;
-
-/* favoriteOrder stores the timestamp (Date.now()) for each idDrink.
-   It lives parallel to `favorites` so RecipeDetail / Zod schema are untouched. */
 export type FavoriteOrder = Record<string, number>;
 
 export type FavoritesSliceType = {
