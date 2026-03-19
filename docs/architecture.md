@@ -2,7 +2,7 @@
 
 ## Overview
 
-Cocktail Lab follows a **modular, layered architecture** designed to keep responsibilities clearly separated and allow each feature to scale independently. The project is a single-page application (SPA) built with React + TypeScript, structured around a unidirectional data flow and a composed global state using Zustand's Slice Pattern.
+Cocktail Lab follows a **modular, layered architecture** designed to keep responsibilities clearly separated and allow each feature to scale independently. It is a multi-page SPA built with React + TypeScript, structured around unidirectional data flow and a composed global state using Zustand's Slice Pattern.
 
 ---
 
@@ -56,12 +56,13 @@ Views are route-level components. Each view corresponds to a URL route defined i
 - Composing the layout using smaller components
 - Triggering initial data fetches (via store actions)
 - Reading page-level state from selectors
-- Managing local presentation state (e.g. active sort option)
+- Managing local presentation state (sort option, visibleCount)
 
 Views do **not** contain business logic or direct API calls.
 
 **Views in this project:**
-- `IndexPage` — Home page. Renders `HeroSection` (full-height with `SearchForm`) above a results grid. Manages sort state, scroll-to-top visibility, and auto-scroll to results after a successful search.
+
+- `IndexPage` — Home page. Renders `HeroSection` above a `DrinkGrid` component. Manages sort state, infinite scroll pagination (`visibleCount` + scroll listener), and auto-scroll to results after a successful search. `DrinkGrid` is a local sub-component that owns pagination and shows skeleton placeholders while loading more.
 - `FavoritesPage` — Saved cocktails with `SortSelector` (defaults to recently-added order). Opens recipe detail via Modal.
 - `GenerateAI` — AI-powered cocktail generator that composes a recipe from a user-supplied ingredient list.
 
@@ -72,11 +73,17 @@ Located in `src/components/`
 Components are reusable UI building blocks. They receive data via props and emit events via callbacks. Components are **not** aware of the global store unless they need to dispatch a local action (e.g. `DrinkCard` dispatching to the favorites slice).
 
 **Components in this project:**
-- `Header` — Sticky navbar with `AnimatedNav` (sliding underline indicator) and `Logo` (letter-bounce animation on hover).
-- `HeroSection` — Full-viewport-height section containing `SearchForm` and a scroll-down arrow that smooth-scrolls to the results grid.
+
+- `Header` — Sticky navbar with `AnimatedNav` (sliding underline indicator using `requestAnimationFrame` + `geometryRef`) and `Logo` (letter-bounce animation on hover via CSS keyframes with staggered delays).
+- `HeroSection` — Full-viewport-height section with five sub-systems:
+  - `MeshGradient` — Two morphing blobs with `filter: blur` and `mix-blend-mode: multiply` (light) / `screen` (dark) that create an animated ambient background. Orange blob left, blue blob right, desynced animation durations (14s / 17s).
+  - `Ticker` — Single horizontal strip of 25 cocktail names scrolling at 50s/cycle. Items are duplicated internally for a seamless seamless loop. Runs forward direction only (one ticker, top position).
+  - `Bubbles` — 20 orbs with negative `animation-delay` values so they spawn distributed across the hero on load rather than all at the bottom. Clipped by `.hero-bubble-zone` (`overflow: hidden`, `top: 37px`, `bottom: 0`).
+  - `ScrollArrow` — Centered circle button that smooth-scrolls to the results section.
+  - Hero fade — CSS `::after` pseudo-element (100px, `linear-gradient to bottom`) that dissolves the mesh gradient into the page background.
 - `SearchForm` — Ingredient text input + HeadlessUI `Listbox` category dropdown + clear button. Accepts a `resultsRef` to scroll to results on successful submit.
-- `SortSelector` — Generic pill-group component, typed with a generic `<T extends string>` to work with both `SortOption` and `SortOptionFavorites`.
-- `DrinkCard` — Card with thumbnail, category badge, and favorites toggle. Lazy-loads full `RecipeDetail` on first favorite.
+- `SortSelector` — Generic pill-group component, typed with `<T extends string>` to work with both `SortOption` and `SortOptionFavorites`.
+- `DrinkCard` — Card with thumbnail, category badge, and favorites toggle.
 - `Modal` — Recipe detail overlay (HeadlessUI `Dialog`) with ingredients, step-by-step instructions, and favorites action.
 - `Notification` — Global toast with auto-dismiss and hover-pause behavior.
 - `SkeletonDrinkCard` — Animated loading placeholder that mirrors the `DrinkCard` layout.
@@ -100,83 +107,74 @@ stores/
 └── selectors.ts          ← Derived state selectors (co-located with store)
 ```
 
-**Slice responsibilities:**
-- State shape definition (typed with TypeScript)
-- Actions / state mutation functions
-- Async operations (API calls via Services)
-- Side effects (localStorage persistence via `zustand/middleware/persist`)
+**`recipeSlice` — key behaviors:**
 
-**Why Slice Pattern?**
-Each slice can be developed, tested, and reasoned about independently. Slices do not depend on each other's internals — they communicate only through the composed store interface.
+- `searchRecipes(filters)` — when called with empty filters (`{ category: "", ingredient: "" }`) it calls `getBrowseRecipes(categories)` from the service layer. Otherwise it calls `getRecipes(filters)` with the user's search criteria.
+- `hasSearched` — boolean that tracks whether any search has been submitted in the current session.
+- No `isBrowsing` flag — the distinction between browse and filtered search is handled at the view level by checking whether filters are empty.
+
+**`favoritesSlice` — key behaviors:**
+
+- `favorites` — a `Record<string, RecipeDetail>` map for O(1) lookups.
+- `favoriteOrder` — a parallel `Record<string, number>` of Unix timestamps. Kept separate from `RecipeDetail` so the domain model (inferred from Zod) stays unmodified.
+- Both are persisted to `localStorage` via `zustand/middleware/persist`.
 
 ### 2.4 Selectors Layer
 
-Located in `src/stores/selectors.ts` (co-located with the store)
+Located in `src/stores/selectors.ts`
 
-Selectors are typed functions that derive computed state from the store. Components call `useAppStore` with a selector to subscribe only to the data they need, preventing unnecessary re-renders.
+Selectors are typed functions that derive computed state from the store. Components call `useAppStore` with a selector to subscribe only to the data they need.
 
 ```ts
-// Example selectors
-export const selectDrinks         = (s: AppState) => s.drinks;
-export const selectFavoritesMap   = (s: AppState) => s.favorites;
-export const selectFavoriteOrder  = (s: AppState) => s.favoriteOrder;
-export const selectIsFavorite     = (id: string) => (s: AppState) => !!s.favorites[id];
+export const selectDrinks          = (s: AppState) => s.drinks;
+export const selectFavoritesMap    = (s: AppState) => s.favorites;
+export const selectFavoriteOrder   = (s: AppState) => s.favoriteOrder;
+export const selectHasSearched     = (s: AppState) => s.hasSearched;
+export const selectIsFavorite      = (id: string) => (s: AppState) => !!s.favorites[id];
 ```
-
-**Benefits:**
-- Components subscribe only to the data they need (prevents unnecessary re-renders)
-- Business derivations are centralized and testable in isolation
-- Decouples component code from store shape
 
 ### 2.5 Sort Layer
 
 Located in `src/utils/sortRecipes.ts`
 
-Client-side sort logic lives outside the store as **pure functions**. This is intentional — sort is a presentation concern, not a business concern. The store's `recipeSlice` applies its own default alphabetical sort on filtered results; the `sortRecipes` utility layer is an additional on-top transform applied at render time.
+Client-side sort logic lives outside the store as **pure functions**. Sort is a presentation concern, not a business concern.
 
 ```ts
-// Two variants — share the same generic constraint (T extends Drink)
 sortDrinks<T>(drinks: T[], option: SortOption): T[]
 sortFavorites<T>(drinks: T[], option: SortOptionFavorites, order: FavoriteOrder): T[]
 ```
 
-`sortFavorites` receives the `favoriteOrder` record from the store to sort by timestamp. The `recently-added` option sorts descending by timestamp so the most recently added favorite appears first.
+`sortFavorites` receives the `favoriteOrder` record from the store to sort by timestamp.
 
 ### 2.6 Services Layer
 
-Located in `src/services/`
+Located in `src/services/recipeService.ts`
 
-Services are responsible for all HTTP communication with the TheCocktailDB API. They use **Axios** as the HTTP client and validate all responses through **Zod schemas** before returning data.
+Services handle all HTTP communication. They use **Axios** and validate all responses through **Zod schemas**.
 
-```ts
-// Data flow in a service function
-API Response (raw JSON)
-    → Zod schema validation (runtime guard)
-    → Domain model transformation
-    → Typed data returned to the store
-```
+**Key functions:**
 
-Services throw typed errors on validation failure, which the store catches and routes to the notification slice.
+- `getCategories()` — fetches `list.php?c=list`, returns `string[]`
+- `getRecipes(filters)` — routes to `searchByName`, `searchByIngredient`, `searchByCategory`, or a combination, deduplicates, and optionally enriches with categories via `getRecipeById`
+- `getBrowseRecipes(categories)` — parallel `filter.php?c=` calls for every category, caps at 12 per category, deduplicates, Fisher-Yates shuffles. This is the engine behind Browse All Recipes.
+- `getRecipeById(id)` — `lookup.php?i=` for full recipe detail
+- `deduplicate(drinks)` — internal utility that uses a `Map<idDrink, Drink>` to remove duplicates across search results
 
 ### 2.7 Schemas (Zod)
 
 Located in `src/utils/recipes-schemas.ts`
 
-Zod schemas define the **expected shape** of every API response. They serve as a runtime contract between the external API and the application's type system. TypeScript domain types in `src/types/index.ts` are inferred directly from these schemas using `z.infer<>`.
-
-If TheCocktailDB returns an unexpected structure (the API is unreliable and inconsistent), Zod catches it before it can corrupt application state.
+Zod schemas define the **expected shape** of every API response. TypeScript domain types in `src/types/index.ts` are inferred directly from these schemas using `z.infer<>`.
 
 ### 2.8 Domain Models (TypeScript Types)
 
 Located in `src/types/index.ts`
 
-Domain types are inferred directly from Zod schemas using `z.infer<>`. This means the runtime validation layer and the static type system are always in sync — there is no separate type definition to maintain.
+Domain types are inferred directly from Zod schemas — never written manually.
 
 ```ts
-// Types derived from schemas — never written manually
 export type Drink        = z.infer<typeof DrinkAPIResponse>;
 export type RecipeDetail = z.infer<typeof RecipeAPIResponseSchema>;
-export type SearchFilters = z.infer<typeof SearchFiltersSchema>;
 ```
 
 ---
@@ -216,7 +214,7 @@ User Interaction
 
 ## 4. Routing Architecture
 
-React Router DOM v7 is configured with a **layout-based** structure. All three views are lazy-loaded with `React.lazy()`, which gives automatic code splitting and suspense boundaries.
+React Router DOM v7 with **layout-based** structure. All three views are lazy-loaded with `React.lazy()`.
 
 ```
 /            →  IndexPage      (hero + search + drink grid)
@@ -224,22 +222,61 @@ React Router DOM v7 is configured with a **layout-based** structure. All three v
 /ai          →  GenerateAI     (AI recipe generator)
 ```
 
-Recipe detail is rendered as a `<Modal>` overlay on top of the current route — there is no separate `/cocktail/:id` page. All routes share the `<Layout>` shell which renders `<Header>`, `<Modal>`, `<Notification>`, and wraps everything in `<ErrorBoundary>`.
+Recipe detail renders as a `<Modal>` overlay — there is no `/cocktail/:id` route. All routes share `<Layout>` which renders `<Header>`, `<Modal>`, `<Notification>`, and `<ErrorBoundary>`.
 
 ---
 
-## 5. State Persistence
+## 5. Infinite Scroll Architecture
+
+The drink grid uses a **scroll event listener** approach (not `IntersectionObserver`) because the data is already in memory and the listener approach gives more precise control.
+
+```
+IndexPage
+  ├── sortedDrinks = useMemo(sortDrinks(drinks, sortOption))
+  ├── gridKey = `${ids.join(",")}-${sortOption}`   ← forces DrinkGrid remount on new data/sort
+  └── DrinkGrid (key={gridKey})
+        ├── visibleCount (useState, starts at 20)
+        ├── showSkeletons (useState)
+        ├── scroll listener → getBoundingClientRect().bottom <= window.innerHeight + 300
+        │     loadingRef prevents concurrent fires
+        │     setShowSkeletons(true) → requestAnimationFrame → setVisibleCount(+20) → setShowSkeletons(false)
+        └── renders sortedDrinks.slice(0, visibleCount) + skeletons if showSkeletons
+```
+
+The `gridKey` pattern forces `DrinkGrid` to unmount and remount whenever the dataset or sort changes, automatically resetting `visibleCount` to 20 without any `useEffect` cascade.
+
+---
+
+## 6. Hero Section Architecture
+
+```
+HeroSection
+  ├── MeshGradient         — two animated blobs, mix-blend-mode per theme
+  ├── Ticker               — 25 cocktails × 2 (duplicated for loop), 50s cycle
+  ├── hero-bubble-zone     — overflow:hidden clip layer (top: 37px, bottom: 0)
+  │     └── Bubbles        — 20 orbs with negative animation-delay, no interaction
+  ├── Content div (z-index: 3)
+  │     ├── heading
+  │     ├── subtext
+  │     └── SearchForm
+  ├── ScrollArrow          — flex justify-center, py-6 spacing
+  └── ::after pseudo       — 100px fade to --bg-base at bottom edge
+```
+
+---
+
+## 7. State Persistence
 
 Two stores use Zustand's `persist` middleware with `localStorage`:
 
-- **favoritesSlice** — persists `favorites` (the `RecipeDetail` map) and `favoriteOrder` (the timestamp record). Both are restored on page load so the recently-added sort order survives browser sessions.
-- **useThemeStore** — persists the `theme` preference (`"light"` | `"dark"`).
+- **favoritesSlice** — persists `favorites` and `favoriteOrder`. Both restored on page load.
+- **useThemeStore** — persists `theme` (`"light"` | `"dark"`). Applied as a class on `<html>` via `useEffect`.
 
 ---
 
-## 6. Client-Side Sort Architecture
+## 8. Client-Side Sort Architecture
 
-Sort state lives locally in each view (`useState`) — it is never persisted or stored globally. This keeps the store lean and treats sort as what it is: a transient presentation preference.
+Sort state is local `useState` in each view — never persisted or stored globally.
 
 ```
 View (useState: sortOption)
@@ -251,55 +288,61 @@ sortDrinks / sortFavorites   ← pure function from utils/sortRecipes.ts
 useMemo(sorted array)        ← recalculated only when drinks or sortOption changes
       │
       ▼
-Grid render
+gridKey changes → DrinkGrid remounts → visibleCount resets to 20
 ```
-
-For `FavoritesPage`, `sortFavorites` additionally receives `favoriteOrder` from the store so it can sort by add timestamp.
 
 ---
 
-## 7. Error Handling Strategy
+## 9. Design System (CSS)
+
+Located in `src/index.css`
+
+Built on **Tailwind CSS v4** with a custom `@layer components` block. All custom classes are in a single `@layer components` block (multiple separate blocks cause cascade issues in Tailwind v4 dev mode).
+
+**Key CSS variables defined in `:root` and `:root.dark`:**
+
+- `--color-brand`, `--color-brand-light`, `--color-brand-dark` — orange palette
+- `--color-surface-dark-*` — dark theme surface ramp
+- `--color-ink-*` — text color ramp
+- `--bg-base`, `--bg-card`, `--bg-overlay` — semantic background tokens
+- `--grid-bg` — neutral background for the results section (plain `--bg-base`, no gradient)
+- `--shadow-brand`, `--shadow-card` — shadow tokens
+- `--ease-out-soft`, `--ease-out-smooth` — easing tokens
+
+**Notable component classes:**
+- `.hero-mesh` — `mix-blend-mode: multiply` (light) / `screen` (dark)
+- `.hero-bubble-zone` — `overflow: hidden` clip for bubbles
+- `.hero-full-height::after` — fade at hero bottom edge
+- `.scroll-arrow`, `.scroll-to-top` — shared orange circle system
+- `.btn-brand` — always `color: #ffffff` regardless of theme
+- `.page-gradient-bg` — simple `background: var(--bg-base)` wrapper
+
+---
+
+## 10. Error Handling Strategy
 
 | Layer | Error Handling |
-|-------|---------------|
-| **Service** | Axios errors caught, Zod validation errors caught, typed errors thrown |
-| **Store slice** | try/catch wraps async actions, errors dispatched to notification slice |
-| **Notification slice** | Centralized toast queue — components read from it |
-| **React** | `<ErrorBoundary>` at the root level catches rendering errors and shows a fallback UI |
+|-------|----------------|
+| **Service** | `safeGet` wraps Axios in try/catch; Zod `safeParse` used for validation — no throws |
+| **Store slice** | try/catch wraps async actions; errors dispatched to notification slice |
+| **Notification slice** | Centralized toast queue |
+| **React** | `<ErrorBoundary>` at root level catches rendering errors |
 
 ---
 
-## 8. Key Design Decisions
+## 11. Key Design Decisions
 
-### Why sort outside the store?
-Sort is a presentation concern — it does not affect what data is fetched or stored, only how it is displayed. Keeping it as a pure utility function + local `useState` avoids polluting the store with transient UI state and makes the sort functions trivially testable in isolation.
+**Why `getBrowseRecipes` instead of a random endpoint?**
+The free TheCocktailDB API has a `/random.php` endpoint but it returns one random drink per call. With 150 parallel calls, duplicates reduce the effective count to 6-20 unique drinks — non-deterministic and inconsistent. `getBrowseRecipes` instead fetches each category's full list via `filter.php?c=`, caps at 12 per category, deduplicates, and shuffles. This gives a consistent ~130 drinks every time.
 
-### Why `favoriteOrder` as a parallel Record instead of annotating `RecipeDetail`?
-`RecipeDetail` is inferred from a Zod schema. Adding a `addedAt` timestamp to it would require modifying the schema, which would then need to be stripped before any comparison or validation against the API. A parallel `Record<string, number>` keeps the domain model pure and the timestamp concern isolated in the slice.
+**Why sort outside the store?**
+Sort is a presentation concern. Keeping it as a pure utility function + local `useState` avoids polluting the store with transient UI state and makes the sort functions trivially testable.
 
-### Why Zustand over Redux?
-Zustand provides a minimal API with less boilerplate while still supporting the Slice Pattern for modular state. For a project of this size, Redux would add significant overhead without meaningful benefit.
+**Why `favoriteOrder` as a parallel Record?**
+`RecipeDetail` is inferred from a Zod schema. Adding `addedAt` to it would require modifying the schema and stripping the field before any API comparison. A parallel `Record<string, number>` keeps the domain model pure.
 
-### Why Zod for validation?
-TheCocktailDB is a free public API with inconsistent response structures (fields that should be strings can be `null`, ingredient fields are numbered `strIngredient1`…`strIngredient15`, etc.). Zod catches these inconsistencies at runtime rather than letting them silently corrupt state.
+**Why `gridKey` for pagination reset instead of `useEffect`?**
+Setting state in a `useEffect` body causes cascading renders (linter warning). Setting state during render with a ref comparison is also disallowed. The `key` prop pattern is the React-idiomatic solution — changing the key unmounts and remounts the child, resetting all its local state cleanly.
 
-### Why a Selectors layer?
-Without centralized selectors, each component would independently subscribe to store fields, leading to duplication and risk of redundant re-renders. The selector layer acts as a contract between store shape and component consumption.
-
----
-
-## 9. Folder Structure Reference
-
-```
-src/
-├── components/       # Reusable UI (Header, HeroSection, SearchForm, SortSelector, DrinkCard, Modal, ...)
-├── layouts/          # Shared page shell (Layout.tsx)
-├── views/            # Route-level pages (IndexPage, FavoritesPage, GenerateAI)
-├── stores/           # Zustand slices, composed store, selectors, theme store
-├── services/         # API communication (Axios + Zod)
-├── utils/            # Zod schemas + sortRecipes pure utilities
-├── types/            # TypeScript domain types (inferred from Zod schemas)
-├── router.tsx        # BrowserRouter + lazy-loaded route definitions
-├── main.tsx          # Application entry point
-└── index.css         # Global styles (Tailwind v4 @theme + @layer components)
-```
+**Why a scroll listener instead of `IntersectionObserver` for infinite scroll?**
+With data already in memory, `IntersectionObserver` fires immediately on mount (the sentinel is within the viewport before any cards are rendered), causing all batches to load at once. A scroll listener with `getBoundingClientRect()` gives explicit control and avoids this timing issue.
