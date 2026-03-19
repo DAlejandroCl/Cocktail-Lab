@@ -156,6 +156,9 @@ function ScrollToTop({ triggerRef }: { triggerRef: React.RefObject<HTMLElement |
 
 /* ─────────────────────────────────────────────────────────────
    DRINK GRID
+   - Always paginates via infinite scroll regardless of search type
+   - Spinner shown below grid while next batch is pending
+   - gridKey from parent forces remount on new dataset / sort change
 ───────────────────────────────────────────────────────────── */
 
 const INITIAL_VISIBLE = 20;
@@ -199,6 +202,7 @@ function DrinkGrid({ drinks: sortedDrinks, onVisibleCountChange }: DrinkGridProp
         loadingRef.current = true;
         setShowSkeletons(true);
 
+        // One rAF to let React paint the skeletons, then load the next batch
         requestAnimationFrame(() => {
           setVisibleCount((prev) => Math.min(prev + LOAD_MORE_STEP, sortedDrinks.length));
           setShowSkeletons(false);
@@ -209,6 +213,7 @@ function DrinkGrid({ drinks: sortedDrinks, onVisibleCountChange }: DrinkGridProp
 
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasMore, sortedDrinks.length]);
 
   return (
@@ -254,6 +259,7 @@ export default function IndexPage() {
     [drinks.drinks, sortOption],
   );
 
+  // gridKey forces DrinkGrid remount (resetting visibleCount) on new data or sort
   const gridKey = `${drinks.drinks.map((d) => d.idDrink).join(",")}-${sortOption}`;
 
   useEffect(() => {
@@ -277,7 +283,7 @@ export default function IndexPage() {
   };
 
   return (
-    <div style={{ background: "var(--bg-base)" }}>
+    <div className="page-gradient-bg">
       <HeroSection
         categories={categories}
         isLoading={isLoading}
@@ -292,9 +298,11 @@ export default function IndexPage() {
 
       <section
         ref={resultsRef}
-        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 pb-24"
+        className="max-w-w-full px-4 sm:px-6 lg:px-8 py-10 pb-24"
         aria-label="Search results"
+        style={{ background: "var(--grid-bg)" }}
       >
+        <div className="max-w-7xl mx-auto">
         <div
           className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-7 pb-5"
           style={{ borderBottom: "1px solid var(--border-subtle)" }}
@@ -330,6 +338,7 @@ export default function IndexPage() {
         ) : (
           <EmptyState onBrowseAll={handleBrowseAll} />
         )}
+        </div>
       </section>
 
       <ScrollToTop triggerRef={resultsRef} />
