@@ -213,7 +213,6 @@ function DrinkGrid({ drinks: sortedDrinks, onVisibleCountChange }: DrinkGridProp
 
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasMore, sortedDrinks.length]);
 
   return (
