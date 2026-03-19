@@ -69,6 +69,9 @@
 
   --ease-out-soft:    cubic-bezier(0.16, 1, 0.3, 1);
   --ease-out-smooth:  cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Grid background — neutral, let the cards speak */
+  --grid-bg: #f8f7f5;
 }
 
 :root.dark {
@@ -95,6 +98,9 @@
 
   --glass-bg:         rgba(22, 27, 42, 0.75);
   --glass-border:     rgba(255, 255, 255, 0.08);
+
+  /* Grid background dark — neutral, let the cards speak */
+  --grid-bg: var(--color-surface-dark-50);
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -450,27 +456,108 @@
    HERO — Dual asymmetric glow
 ───────────────────────────────────────────────────────────── */
 
-.hero-glow-a,
-.hero-glow-b {
+/* ─────────────────────────────────────────────────────────────
+   HERO — Mesh gradient background (blend mode)
+───────────────────────────────────────────────────────────── */
+
+.hero-mesh {
   position: absolute;
+  inset: 0;
   pointer-events: none;
-  border-radius: 50%;
   z-index: 0;
+  overflow: hidden;
+}
+
+/* Light: multiply — colors tint the cream background */
+.hero-mesh { mix-blend-mode: multiply; }
+
+/* Dark: screen — adds light onto dark */
+:root.dark .hero-mesh { mix-blend-mode: screen; }
+
+.hero-mesh__blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(72px);
+  will-change: transform, border-radius;
+}
+
+/* Orange blob — covers left half, drifts slowly */
+.hero-mesh__blob--orange {
+  width: 80%;
+  height: 130%;
+  top: 50%; left: 10%;
+  transform: translate(-50%, -50%);
+  animation: mesh-orange 14s ease-in-out infinite alternate;
+}
+
+/* Blue/slate blob — covers right half, drifts out of phase */
+.hero-mesh__blob--blue {
+  width: 80%;
+  height: 130%;
+  top: 50%; left: 90%;
+  transform: translate(-50%, -50%);
+  animation: mesh-blue 17s ease-in-out infinite alternate;
+}
+
+/* Center warmth blob — subtle overlap glow */
+.hero-mesh__blob--center {
+  width: 50%;
+  height: 80%;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
+  animation: mesh-center 11s ease-in-out infinite alternate;
 }
 
-.hero-glow-a {
-  width: clamp(320px, 60vw, 600px);
-  height: clamp(260px, 50vw, 480px);
-  background: radial-gradient(ellipse, rgba(242,127,13,0.11) 0%, rgba(242,127,13,0.04) 50%, transparent 70%);
+/* Light theme colors */
+.hero-mesh__blob--orange {
+  background: radial-gradient(ellipse, rgba(242,127,13,0.55) 0%, rgba(242,127,13,0.18) 45%, transparent 72%);
+}
+.hero-mesh__blob--blue {
+  background: radial-gradient(ellipse, rgba(180,200,240,0.95) 0%, rgba(160,185,230,0.45) 42%, transparent 70%);
+}
+.hero-mesh__blob--center {
+  background: radial-gradient(ellipse, rgba(255,200,100,0.28) 0%, transparent 68%);
 }
 
-/* glow-b not used in central mode — hidden */
-.hero-glow-b { display: none; }
+/* Dark theme colors */
+:root.dark .hero-mesh__blob--orange {
+  background: radial-gradient(ellipse, rgba(242,127,13,0.52) 0%, rgba(200,80,10,0.16) 45%, transparent 70%);
+}
+:root.dark .hero-mesh__blob--blue {
+  background: radial-gradient(ellipse, rgba(60,80,160,0.58) 0%, rgba(30,45,100,0.18) 45%, transparent 70%);
+}
+:root.dark .hero-mesh__blob--center {
+  background: radial-gradient(ellipse, rgba(100,60,20,0.22) 0%, transparent 65%);
+}
 
-:root.dark .hero-glow-a {
-  background: radial-gradient(ellipse, rgba(242,127,13,0.20) 0%, rgba(242,100,13,0.07) 50%, transparent 70%);
+@keyframes mesh-orange {
+  0%   { left: 10%;  top: 48%; border-radius: 50%;                              transform: translate(-50%,-50%) scale(1);    }
+  35%  { left: 16%;  top: 52%; border-radius: 55% 45% 50% 50% / 48% 52% 48% 52%; transform: translate(-50%,-50%) scale(1.06); }
+  70%  { left: 12%;  top: 46%; border-radius: 45% 55% 52% 48% / 52% 48% 52% 48%; transform: translate(-50%,-50%) scale(0.96); }
+  100% { left: 14%;  top: 50%; border-radius: 50% 50% 48% 52% / 50% 50% 50% 50%; transform: translate(-50%,-50%) scale(1.03); }
+}
+
+@keyframes mesh-blue {
+  0%   { left: 90%;  top: 52%; border-radius: 50%;                              transform: translate(-50%,-50%) scale(1);    }
+  30%  { left: 84%;  top: 48%; border-radius: 48% 52% 55% 45% / 52% 48% 52% 48%; transform: translate(-50%,-50%) scale(0.96); }
+  65%  { left: 88%;  top: 54%; border-radius: 55% 45% 48% 52% / 48% 52% 48% 52%; transform: translate(-50%,-50%) scale(1.07); }
+  100% { left: 86%;  top: 50%; border-radius: 52% 48% 50% 50% / 48% 52% 50% 50%; transform: translate(-50%,-50%) scale(0.98); }
+}
+
+@keyframes mesh-center {
+  0%,100% { transform: translate(-50%,-50%) scale(1);    opacity: 0.8; }
+  50%     { transform: translate(-50%,-50%) scale(1.14); opacity: 1;   }
+}
+
+/* ── Bubble clip zone ── */
+.hero-bubble-zone {
+  position: absolute;
+  inset: 0;
+  top: 37px;   /* below the top ticker */
+  bottom: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 2;
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -498,7 +585,7 @@
 .hero-ticker__track {
   display: flex;
   width: max-content;
-  animation: hero-ticker-fwd 22s linear infinite;
+  animation: hero-ticker-fwd 50s linear infinite;
 }
 
 .hero-ticker__track--rev {
@@ -525,11 +612,11 @@
   font-size: 0.75rem;
   letter-spacing: 0.09em;
   white-space: nowrap;
-  color: rgba(242,127,13,0.45);
+  color: rgba(242,127,13,0.65);
 }
 
 :root.dark .hero-ticker__item {
-  color: rgba(242,127,13,0.38);
+  color: rgba(242,127,13,0.50);
 }
 
 .hero-ticker__dot {
@@ -538,100 +625,69 @@
   height: 3px;
   border-radius: 50%;
   flex-shrink: 0;
-  background: rgba(242,127,13,0.35);
+  background: rgba(242,127,13,0.50);
 }
 
 :root.dark .hero-ticker__dot {
-  background: rgba(242,127,13,0.3);
+  background: rgba(242,127,13,0.40);
 }
 
 /* ─────────────────────────────────────────────────────────────
-   HERO — Bubbles
+   HERO — Bubbles (simple rising orbs, no interaction)
 ───────────────────────────────────────────────────────────── */
 
 @keyframes bubble-rise {
   0%   { transform: translateY(0) translateX(0); opacity: 0; }
   8%   { opacity: 1; }
-  85%  { opacity: 0.75; }
-  100% { transform: translateY(-100vh) translateX(var(--d, 5px)); opacity: 0; }
+  88%  { opacity: 0.7; }
+  100% { transform: translateY(-800px) translateX(var(--d, 5px)); opacity: 0; }
 }
 
-@keyframes bubble-frag-fly {
-  0%   { transform: translate(0, 0) scale(1); opacity: 1; }
-  100% { transform: translate(var(--fx, 20px), var(--fy, -30px)) scale(0); opacity: 0; }
-}
-
-@keyframes bubble-ring-expand {
-  0%   { transform: scale(0.4); opacity: 0.9; }
-  100% { transform: scale(3.2); opacity: 0; }
-}
-
-.bubble {
+.bubble--simple {
   position: absolute;
   border-radius: 50%;
-  pointer-events: auto;
-  cursor: pointer;
+  pointer-events: none;
   animation: bubble-rise linear infinite;
-  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.bubble--fill {
-  background: rgba(242,127,13,0.10);
-  border: 1px solid rgba(242,127,13,0.24);
-}
-
-.bubble--outline {
-  background: transparent;
-  border: 1.5px solid rgba(242,127,13,0.20);
-}
-
-.bubble--glow {
-  background: rgba(242,127,13,0.07);
-  box-shadow: 0 0 10px rgba(242,127,13,0.16);
-}
-
-:root.dark .bubble--fill {
-  background: rgba(242,127,13,0.13);
-  border-color: rgba(242,127,13,0.30);
-}
-
-:root.dark .bubble--outline {
-  border-color: rgba(242,127,13,0.24);
-}
-
-:root.dark .bubble--glow {
   background: rgba(242,127,13,0.09);
-  box-shadow: 0 0 14px rgba(242,127,13,0.25);
+  border: 1px solid rgba(242,127,13,0.20);
 }
 
-.bubble-ring {
-  position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-  border: 2px solid rgba(242,127,13,0.55);
-  animation: bubble-ring-expand 0.4s cubic-bezier(0.16,1,0.3,1) forwards;
-}
-
-.bubble-frag {
-  position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-  width: 6px; height: 6px;
-  background: rgba(242,127,13,0.75);
-  animation: bubble-frag-fly var(--dur, 0.5s) cubic-bezier(0.16,1,0.3,1) forwards;
-}
-
-:root.dark .bubble-frag {
-  background: rgba(242,160,60,0.85);
-  box-shadow: 0 0 4px rgba(242,127,13,0.6);
+:root.dark .bubble--simple {
+  background: rgba(242,127,13,0.11);
+  border-color: rgba(242,127,13,0.28);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bubble,
+  .bubble--simple,
+  .hero-mesh__blob,
   .hero-ticker__track,
   .hero-ticker__track--rev {
     animation: none !important;
   }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   PAGE WRAPPER — neutral background
+───────────────────────────────────────────────────────────── */
+
+.page-gradient-bg {
+  background: var(--bg-base);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   HERO FADE — dissolves the mesh gradient into the page bg
+   A ::after pseudo-element on the hero section creates a smooth
+   fade at the bottom edge so the grid starts from a clean base.
+───────────────────────────────────────────────────────────── */
+
+.hero-full-height::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 100px;
+  pointer-events: none;
+  z-index: 1;
+  background: linear-gradient(to bottom, transparent, var(--bg-base));
 }
 
 /* ─────────────────────────────────────────────────────────────
