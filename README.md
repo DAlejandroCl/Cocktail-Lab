@@ -10,7 +10,7 @@
 
 Multi-page cocktail recipe application built with **React + TypeScript** and **React Router DOM**.
 
-Originally developed as part of a React course project focused on multi-page routing and Zustand's Slice Pattern, the application progressively evolved to incorporate a fully custom design system, modular component architecture, runtime API validation, client-side sort, and a comprehensive multi-layer testing strategy.
+Originally developed as part of a React course project focused on multi-page routing and Zustand's Slice Pattern, the application progressively evolved to incorporate a fully custom design system, modular component architecture, runtime API validation, client-side sort, an animated hero section, and a comprehensive multi-layer testing strategy.
 
 The app consumes the public [TheCocktailDB API](https://www.thecocktaildb.com/api.php) to allow users to browse, search, and manage cocktail recipes.
 
@@ -38,16 +38,22 @@ The app consumes the public [TheCocktailDB API](https://www.thecocktaildb.com/ap
 
 ## ✨ Features
 
+### 🎨 Hero Section
+- Full-height hero with animated **mesh gradient background** (two morphing blobs — orange and blue — using `mix-blend-mode` for both light and dark themes)
+- Floating **bubble layer** clipped between the ticker strip and the bottom edge, with negative animation delays for an organic distributed spawn
+- Horizontal **ticker strip** with 25 cocktail names scrolling continuously
+- Smooth **fade transition** at the bottom edge of the hero that dissolves into the page background
+
 ### 🔎 Recipe Exploration
-- Full-height hero section with **search by ingredient** and **category dropdown**
-- Combined ingredient + category filter
+- **Search by ingredient** and/or **category** — combined or independent filters
+- **Browse All Recipes** — fetches all available categories in parallel via `filter.php?c=`, takes up to 12 drinks per category, shuffles the result, and paginates the grid progressively (20 cards at a time via scroll listener)
 - Clear button to reset search filters
 - Auto-scroll to results grid after a successful search
-- Scroll-to-top button that appears when browsing results
+- `Showing X of Y recipes` counter that updates as the user scrolls
 
 ### 📊 Sorting
-- Results grid: sort by default, A→Z, Z→A, or Category
-- Favorites: sort by recently added (default), A→Z, Z→A, or Category
+- Results grid: sort by **Default**, **A → Z**, **Z → A**, or **Category**
+- Favorites: sort by **Recently Added** (default), **A → Z**, **Z → A**, or **Category**
 - Recently-added order persists across sessions via `favoriteOrder` timestamps
 
 ### 📖 Detailed Recipe View
@@ -59,18 +65,19 @@ The app consumes the public [TheCocktailDB API](https://www.thecocktaildb.com/ap
 ### ❤️ Favorites System
 - Add / remove drinks with a single click
 - Persistent storage via Zustand `persist` middleware
-- Recently-added order tracked with timestamps
+- Recently-added order tracked with timestamps in a parallel `favoriteOrder` record
 
 ### 🤖 AI Generator
 - Compose a custom cocktail recipe from a user-supplied ingredient list
 
 ### 🎨 UI & Experience
-- Custom design system with light/dark mode (persisted)
-- Sticky navbar with animated sliding underline and logo hover animation
-- Responsive layout (mobile-first)
-- Skeleton loading states
-- Global notification toasts
+- Custom design system with **light / dark mode** (persisted via `useThemeStore`)
+- Sticky navbar with animated sliding underline indicator and logo letter-bounce animation
+- Responsive layout (mobile-first, tested on all breakpoints)
+- Skeleton loading states (20 placeholders during initial fetch)
+- Global notification toasts with auto-dismiss
 - Accessible semantic markup (WCAG 2.1 AA)
+- `prefers-reduced-motion` support — all CSS animations opt out cleanly
 
 ---
 
@@ -107,9 +114,9 @@ Views → Components → Store (Zustand Slices) → Selectors → Services → Z
 
 - **Views** — Route-level pages (`IndexPage`, `FavoritesPage`, `GenerateAI`)
 - **Components** — Reusable UI (`HeroSection`, `SearchForm`, `SortSelector`, `DrinkCard`, `Header`, `Modal`, …)
-- **Store** — Zustand slices: `recipeSlice`, `favoritesSlice` (with `favoriteOrder`), `notificationSlice`, `generateAISlice`, `useThemeStore`
+- **Store** — Zustand slices: `recipeSlice`, `favoritesSlice`, `notificationSlice`, `generateAISlice`, `useThemeStore`
 - **Selectors** — Centralized typed derived-state functions (prevents unnecessary re-renders)
-- **Sort utilities** — Pure functions in `utils/sortRecipes.ts`, applied at render time via `useMemo` in each view
+- **Sort utilities** — Pure functions in `utils/sortRecipes.ts`, applied at render time via `useMemo`
 - **Services** — Axios HTTP calls with Zod-validated responses
 - **Schemas** — Zod runtime contracts for all API responses
 - **Domain models** — TypeScript types inferred from Zod schemas via `z.infer<>`, always in sync
@@ -212,14 +219,15 @@ npm run test:e2e:debug
 
 This project consumes the public **[TheCocktailDB API](https://www.thecocktaildb.com/api.php)**.
 
-| Endpoint type | Description |
-|---------------|-------------|
-| **Categories** | List of available drink categories |
-| **Filter** | Drinks filtered by category or ingredient |
-| **Lookup** | Full recipe detail by drink ID |
-| **Search** | Drinks by name |
+| Endpoint | Used for |
+|----------|----------|
+| `list.php?c=list` | Fetch all available categories |
+| `filter.php?c=` | Drinks by category (Browse All uses this per-category in parallel) |
+| `filter.php?i=` | Drinks by ingredient |
+| `search.php?s=` | Drinks by name |
+| `lookup.php?i=` | Full recipe detail by drink ID |
 
-All responses are validated with Zod schemas before entering the store.
+All responses are validated with Zod schemas before entering the store. The `getBrowseRecipes` function calls `filter.php?c=` for each category in parallel, caps at 12 drinks per category, deduplicates, and Fisher-Yates shuffles the result for variety.
 
 ---
 
@@ -227,8 +235,8 @@ All responses are validated with Zod schemas before entering the store.
 
 | Document | Description |
 |----------|-------------|
-| [`docs/architecture.md`](docs/architecture.md) | Full architectural breakdown with diagrams |
-| [`docs/project-structure.md`](docs/project-structure.md) | Complete file tree with descriptions |
+| [`docs/architecture.md`](docs/architecture.md) | Full architectural breakdown with data flow diagrams |
+| [`docs/project-structure.md`](docs/project-structure.md) | Complete annotated file tree |
 | [`docs/testing-strategy.md`](docs/testing-strategy.md) | Detailed testing strategy per layer |
 | [`docs/testing-strategy-summary.md`](docs/testing-strategy-summary.md) | Quick testing reference |
 | [`docs/accessibility.md`](docs/accessibility.md) | Accessibility standards and audit results |
