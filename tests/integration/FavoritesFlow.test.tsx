@@ -87,7 +87,7 @@ function seedFavorite(recipe: RecipeDetail) {
 // ─────────────────────────────────────────────
 
 beforeEach(() => {
-  useAppStore.setState({ favorites: {}, notification: null });
+  useAppStore.setState({ favorites: {}, favoriteOrder: {}, notification: null });
 
   server.use(
     http.get(
