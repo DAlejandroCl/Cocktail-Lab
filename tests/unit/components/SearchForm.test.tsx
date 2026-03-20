@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createRef } from "react";
@@ -166,6 +166,13 @@ describe("SearchForm", () => {
   });
 
   // ── Category dropdown ───────────────────────────────────────────────────
+  //
+  // HeadlessUI v2 applies the `inert` attribute to the Listbox panel's outer
+  // container while the popup is open, which removes its descendants from the
+  // accessibility tree.  Queries via screen.getByRole() therefore fail.
+  // Workaround: query the DOM directly with document.querySelectorAll and
+  // wait for the elements to appear, mirroring the pattern already used in
+  // Header.test.tsx for the same HeadlessUI version.
 
   describe("category dropdown", () => {
     it("opens the listbox when the category button is clicked", async () => {
@@ -176,7 +183,11 @@ describe("SearchForm", () => {
         screen.getByRole("button", { name: /all categories/i }),
       );
 
-      expect(screen.getByRole("listbox")).toBeInTheDocument();
+      // Wait for at least one [role="option"] to appear in the DOM
+      await waitFor(() => {
+        const options = document.querySelectorAll('[role="option"]');
+        expect(options.length).toBeGreaterThan(0);
+      });
     });
 
     it("lists all passed categories as options", async () => {
@@ -187,8 +198,17 @@ describe("SearchForm", () => {
         screen.getByRole("button", { name: /all categories/i }),
       );
 
-      expect(screen.getByRole("option", { name: "Cocktail" })).toBeInTheDocument();
-      expect(screen.getByRole("option", { name: "Shot" })).toBeInTheDocument();
+      await waitFor(() => {
+        const options = document.querySelectorAll('[role="option"]');
+        expect(options.length).toBeGreaterThan(0);
+      });
+
+      const optionTexts = Array.from(
+        document.querySelectorAll('[role="option"]'),
+      ).map((el) => el.textContent?.trim());
+
+      expect(optionTexts).toContain("Cocktail");
+      expect(optionTexts).toContain("Shot");
     });
 
     it("selecting a category enables the Clear button", async () => {
@@ -198,7 +218,18 @@ describe("SearchForm", () => {
       await user.click(
         screen.getByRole("button", { name: /all categories/i }),
       );
-      await user.click(screen.getByRole("option", { name: "Cocktail" }));
+
+      // Wait for options to appear in the DOM, then click via direct DOM query
+      await waitFor(() => {
+        const options = document.querySelectorAll('[role="option"]');
+        expect(options.length).toBeGreaterThan(0);
+      });
+
+      const cocktailOption = Array.from(
+        document.querySelectorAll('[role="option"]'),
+      ).find((el) => el.textContent?.trim() === "Cocktail")!;
+
+      await user.click(cocktailOption);
 
       expect(
         screen.getByRole("button", { name: /clear search filters/i }),
