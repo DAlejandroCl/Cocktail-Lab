@@ -12,17 +12,17 @@ import {
 // ─────────────────────────────────────────────
 
 vi.mock("@/services/recipeService", () => ({
-  getCategories: vi.fn(),
-  getRecipes: vi.fn(),
-  getRecipeById: vi.fn(),
-  getRandomRecipes: vi.fn(),
+  getCategories:    vi.fn(),
+  getRecipes:       vi.fn(),
+  getRecipeById:    vi.fn(),
+  getBrowseRecipes: vi.fn(),
 }));
 
 import {
   getCategories,
   getRecipes,
   getRecipeById,
-  getRandomRecipes,
+  getBrowseRecipes,
 } from "@/services/recipeService";
 
 // ─────────────────────────────────────────────
@@ -33,48 +33,30 @@ const createTestStore = () =>
   createStore<RecipesSliceType>(createRecipesSlice);
 
 const makeDrink = (id: string, name: string) => ({
-  idDrink: id,
-  strDrink: name,
+  idDrink:       id,
+  strDrink:      name,
   strDrinkThumb: "image.jpg",
-  strCategory: "Cocktail",
+  strCategory:   "Cocktail",
 });
 
 const makeRecipeDetail = (id: string, name: string) => ({
-  idDrink: id,
-  strDrink: name,
-  strDrinkThumb: "image.jpg",
+  idDrink:         id,
+  strDrink:        name,
+  strDrinkThumb:   "image.jpg",
   strInstructions: "Mix.",
-  strCategory: "Cocktail",
-  strIngredient1: "Rum",
-  strIngredient2: null,
-  strIngredient3: null,
-  strIngredient4: null,
-  strIngredient5: null,
-  strIngredient6: null,
-  strIngredient7: null,
-  strIngredient8: null,
-  strIngredient9: null,
-  strIngredient10: null,
-  strIngredient11: null,
-  strIngredient12: null,
-  strIngredient13: null,
-  strIngredient14: null,
-  strIngredient15: null,
-  strMeasure1: "50ml",
-  strMeasure2: null,
-  strMeasure3: null,
-  strMeasure4: null,
-  strMeasure5: null,
-  strMeasure6: null,
-  strMeasure7: null,
-  strMeasure8: null,
-  strMeasure9: null,
-  strMeasure10: null,
-  strMeasure11: null,
-  strMeasure12: null,
-  strMeasure13: null,
-  strMeasure14: null,
-  strMeasure15: null,
+  strCategory:     "Cocktail",
+  strIngredient1:  "Rum",
+  strIngredient2:  null, strIngredient3:  null, strIngredient4:  null,
+  strIngredient5:  null, strIngredient6:  null, strIngredient7:  null,
+  strIngredient8:  null, strIngredient9:  null, strIngredient10: null,
+  strIngredient11: null, strIngredient12: null, strIngredient13: null,
+  strIngredient14: null, strIngredient15: null,
+  strMeasure1:     "50ml",
+  strMeasure2:     null, strMeasure3:  null, strMeasure4:  null,
+  strMeasure5:     null, strMeasure6:  null, strMeasure7:  null,
+  strMeasure8:     null, strMeasure9:  null, strMeasure10: null,
+  strMeasure11:    null, strMeasure12: null, strMeasure13: null,
+  strMeasure14:    null, strMeasure15: null,
 });
 
 // ─────────────────────────────────────────────
@@ -115,6 +97,11 @@ describe("recipeSlice", () => {
     it("has not searched yet", () => {
       expect(store.getState().hasSearched).toBe(false);
     });
+
+    it("does not have isBrowsing in state", () => {
+      // isBrowsing was removed — browse vs filtered is handled at the view level
+      expect((store.getState() as Record<string, unknown>).isBrowsing).toBeUndefined();
+    });
   });
 
   // ── fetchCategories ───────────────────────────────────────────────────
@@ -141,9 +128,9 @@ describe("recipeSlice", () => {
 
   describe("searchRecipes", () => {
     it("sets isLoading=true and hasSearched=true immediately", async () => {
-      vi.mocked(getRandomRecipes).mockResolvedValue([]);
+      vi.mocked(getBrowseRecipes).mockResolvedValue([]);
 
-      const promise = store.getState().searchRecipes({});
+      const promise = store.getState().searchRecipes({ category: "", ingredient: "" });
 
       expect(store.getState().isLoading).toBe(true);
       expect(store.getState().hasSearched).toBe(true);
@@ -152,30 +139,52 @@ describe("recipeSlice", () => {
     });
 
     it("sets isLoading=false after completing", async () => {
-      vi.mocked(getRandomRecipes).mockResolvedValue([]);
+      vi.mocked(getBrowseRecipes).mockResolvedValue([]);
 
-      await store.getState().searchRecipes({});
+      await store.getState().searchRecipes({ category: "", ingredient: "" });
 
       expect(store.getState().isLoading).toBe(false);
     });
 
-    it("calls getRandomRecipes when no filters are provided", async () => {
-      vi.mocked(getRandomRecipes).mockResolvedValue([]);
+    it("calls getBrowseRecipes with store categories when filters are empty", async () => {
+      // Pre-load categories into the store
+      vi.mocked(getCategories).mockResolvedValue(["Cocktail", "Shot", "Beer"]);
+      await store.getState().fetchCategories();
 
-      await store.getState().searchRecipes({});
+      vi.mocked(getBrowseRecipes).mockResolvedValue([]);
 
-      expect(getRandomRecipes).toHaveBeenCalledWith(150);
+      await store.getState().searchRecipes({ category: "", ingredient: "" });
+
+      expect(getBrowseRecipes).toHaveBeenCalledWith(["Cocktail", "Shot", "Beer"]);
       expect(getRecipes).not.toHaveBeenCalled();
     });
 
-    it("calls getRecipes when filters are provided", async () => {
+    it("calls getBrowseRecipes with empty array when no categories loaded yet", async () => {
+      vi.mocked(getBrowseRecipes).mockResolvedValue([]);
+
+      await store.getState().searchRecipes({ category: "", ingredient: "" });
+
+      expect(getBrowseRecipes).toHaveBeenCalledWith([]);
+    });
+
+    it("calls getRecipes when ingredient filter is provided", async () => {
       const drinks = [makeDrink("1", "Mojito")];
       vi.mocked(getRecipes).mockResolvedValue(drinks);
 
-      await store.getState().searchRecipes({ ingredient: "Rum" });
+      await store.getState().searchRecipes({ ingredient: "Rum", category: "" });
 
-      expect(getRecipes).toHaveBeenCalledWith({ ingredient: "Rum" });
-      expect(getRandomRecipes).not.toHaveBeenCalled();
+      expect(getRecipes).toHaveBeenCalledWith({ ingredient: "Rum", category: "" });
+      expect(getBrowseRecipes).not.toHaveBeenCalled();
+    });
+
+    it("calls getRecipes when category filter is provided", async () => {
+      const drinks = [makeDrink("1", "Mojito")];
+      vi.mocked(getRecipes).mockResolvedValue(drinks);
+
+      await store.getState().searchRecipes({ ingredient: "", category: "Shot" });
+
+      expect(getRecipes).toHaveBeenCalledWith({ ingredient: "", category: "Shot" });
+      expect(getBrowseRecipes).not.toHaveBeenCalled();
     });
 
     it("sorts drinks alphabetically when using filters", async () => {
@@ -184,25 +193,34 @@ describe("recipeSlice", () => {
         makeDrink("1", "Aperol Spritz"),
       ]);
 
-      await store.getState().searchRecipes({ category: "Cocktail" });
+      await store.getState().searchRecipes({ category: "Cocktail", ingredient: "" });
 
       const names = store.getState().drinks.drinks.map((d) => d.strDrink);
       expect(names).toEqual(["Aperol Spritz", "Zombie"]);
     });
 
-    it("stores the fetched drinks in state", async () => {
+    it("stores the drinks returned by getBrowseRecipes in state", async () => {
       const drinks = [makeDrink("1", "Mojito"), makeDrink("2", "Daiquiri")];
-      vi.mocked(getRandomRecipes).mockResolvedValue(drinks);
+      vi.mocked(getBrowseRecipes).mockResolvedValue(drinks);
 
-      await store.getState().searchRecipes({});
+      await store.getState().searchRecipes({ category: "", ingredient: "" });
 
       expect(store.getState().drinks.drinks).toHaveLength(2);
     });
 
-    it("sets empty drinks on service error", async () => {
-      vi.mocked(getRandomRecipes).mockRejectedValue(new Error("API down"));
+    it("sets empty drinks and isLoading=false when getBrowseRecipes throws", async () => {
+      vi.mocked(getBrowseRecipes).mockRejectedValue(new Error("API down"));
 
-      await store.getState().searchRecipes({});
+      await store.getState().searchRecipes({ category: "", ingredient: "" });
+
+      expect(store.getState().drinks.drinks).toEqual([]);
+      expect(store.getState().isLoading).toBe(false);
+    });
+
+    it("sets empty drinks and isLoading=false when getRecipes throws", async () => {
+      vi.mocked(getRecipes).mockRejectedValue(new Error("API down"));
+
+      await store.getState().searchRecipes({ category: "Shot", ingredient: "" });
 
       expect(store.getState().drinks.drinks).toEqual([]);
       expect(store.getState().isLoading).toBe(false);
