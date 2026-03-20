@@ -88,20 +88,34 @@ export const AI_RECIPE_RESPONSE = {
 // API mock helpers
 // ─────────────────────────────────────────────
 
+// Drinks per category — mirrors the MSW handler fixture so E2E and unit
+// tests use the same data shape.
+const DRINKS_BY_CATEGORY: Record<string, typeof DRINK[]> = {
+  Cocktail: [DRINK],
+  Shot:     [DRINK_2],
+  Beer:     [{ ...DRINK_2, idDrink: "301", strDrink: "Black and Tan", strCategory: "Beer" }],
+  Shake:    [{ ...DRINK_2, idDrink: "401", strDrink: "Vanilla Shake",  strCategory: "Shake" }],
+};
+
 export async function mockDefaultApi(page: Page) {
   await page.route(/thecocktaildb\.com\/api\/json\/v1\/1\/list\.php/, async (route) => {
     await route.fulfill({ json: { drinks: CATEGORIES } });
   });
 
-  await page.route(/thecocktaildb\.com\/api\/json\/v1\/1\/random\.php/, async (route) => {
-    await route.fulfill({ json: { drinks: [DRINK] } });
+  // filter.php handles both getBrowseRecipes (?c=) and getRecipes (?i= / ?c=)
+  // Returns category-specific drinks for ?c= so Browse All gets varied results.
+  await page.route(/thecocktaildb\.com\/api\/json\/v1\/1\/filter\.php/, async (route) => {
+    const url      = new URL(route.request().url());
+    const category = url.searchParams.get("c");
+
+    const drinks = category && DRINKS_BY_CATEGORY[category]
+      ? DRINKS_BY_CATEGORY[category]
+      : [DRINK];
+
+    await route.fulfill({ json: { drinks } });
   });
 
   await page.route(/thecocktaildb\.com\/api\/json\/v1\/1\/search\.php/, async (route) => {
-    await route.fulfill({ json: { drinks: [DRINK] } });
-  });
-
-  await page.route(/thecocktaildb\.com\/api\/json\/v1\/1\/filter\.php/, async (route) => {
     await route.fulfill({ json: { drinks: [DRINK] } });
   });
 
@@ -123,9 +137,6 @@ export async function mockAIApiError(page: Page) {
 }
 
 export async function mockEmptyResults(page: Page) {
-  await page.route(/thecocktaildb\.com\/api\/json\/v1\/1\/random\.php/, async (route) => {
-    await route.fulfill({ json: { drinks: null } });
-  });
   await page.route(/thecocktaildb\.com\/api\/json\/v1\/1\/filter\.php/, async (route) => {
     await route.fulfill({ json: { drinks: null } });
   });
