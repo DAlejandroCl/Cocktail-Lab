@@ -33,6 +33,8 @@ describe("SkeletonDrinkCard Unit Tests", () => {
 
     const divs = wrapper.querySelectorAll("div");
 
-    expect(divs.length).toBeGreaterThan(5);
+    // The component renders 5 descendant divs (image placeholder + content
+    // wrapper + 3 shimmer lines). Use >= to avoid brittleness if more are added.
+    expect(divs.length).toBeGreaterThanOrEqual(5);
   });
 });
