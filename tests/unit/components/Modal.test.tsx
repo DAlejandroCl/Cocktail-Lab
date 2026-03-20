@@ -112,8 +112,10 @@ describe("Modal", () => {
     render(<Modal />);
 
     expect(screen.getByText("Mojito")).toBeInTheDocument();
+    // Modal.tsx generates: alt={`${selectedRecipe.strDrink} cocktail`}
+    // which produces "Mojito cocktail" — no "Image of" prefix.
     expect(
-      screen.getByAltText("Image of Mojito cocktail"),
+      screen.getByAltText("Mojito cocktail"),
     ).toBeInTheDocument();
   });
 
