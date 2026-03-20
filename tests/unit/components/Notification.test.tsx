@@ -61,8 +61,9 @@ describe("Notification Component", () => {
 
     render(<Notification />);
 
+    // aria-label in Notification.tsx is "Dismiss notification"
     await user.click(
-      screen.getByRole("button", { name: /close notification/i }),
+      screen.getByRole("button", { name: /dismiss notification/i }),
     );
 
     expect(useAppStore.getState().notification).toBeNull();
