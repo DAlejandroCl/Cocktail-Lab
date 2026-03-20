@@ -30,7 +30,8 @@ test.describe("Search flow", () => {
     });
 
     test("skeleton cards appear while loading", async ({ page, homePage }) => {
-      await page.route("**/api/json/v1/1/random.php**", async (route) => {
+      // Delay filter.php (used by getBrowseRecipes) to keep skeletons visible
+      await page.route("**/api/json/v1/1/filter.php**", async (route) => {
         await new Promise((r) => setTimeout(r, 800));
         await route.fulfill({ json: { drinks: [DRINK] } });
       });
@@ -158,7 +159,8 @@ test.describe("Search flow", () => {
     });
 
     test("search form shows aria-busy while loading", async ({ page, homePage }) => {
-      await page.route("**/api/json/v1/1/random.php**", async (route) => {
+      // Delay filter.php (used by getBrowseRecipes) to keep loading state visible
+      await page.route("**/api/json/v1/1/filter.php**", async (route) => {
         await new Promise((r) => setTimeout(r, 800));
         await route.fulfill({ json: { drinks: [DRINK] } });
       });
