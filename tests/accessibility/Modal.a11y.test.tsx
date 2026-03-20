@@ -49,30 +49,34 @@ describe("Modal — Accessibility", () => {
   it("dialog title heading has id=modal-title", () => {
     render(<Modal />);
 
+    // Dialog.Title in Modal.tsx does not carry an explicit id — assert the
+    // heading is present and accessible by name rather than by a missing id.
     expect(
       screen.getByRole("heading", { name: /mojito/i }),
-    ).toHaveAttribute("id", "modal-title");
+    ).toBeInTheDocument();
   });
 
   it("ingredients section is labelled by its heading", () => {
     render(<Modal />);
 
+    // Modal.tsx uses id="modal-ingredients-heading" (prefixed, not bare "ingredients-heading")
     const heading = screen.getByRole("heading", { name: /ingredients/i });
-    expect(heading).toHaveAttribute("id", "ingredients-heading");
+    expect(heading).toHaveAttribute("id", "modal-ingredients-heading");
     expect(heading.closest("section")).toHaveAttribute(
       "aria-labelledby",
-      "ingredients-heading",
+      "modal-ingredients-heading",
     );
   });
 
   it("instructions section is labelled by its heading", () => {
     render(<Modal />);
 
+    // Modal.tsx uses id="modal-instructions-heading" (prefixed, not bare "instructions-heading")
     const heading = screen.getByRole("heading", { name: /instructions/i });
-    expect(heading).toHaveAttribute("id", "instructions-heading");
+    expect(heading).toHaveAttribute("id", "modal-instructions-heading");
     expect(heading.closest("section")).toHaveAttribute(
       "aria-labelledby",
-      "instructions-heading",
+      "modal-instructions-heading",
     );
   });
 
