@@ -12,8 +12,9 @@ import { makeRecipeDetail, toFavoritesMap } from "../mocks/factories";
 
 beforeEach(() => {
   useAppStore.setState({
-    favorites: {},
-    notification: null,
+    favorites:     {},
+    favoriteOrder: {},
+    notification:  null,
   });
 });
 
