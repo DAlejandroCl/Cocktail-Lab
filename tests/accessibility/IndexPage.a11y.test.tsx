@@ -12,11 +12,12 @@ import { makeDrink } from "../mocks/factories";
 
 beforeEach(() => {
   useAppStore.setState({
-    drinks: { drinks: [] },
-    isLoading: false,
-    hasSearched: false,
-    favorites: {},
-    notification: null,
+    drinks:        { drinks: [] },
+    isLoading:     false,
+    hasSearched:   false,
+    favorites:     {},
+    favoriteOrder: {},
+    notification:  null,
   });
 });
 
@@ -38,12 +39,40 @@ function renderIndexPage() {
 
 describe("IndexPage — Accessibility", () => {
 
+  // ── axe automated audits ──────────────────────────────────────────────
+
   it("has no accessibility violations in the empty state", async () => {
     const { container } = renderIndexPage();
 
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });
+
+  it("has no accessibility violations in the loading state", async () => {
+    useAppStore.setState({ isLoading: true });
+
+    const { container } = renderIndexPage();
+
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
+  });
+
+  it("has no accessibility violations when drinks are displayed", async () => {
+    const drink = makeDrink({ strDrink: "Margarita" });
+
+    useAppStore.setState({
+      drinks:      { drinks: [drink] },
+      hasSearched: true,
+      isLoading:   false,
+    });
+
+    const { container } = renderIndexPage();
+
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
+  });
+
+  // ── Empty state ───────────────────────────────────────────────────────
 
   it("renders the empty state heading accessibly", () => {
     renderIndexPage();
@@ -61,86 +90,67 @@ describe("IndexPage — Accessibility", () => {
     ).toBeInTheDocument();
   });
 
-  it("has no accessibility violations in the loading state", async () => {
-    useAppStore.setState({ isLoading: true });
+  // ── Loading state ─────────────────────────────────────────────────────
 
-    const { container } = renderIndexPage();
-
-    const results = await axe(container);
-    expect(results).toHaveNoViolations();
-  });
-
-  it("shows the loading message during fetch", () => {
+  it("shows the correct loading message during fetch", () => {
     useAppStore.setState({ isLoading: true });
 
     renderIndexPage();
 
     expect(
-      screen.getByText(/mixing the perfect drinks for you/i),
+      screen.getByText(/mixing the perfect drinks…/i),
     ).toBeInTheDocument();
   });
 
-  it("renders 8 skeleton cards with aria-hidden while loading", () => {
+  it("renders 20 skeleton cards with role=presentation while loading", () => {
     useAppStore.setState({ isLoading: true });
 
     renderIndexPage();
 
     const skeletons = screen.getAllByRole("presentation", { hidden: true });
-    expect(skeletons).toHaveLength(8);
+    expect(skeletons).toHaveLength(20);
   });
 
-  it("has no accessibility violations when drinks are displayed", async () => {
+  // ── Results state ─────────────────────────────────────────────────────
+
+  it("renders the Results heading when drinks are present", () => {
     const drink = makeDrink({ strDrink: "Margarita" });
 
     useAppStore.setState({
-      drinks: { drinks: [drink] },
+      drinks:      { drinks: [drink] },
       hasSearched: true,
-      isLoading: false,
-    });
-
-    const { container } = renderIndexPage();
-
-    const results = await axe(container);
-    expect(results).toHaveNoViolations();
-  });
-
-  it("renders the Featured Mixes heading when drinks are present", () => {
-    const drink = makeDrink({ strDrink: "Margarita" });
-
-    useAppStore.setState({
-      drinks: { drinks: [drink] },
-      hasSearched: true,
-      isLoading: false,
+      isLoading:   false,
     });
 
     renderIndexPage();
 
     expect(
-      screen.getByRole("heading", { name: /featured mixes/i }),
+      screen.getByRole("heading", { name: /^results$/i }),
     ).toBeInTheDocument();
   });
 
-  it("shows the recipe count when drinks are present", () => {
+  it("shows the recipe count label when drinks are present", () => {
     const drink = makeDrink({ strDrink: "Margarita" });
 
     useAppStore.setState({
-      drinks: { drinks: [drink] },
+      drinks:      { drinks: [drink] },
       hasSearched: true,
-      isLoading: false,
+      isLoading:   false,
     });
 
     renderIndexPage();
 
-    expect(screen.getByText(/found 1 recipe/i)).toBeInTheDocument();
+    // Single result → "1 recipe found" (singular)
+    expect(screen.getByText("1 recipe found")).toBeInTheDocument();
   });
 
   it("drink cards are wrapped in articles with aria-labelledby", () => {
     const drink = makeDrink({ strDrink: "Margarita" });
 
     useAppStore.setState({
-      drinks: { drinks: [drink] },
+      drinks:      { drinks: [drink] },
       hasSearched: true,
-      isLoading: false,
+      isLoading:   false,
     });
 
     renderIndexPage();
@@ -152,19 +162,42 @@ describe("IndexPage — Accessibility", () => {
     );
   });
 
-  it("View All button is accessible when drinks are present", () => {
-    const drink = makeDrink({ strDrink: "Margarita" });
-
-    useAppStore.setState({
-      drinks: { drinks: [drink] },
-      hasSearched: true,
-      isLoading: false,
-    });
-
+  it("results section has aria-label for screen readers", () => {
     renderIndexPage();
 
     expect(
-      screen.getByRole("button", { name: /view all/i }),
+      screen.getByRole("region", { name: /search results/i }),
+    ).toBeInTheDocument();
+  });
+
+  // ── Decorative elements are hidden from AT ────────────────────────────
+
+  it("hero ticker strip is aria-hidden", () => {
+    renderIndexPage();
+
+    const ticker = document.querySelector(".hero-ticker");
+    expect(ticker).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("hero bubble zone is aria-hidden", () => {
+    renderIndexPage();
+
+    const zone = document.querySelector(".hero-bubble-zone");
+    expect(zone).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("mesh gradient layer is aria-hidden", () => {
+    renderIndexPage();
+
+    const mesh = document.querySelector(".hero-mesh");
+    expect(mesh).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("scroll arrow has a descriptive aria-label", () => {
+    renderIndexPage();
+
+    expect(
+      screen.getByRole("button", { name: /scroll to results/i }),
     ).toBeInTheDocument();
   });
 });
