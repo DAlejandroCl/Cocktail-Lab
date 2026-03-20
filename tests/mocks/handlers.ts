@@ -1,17 +1,42 @@
 import { http, HttpResponse } from "msw";
 
 // ─────────────────────────────────────────────
-// Inline fixtures
+// Fixtures — drinks per category
+//
+// Each category has its own set of drinks with
+// unique idDrinks so getBrowseRecipes can
+// deduplicate correctly across categories.
 // ─────────────────────────────────────────────
 
-const DEFAULT_DRINK = {
-  idDrink: "1",
-  strDrink: "Mojito",
-  strDrinkThumb: "https://image.com/mojito.jpg",
+export const DRINKS_BY_CATEGORY: Record<string, Array<{ idDrink: string; strDrink: string; strDrinkThumb: string }>> = {
+  Cocktail: [
+    { idDrink: "101", strDrink: "Mojito",          strDrinkThumb: "https://image.com/mojito.jpg"    },
+    { idDrink: "102", strDrink: "Negroni",          strDrinkThumb: "https://image.com/negroni.jpg"   },
+    { idDrink: "103", strDrink: "Margarita",        strDrinkThumb: "https://image.com/margarita.jpg" },
+  ],
+  Shot: [
+    { idDrink: "201", strDrink: "B-52",             strDrinkThumb: "https://image.com/b52.jpg"       },
+    { idDrink: "202", strDrink: "Tequila Shot",     strDrinkThumb: "https://image.com/tequila.jpg"   },
+    { idDrink: "203", strDrink: "Kamikaze",         strDrinkThumb: "https://image.com/kamikaze.jpg"  },
+  ],
+  Beer: [
+    { idDrink: "301", strDrink: "Black and Tan",    strDrinkThumb: "https://image.com/blacktan.jpg"  },
+    { idDrink: "302", strDrink: "Snakebite",        strDrinkThumb: "https://image.com/snakebite.jpg" },
+  ],
+  Shake: [
+    { idDrink: "401", strDrink: "Vanilla Shake",   strDrinkThumb: "https://image.com/vanilla.jpg"   },
+    { idDrink: "402", strDrink: "Chocolate Shake", strDrinkThumb: "https://image.com/chocolate.jpg" },
+  ],
 };
 
+// Total unique drinks across all categories — used in test assertions
+export const TOTAL_BROWSE_DRINKS = Object.values(DRINKS_BY_CATEGORY).flat().length;
+
+// Default single drink for ingredient/name search handlers
+const DEFAULT_DRINK = DRINKS_BY_CATEGORY.Cocktail[0];
+
 const DEFAULT_RECIPE_DETAIL = {
-  idDrink: "1",
+  idDrink: "101",
   strDrink: "Mojito",
   strDrinkThumb: "https://image.com/mojito.jpg",
   strInstructions: "Mix ingredients. Serve cold.",
@@ -56,7 +81,7 @@ export const DEFAULT_AI_RECIPE_RESPONSE = {
     strInstructions:
       "Combine all ingredients in a shaker with ice. Shake for 15 seconds. Double-strain into a chilled glass.",
     ingredients: [
-      { name: "Vodka",        measure: "2 oz"  },
+      { name: "Vodka",        measure: "2 oz"   },
       { name: "Lime juice",   measure: "3/4 oz" },
       { name: "Simple syrup", measure: "1/2 oz" },
       { name: "Egg white",    measure: "1"      },
@@ -71,9 +96,16 @@ export const DEFAULT_AI_RECIPE_RESPONSE = {
 export const handlers = [
 
   // ── CocktailDB — filter (ingredient / category) ───────────────────────
+  //
+  // When called with ?c= (getBrowseRecipes): return the category-specific
+  // drinks from DRINKS_BY_CATEGORY so tests can assert on realistic counts
+  // and deduplication. Falls back to DEFAULT_DRINK for unknown categories.
+  //
+  // When called with ?i= (getRecipes by ingredient): return DEFAULT_DRINK
+  // or empty for the "empty" sentinel value.
 
   http.get("https://www.thecocktaildb.com/api/json/v1/1/filter.php", ({ request }) => {
-    const url = new URL(request.url);
+    const url        = new URL(request.url);
     const ingredient = url.searchParams.get("i");
     const category   = url.searchParams.get("c");
 
@@ -81,12 +113,21 @@ export const handlers = [
       return HttpResponse.json({ drinks: null });
     }
 
-    return HttpResponse.json({
-      drinks: [{ ...DEFAULT_DRINK, strCategory: category ?? "Cocktail" }],
-    });
+    if (ingredient) {
+      return HttpResponse.json({ drinks: [DEFAULT_DRINK] });
+    }
+
+    if (category) {
+      const drinks = DRINKS_BY_CATEGORY[category] ?? [
+        { ...DEFAULT_DRINK, strCategory: category },
+      ];
+      return HttpResponse.json({ drinks });
+    }
+
+    return HttpResponse.json({ drinks: [DEFAULT_DRINK] });
   }),
 
-  // ── CocktailDB — search ───────────────────────────────────────────────
+  // ── CocktailDB — search (by name) ────────────────────────────────────
 
   http.get("https://www.thecocktaildb.com/api/json/v1/1/search.php", ({ request }) => {
     const url  = new URL(request.url);
@@ -116,19 +157,8 @@ export const handlers = [
 
   http.get("https://www.thecocktaildb.com/api/json/v1/1/list.php", () =>
     HttpResponse.json({
-      drinks: [
-        { strCategory: "Cocktail" },
-        { strCategory: "Shot"     },
-        { strCategory: "Beer"     },
-        { strCategory: "Shake"    },
-      ],
+      drinks: Object.keys(DRINKS_BY_CATEGORY).map((strCategory) => ({ strCategory })),
     }),
-  ),
-
-  // ── CocktailDB — random ───────────────────────────────────────────────
-
-  http.get("https://www.thecocktaildb.com/api/json/v1/1/random.php", () =>
-    HttpResponse.json({ drinks: [DEFAULT_DRINK] }),
   ),
 
   // ── AI Recipe Generator ───────────────────────────────────────────────
