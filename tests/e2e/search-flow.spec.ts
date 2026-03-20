@@ -15,7 +15,7 @@ test.describe("Search flow", () => {
       await homePage.expectResultsVisible();
     });
 
-    test("Featured Mixes heading appears after loading", async ({ homePage }) => {
+    test("results heading changes to 'Results' after Browse All", async ({ homePage }) => {
       await homePage.goto();
       await homePage.browseAll();
 
