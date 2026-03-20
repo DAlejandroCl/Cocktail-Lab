@@ -135,7 +135,7 @@ describe("generateAISlice", () => {
     store.getState().saveAiRecipe(r1);
     store.getState().saveAiRecipe(r2);
     store.getState().removeAiRecipe("ai-1");
-    expect(store.getState().aiRecipes.map((r) => r.idDrink)).toEqual(["ai-2"]);
+    expect(store.getState().aiRecipes.map((r: AiRecipeSliceType["aiRecipes"][number]) => r.idDrink)).toEqual(["ai-2"]);
   });
 
   // ── generateRecipe ────────────────────────────────────────────────────────
