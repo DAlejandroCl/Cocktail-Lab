@@ -11,6 +11,7 @@ import {
   selectSelectRecipe,
   selectCloseModal,
   selectFavoritesMap,
+  selectFavoriteOrder,
   selectAddFavorite,
   selectRemoveFavorite,
   selectIsFavorite,
@@ -108,6 +109,7 @@ const mockState = {
 
   /* ── FavoritesSlice ── */
   favorites:      { "1": mockRecipe },
+  favoriteOrder:  { "1": 1700000000000 },
   addFavorite:    vi.fn(),
   removeFavorite: vi.fn(),
   isFavorite:     vi.fn((id: string) => id === "1"),
@@ -177,6 +179,10 @@ describe("Selectors", () => {
 
   it("selectFavoritesMap returns favorites map", () => {
     expect(selectFavoritesMap(mockState)).toEqual(mockState.favorites);
+  });
+
+  it("selectFavoriteOrder returns favoriteOrder timestamp record", () => {
+    expect(selectFavoriteOrder(mockState)).toEqual(mockState.favoriteOrder);
   });
 
   it("selectAddFavorite returns addFavorite function", () => {
