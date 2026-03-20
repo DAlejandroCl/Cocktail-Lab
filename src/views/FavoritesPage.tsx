@@ -92,7 +92,7 @@ export default function FavoritesPage() {
   }, [hasFavorites, setNotification]);
 
   return (
-    <section className="relative min-h-[60vh]">
+    <main className="relative min-h-[60vh]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-24">
 
         <div
@@ -100,12 +100,12 @@ export default function FavoritesPage() {
           style={{ borderBottom: "1px solid var(--border-subtle)" }}
         >
           <div>
-            <h1
+            <h2
               className="text-xl font-bold uppercase tracking-tighter"
               style={{ color: "var(--text-primary)" }}
             >
               My Favorites
-            </h1>
+            </h2>
             {hasFavorites && (
               <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
                 {favoritesArray.length}{" "}
@@ -139,6 +139,6 @@ export default function FavoritesPage() {
           <FavoritesEmptyState />
         )}
       </div>
-    </section>
+    </main>
   );
 }
