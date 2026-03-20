@@ -78,8 +78,9 @@ function seedFavorite(...recipes: RecipeDetail[]) {
 
 beforeEach(() => {
   useAppStore.setState({
-    favorites: {},
-    notification: null,
+    favorites:     {},
+    favoriteOrder: {},
+    notification:  null,
   });
 });
 
