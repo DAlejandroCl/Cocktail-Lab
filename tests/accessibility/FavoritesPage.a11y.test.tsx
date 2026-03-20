@@ -74,7 +74,7 @@ describe("FavoritesPage — Accessibility", () => {
     renderFavoritesPage();
 
     expect(
-      screen.getByRole("heading", { name: /my favorites/i }),
+      screen.getByRole("heading", { name: /my favorites/i, level: 2 }),
     ).toBeInTheDocument();
   });
 
