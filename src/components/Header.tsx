@@ -25,11 +25,12 @@ const NAV_LINKS_MOBILE = [
 interface AnimatedNavProps {
   links: typeof NAV_LINKS | typeof NAV_LINKS_MOBILE;
   className?: string;
+  "aria-label"?: string;
 }
 
-function AnimatedNav({ links, className = "" }: AnimatedNavProps) {
+function AnimatedNav({ links, className = "", "aria-label": ariaLabel }: AnimatedNavProps) {
   const location = useLocation();
-  const navRef = useRef<HTMLDivElement>(null);
+  const navRef = useRef<HTMLElement>(null);
   const linkRefs = useRef<Map<string, HTMLAnchorElement>>(new Map());
   const [underline, setUnderline] = useState<{
     left: number;
@@ -66,7 +67,7 @@ function AnimatedNav({ links, className = "" }: AnimatedNavProps) {
   }, [location.pathname, links]);
 
   return (
-    <div ref={navRef} className={`nav-animated ${className}`}>
+    <nav ref={navRef} aria-label={ariaLabel} className={`nav-animated ${className}`}>
       {links.map((link) => {
         const isActive = link.end
           ? location.pathname === link.to
@@ -94,7 +95,7 @@ function AnimatedNav({ links, className = "" }: AnimatedNavProps) {
           style={{ left: underline.left, width: underline.width }}
         />
       )}
-    </div>
+    </nav>
   );
 }
 
@@ -137,12 +138,13 @@ export default function Header() {
         <div className="flex items-center justify-between h-16">
           <Logo />
 
-          <AnimatedNav links={NAV_LINKS} className="hidden md:flex gap-8" />
+          <AnimatedNav links={NAV_LINKS} aria-label="Main navigation" className="hidden md:flex gap-8" />
 
           <div className="flex items-center gap-4">
             <ThemeToggle />
             <AnimatedNav
               links={NAV_LINKS_MOBILE}
+              aria-label="Main navigation"
               className="flex md:hidden gap-5"
             />
           </div>
