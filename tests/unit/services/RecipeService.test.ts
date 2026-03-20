@@ -4,7 +4,7 @@ import {
   getCategories,
   getRecipes,
   getRecipeById,
-  getRandomRecipes,
+  getBrowseRecipes,
 } from "@/services/recipeService";
 import type { SearchFilters, Drink } from "@/types";
 
@@ -13,6 +13,10 @@ vi.mock("axios");
 const mockedAxios = axios as unknown as {
   get: ReturnType<typeof vi.fn>;
 };
+
+// ─────────────────────────────────────────────
+// Fixtures
+// ─────────────────────────────────────────────
 
 const validDrink = {
   idDrink: "1",
@@ -135,7 +139,7 @@ describe("recipeService", () => {
       expect(result).toEqual([]);
     });
 
-    it("returns empty array when schema validation fails (branch L54)", async () => {
+    it("returns empty array when schema validation fails", async () => {
       mockGet({ wrong: "shape" });
 
       const result = await getCategories();
@@ -143,7 +147,7 @@ describe("recipeService", () => {
       expect(result).toEqual([]);
     });
 
-    it("returns empty array when drinks is null (nullish coalescing branch L59)", async () => {
+    it("returns empty array when drinks is null", async () => {
       mockGet({ drinks: null });
 
       const result = await getCategories();
@@ -156,8 +160,8 @@ describe("recipeService", () => {
 
   describe("getRecipes — ingredient only", () => {
     it("merges and deduplicates searchByName and searchByIngredient results", async () => {
-      mockGetOnce({ drinks: [validDrink] });           
-      mockGetOnce({ drinks: [validDrink, validDrink2] }); 
+      mockGetOnce({ drinks: [validDrink] });
+      mockGetOnce({ drinks: [validDrink, validDrink2] });
 
       const result = await getRecipes({ ingredient: "Rum" });
 
@@ -166,18 +170,18 @@ describe("recipeService", () => {
 
     it("enriches drinks missing strCategory by fetching their detail", async () => {
       mockGetOnce({ drinks: [validDrinkNoCategory] });
-      mockGetOnce({ drinks: [] });                      
-      mockGetOnce({ drinks: [validRecipeDetail] });     
+      mockGetOnce({ drinks: [] });
+      mockGetOnce({ drinks: [validRecipeDetail] });
 
       const result = await getRecipes({ ingredient: "Mystery" });
 
       expect(result[0].strCategory).toBe("Cocktail");
     });
 
-    it("returns drink without category when enrichment fetch fails (catch branch)", async () => {
-      mockGetOnce({ drinks: [validDrinkNoCategory] }); 
-      mockGetOnce({ drinks: [] });                      
-      mockGetRejectedOnce();                            
+    it("returns drink without category when enrichment fetch fails", async () => {
+      mockGetOnce({ drinks: [validDrinkNoCategory] });
+      mockGetOnce({ drinks: [] });
+      mockGetRejectedOnce();
 
       const result = await getRecipes({ ingredient: "Mystery" });
 
@@ -191,26 +195,26 @@ describe("recipeService", () => {
       );
     });
 
-    it("returns empty array when searchByName returns null data (branch L129)", async () => {
-      mockedAxios.get.mockResolvedValueOnce(null); 
-      mockGetOnce({ drinks: [validDrink] });       
+    it("handles null response from searchByName gracefully", async () => {
+      mockedAxios.get.mockResolvedValueOnce(null);
+      mockGetOnce({ drinks: [validDrink] });
 
       const result = await getRecipes({ ingredient: "Rum" });
 
       expect(result.some((d: Drink) => d.idDrink === "1")).toBe(true);
     });
 
-    it("returns empty array when searchByName schema fails (branch L133)", async () => {
+    it("handles invalid schema from searchByName gracefully", async () => {
       mockGetOnce({ wrong: "shape" });
-      mockGetOnce({ drinks: [validDrink] }); 
+      mockGetOnce({ drinks: [validDrink] });
 
       const result = await getRecipes({ ingredient: "Rum" });
 
       expect(result.some((d: Drink) => d.idDrink === "1")).toBe(true);
     });
 
-    it("handles null drinks in searchByName (nullish branch L138)", async () => {
-      mockGetOnce({ drinks: null }); 
+    it("handles null drinks array in searchByName", async () => {
+      mockGetOnce({ drinks: null });
       mockGetOnce({ drinks: [validDrink] });
 
       const result = await getRecipes({ ingredient: "Rum" });
@@ -218,27 +222,27 @@ describe("recipeService", () => {
       expect(result).toHaveLength(1);
     });
 
-    it("returns empty array when searchByIngredient returns null data (branch L145)", async () => {
-      mockGetOnce({ drinks: [validDrink] }); 
-      mockedAxios.get.mockResolvedValueOnce(null); 
+    it("handles null response from searchByIngredient gracefully", async () => {
+      mockGetOnce({ drinks: [validDrink] });
+      mockedAxios.get.mockResolvedValueOnce(null);
 
       const result = await getRecipes({ ingredient: "Rum" });
 
       expect(result.some((d: Drink) => d.idDrink === "1")).toBe(true);
     });
 
-    it("returns empty array when searchByIngredient schema fails (branch L149)", async () => {
-      mockGetOnce({ drinks: [validDrink] }); 
-      mockGetOnce({ wrong: "shape" });        
+    it("handles invalid schema from searchByIngredient gracefully", async () => {
+      mockGetOnce({ drinks: [validDrink] });
+      mockGetOnce({ wrong: "shape" });
 
       const result = await getRecipes({ ingredient: "Rum" });
 
       expect(result.some((d: Drink) => d.idDrink === "1")).toBe(true);
     });
 
-    it("handles null drinks in searchByIngredient (nullish branch L154)", async () => {
-      mockGetOnce({ drinks: [validDrink] }); 
-      mockGetOnce({ drinks: null });          
+    it("handles null drinks array in searchByIngredient", async () => {
+      mockGetOnce({ drinks: [validDrink] });
+      mockGetOnce({ drinks: null });
 
       const result = await getRecipes({ ingredient: "Rum" });
 
@@ -265,15 +269,15 @@ describe("recipeService", () => {
       expect(result).toEqual([]);
     });
 
-    it("returns empty array when searchByCategory returns null data (branch L161)", async () => {
-      mockedAxios.get.mockResolvedValue(null); 
+    it("returns empty array when searchByCategory returns null response", async () => {
+      mockedAxios.get.mockResolvedValue(null);
 
       const result = await getRecipes({ category: "Cocktail" });
 
       expect(result).toEqual([]);
     });
 
-    it("returns empty array when searchByCategory schema fails (branch L165)", async () => {
+    it("returns empty array when searchByCategory schema fails", async () => {
       mockGet({ wrong: "shape" });
 
       const result = await getRecipes({ category: "Cocktail" });
@@ -281,7 +285,7 @@ describe("recipeService", () => {
       expect(result).toEqual([]);
     });
 
-    it("handles null drinks in searchByCategory (nullish branch L170)", async () => {
+    it("returns empty array when drinks is null in searchByCategory", async () => {
       mockGet({ drinks: null });
 
       const result = await getRecipes({ category: "Cocktail" });
@@ -294,11 +298,11 @@ describe("recipeService", () => {
 
   describe("getRecipes — ingredient + category combined", () => {
     it("filters combined results by the specified category", async () => {
-      const cocktailDrink = { ...validDrink, strCategory: "Cocktail" };
-      const shotDrink = { ...validDrink2, strCategory: "Shot" };
+      const cocktailDrink = { ...validDrink,  strCategory: "Cocktail" };
+      const shotDrink     = { ...validDrink2, strCategory: "Shot"     };
 
-      mockGetOnce({ drinks: [cocktailDrink] });               
-      mockGetOnce({ drinks: [cocktailDrink, shotDrink] });    
+      mockGetOnce({ drinks: [cocktailDrink] });
+      mockGetOnce({ drinks: [cocktailDrink, shotDrink] });
 
       const result = await getRecipes({ ingredient: "Rum", category: "Cocktail" });
 
@@ -306,7 +310,7 @@ describe("recipeService", () => {
     });
 
     it("returns empty array when no drinks match the category after filtering", async () => {
-      mockGetOnce({ drinks: [validDrink] }); 
+      mockGetOnce({ drinks: [validDrink] });
       mockGetOnce({ drinks: [] });
 
       const result = await getRecipes({ ingredient: "Rum", category: "Shot" });
@@ -315,9 +319,9 @@ describe("recipeService", () => {
     });
 
     it("enriches drinks without category before filtering in combined mode", async () => {
-      mockGetOnce({ drinks: [validDrinkNoCategory] }); 
-      mockGetOnce({ drinks: [] });                      
-      mockGetOnce({ drinks: [{ ...validRecipeDetail, idDrink: "3", strCategory: "Cocktail" }] }); // lookup
+      mockGetOnce({ drinks: [validDrinkNoCategory] });
+      mockGetOnce({ drinks: [] });
+      mockGetOnce({ drinks: [{ ...validRecipeDetail, idDrink: "3", strCategory: "Cocktail" }] });
 
       const result = await getRecipes({ ingredient: "Mystery", category: "Cocktail" });
 
@@ -368,83 +372,99 @@ describe("recipeService", () => {
     });
   });
 
-  // ── getRandomRecipes ───────────────────────────────────────────────────
+  // ── getBrowseRecipes ───────────────────────────────────────────────────
 
-  describe("getRandomRecipes", () => {
-    it("returns sorted unique drinks", async () => {
-      mockGetOnce({ drinks: [validDrink2] }); 
-      mockGetOnce({ drinks: [validDrink] });  
-
-      const result = await getRandomRecipes(2);
-
-      expect(result[0].strDrink).toBe("Daiquiri");
-      expect(result[1].strDrink).toBe("Mojito");
-    });
-
-    it("deduplicates drinks with the same idDrink", async () => {
+  describe("getBrowseRecipes", () => {
+    it("returns an array of drinks when categories are provided", async () => {
       mockGetOnce({ drinks: [validDrink] });
-      mockGetOnce({ drinks: [validDrink] }); 
+      mockGetOnce({ drinks: [validDrink2] });
 
-      const result = await getRandomRecipes(2);
+      const result = await getBrowseRecipes(["Cocktail", "Shot"]);
 
-      expect(result).toHaveLength(1);
+      expect(result.length).toBeGreaterThan(0);
     });
 
-    it("skips null responses from safeGet", async () => {
-      mockedAxios.get.mockResolvedValueOnce(null);
+    it("injects strCategory from the category parameter into each drink", async () => {
+      mockGetOnce({ drinks: [{ idDrink: "1", strDrink: "Mojito", strDrinkThumb: "img.jpg" }] });
+
+      const result = await getBrowseRecipes(["Cocktail"]);
+
+      expect(result[0].strCategory).toBe("Cocktail");
+    });
+
+    it("deduplicates drinks that appear in multiple categories", async () => {
+      // Same drink in both category results
       mockGetOnce({ drinks: [validDrink] });
-
-      const result = await getRandomRecipes(2);
-
-      expect(result).toHaveLength(1);
-    });
-
-    it("skips responses with empty drinks array", async () => {
-      mockGetOnce({ drinks: [] });
       mockGetOnce({ drinks: [validDrink] });
 
-      const result = await getRandomRecipes(2);
+      const result = await getBrowseRecipes(["Cocktail", "Shot"]);
 
-      expect(result).toHaveLength(1);
+      const ids = result.map((d) => d.idDrink);
+      expect(new Set(ids).size).toBe(ids.length);
     });
 
-    it("skips responses that fail schema validation", async () => {
-      mockGetOnce({ drinks: [{ wrong: "shape" }] });
-      mockGetOnce({ drinks: [validDrink] });
-
-      const result = await getRandomRecipes(2);
-
-      expect(result.some((d: Drink) => d.idDrink === "1")).toBe(true);
-    });
-
-    it("returns empty array when all responses are null", async () => {
-      mockedAxios.get.mockResolvedValue(null);
-
-      const result = await getRandomRecipes(3);
-
-      expect(result).toEqual([]);
-    });
-
-    it("caps results at 100 when more than 100 unique drinks are returned", async () => {
-      const manyDrinks = Array.from({ length: 105 }, (_, i) => ({
+    it("caps drinks at 12 per category", async () => {
+      // 15 drinks for a single category — only 12 should be kept
+      const manyDrinks = Array.from({ length: 15 }, (_, i) => ({
         idDrink: String(i + 1),
-        strDrink: `Drink ${String(i + 1).padStart(3, "0")}`,
-        strDrinkThumb: `https://image.com/drink${i + 1}.jpg`,
-        strCategory: "Cocktail",
+        strDrink: `Drink ${i + 1}`,
+        strDrinkThumb: `https://image.com/${i + 1}.jpg`,
       }));
 
-      mockedAxios.get.mockResolvedValue({ data: { drinks: manyDrinks } });
+      mockGetOnce({ drinks: manyDrinks });
 
-      const result = await getRandomRecipes(1);
+      const result = await getBrowseRecipes(["Cocktail"]);
 
-      expect(result.length).toBeLessThanOrEqual(100);
+      expect(result.length).toBeLessThanOrEqual(12);
+    });
+
+    it("returns empty array when given an empty categories list", async () => {
+      const result = await getBrowseRecipes([]);
+
+      expect(result).toEqual([]);
+      expect(mockedAxios.get).not.toHaveBeenCalled();
+    });
+
+    it("skips categories that return null from the API", async () => {
+      mockedAxios.get.mockResolvedValueOnce(null);
+      mockGetOnce({ drinks: [validDrink2] });
+
+      const result = await getBrowseRecipes(["Cocktail", "Shot"]);
+
+      expect(result.some((d) => d.idDrink === "2")).toBe(true);
+    });
+
+    it("skips categories that return null drinks array", async () => {
+      mockGetOnce({ drinks: null });
+      mockGetOnce({ drinks: [validDrink] });
+
+      const result = await getBrowseRecipes(["Cocktail", "Shot"]);
+
+      expect(result).toHaveLength(1);
+    });
+
+    it("returns a shuffled result — same elements, potentially different order", async () => {
+      const drinks = Array.from({ length: 6 }, (_, i) => ({
+        idDrink: String(i + 1),
+        strDrink: `Drink ${i + 1}`,
+        strDrinkThumb: `https://image.com/${i + 1}.jpg`,
+      }));
+
+      mockGetOnce({ drinks });
+
+      const result = await getBrowseRecipes(["Cocktail"]);
+
+      // All original ids must be present after shuffle
+      const resultIds = result.map((d) => d.idDrink).sort();
+      const sourceIds = drinks.map((d) => d.idDrink).sort();
+      expect(resultIds).toEqual(sourceIds);
     });
   });
 
   // ── deduplicate — internal edge case ──────────────────────────────────
 
   describe("deduplicate — via getRecipes", () => {
-    it("skips drinks without idDrink (branch L237)", async () => {
+    it("skips drinks without idDrink", async () => {
       const drinkWithoutId = {
         strDrink: "Ghost Drink",
         strDrinkThumb: "https://image.com/ghost.jpg",
@@ -452,7 +472,7 @@ describe("recipeService", () => {
       };
 
       mockGetOnce({ drinks: [drinkWithoutId, validDrink] });
-      mockGetOnce({ drinks: [] });                          
+      mockGetOnce({ drinks: [] });
 
       const result = await getRecipes({ ingredient: "Rum" });
 
