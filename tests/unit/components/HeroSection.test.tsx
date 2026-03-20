@@ -209,8 +209,11 @@ describe("HeroSection", () => {
     it("renders the Search button", () => {
       renderHero();
 
+      // Use exact match — /search/i also matches the Clear button's
+      // aria-label ("Clear search filters"), causing getByRole to throw
+      // due to multiple matches.
       expect(
-        screen.getByRole("button", { name: /search/i }),
+        screen.getByRole("button", { name: /^search$/i }),
       ).toBeInTheDocument();
     });
 
@@ -247,8 +250,8 @@ describe("HeroSection", () => {
     it("Search button shows loading indicator when isLoading=true", () => {
       renderHero({ isLoading: true });
 
-      // When loading the button text changes — still accessible by role
-      const searchBtn = screen.getByRole("button", { name: /search/i });
+      // Use exact match to avoid collision with "Clear search filters" button.
+      const searchBtn = screen.getByRole("button", { name: /^search$/i });
       expect(searchBtn).toBeInTheDocument();
     });
   });
