@@ -46,9 +46,9 @@ describe("AppRoutes", () => {
       </MemoryRouter>
     );
 
-    // "Ready to Mix" is the IndexPage empty-state heading — unique to that view
+    // "Your Perfect Mix Awaits" is the IndexPage empty-state heading — unique to that view
     expect(
-      await screen.findByRole("heading", { name: /ready to mix/i })
+      await screen.findByRole("heading", { name: /your perfect mix awaits/i })
     ).toBeInTheDocument();
   });
 
