@@ -1,45 +1,7 @@
-import { render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { describe, it, expect } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import Header from "@/components/Header";
-import type { AppState } from "@/stores/selectors";
-
-vi.mock("@/stores/useAppStore", () => ({
-  useAppStore: vi.fn(),
-}));
-
-import { useAppStore } from "@/stores/useAppStore";
-
-// ─────────────────────────────────────────────
-// Action mocks
-// ─────────────────────────────────────────────
-
-const mockFetchCategories = vi.fn();
-const mockSearchRecipes = vi.fn();
-const mockSetNotification = vi.fn();
-
-// ─────────────────────────────────────────────
-// Store helper
-// ─────────────────────────────────────────────
-
-function setupStore(overrides?: Partial<AppState>) {
-  const mockedUseAppStore = useAppStore as unknown as Mock;
-
-  const baseState: Partial<AppState> = {
-    fetchCategories: mockFetchCategories,
-    categories: ["Cocktail", "Ordinary Drink"],
-    searchRecipes: mockSearchRecipes,
-    drinks: { drinks: [] },
-    isLoading: false,
-    setNotification: mockSetNotification,
-  };
-
-  mockedUseAppStore.mockImplementation(
-    (selector: (state: AppState) => unknown) =>
-      selector({ ...baseState, ...overrides } as AppState),
-  );
-}
 
 // ─────────────────────────────────────────────
 // Render helper
@@ -58,111 +20,88 @@ function renderHeader(path = "/") {
 // ─────────────────────────────────────────────
 
 describe("Header", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    setupStore();
-  });
 
-  it("calls fetchCategories on mount", () => {
+  // ── Logo ──────────────────────────────────────────────────────────────
+
+  it("renders the logo link pointing to /", () => {
     renderHeader();
 
-    expect(mockFetchCategories).toHaveBeenCalledTimes(1);
+    // The Logo renders a <Link to="/"> — it is the first link in the header
+    const logoLink = screen.getAllByRole("link", { name: /cocktail/i })[0];
+    expect(logoLink).toBeInTheDocument();
+    expect(logoLink).toHaveAttribute("href", "/");
   });
 
-  it("renders navigation links", () => {
+  // ── Navigation links ──────────────────────────────────────────────────
+  //
+  // Header renders two AnimatedNav instances (desktop + mobile) from the same
+  // route config, so every destination appears twice in the DOM.
+  // Use getAllByRole to accept both occurrences.
+
+  it("renders navigation links to Home, Favorites and AI Generator", () => {
     renderHeader();
 
-    expect(screen.getByRole("link", { name: /home/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /favorites/i })).toBeInTheDocument();
+    // Desktop nav uses full labels; mobile nav uses abbreviated ones.
+    // getAllByRole with a broad pattern captures both — just assert at least one.
+    expect(screen.getAllByRole("link", { name: /home/i }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByRole("link", { name: /favorites/i }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByRole("link", { name: /ai/i }).length).toBeGreaterThanOrEqual(1);
   });
 
-  it("renders the search form on the home route", () => {
-    renderHeader("/");
-    expect(screen.getByRole("search")).toBeInTheDocument();
-  });
-
-  it("does not render the search form on other routes", () => {
-    renderHeader("/favorites");
+  it("does not render a search form", () => {
+    // The search form lives in HeroSection / IndexPage, not in Header.
+    renderHeader();
     expect(screen.queryByRole("search")).not.toBeInTheDocument();
   });
 
-  it("shows error notification when submitting without any filters", async () => {
-    const user = userEvent.setup();
+  // ── Theme toggle ──────────────────────────────────────────────────────
 
+  it("renders the theme toggle button", () => {
     renderHeader();
 
-    await user.click(screen.getByRole("button", { name: /search/i }));
+    // ThemeToggle renders a button — verify it exists without coupling to its label
+    // (label depends on current theme state).
+    const buttons = screen.getAllByRole("button");
+    expect(buttons.length).toBeGreaterThanOrEqual(1);
+  });
 
-    expect(mockSetNotification).toHaveBeenCalledWith(
-      "Please enter an ingredient or select a category.",
-      "error",
+  // ── Active link state ─────────────────────────────────────────────────
+
+  it("marks the Home link as active on the / route", () => {
+    renderHeader("/");
+
+    const homeLinks = screen.getAllByRole("link", { name: /^home$/i });
+    // At least one desktop Home link should carry the active class
+    const activeHome = homeLinks.find((el) =>
+      el.classList.contains("nav-link--active"),
     );
+    expect(activeHome).toBeDefined();
   });
 
-  it("calls searchRecipes with ingredient when only ingredient is provided", async () => {
-    const user = userEvent.setup();
+  it("marks the Favorites link as active on the /favorites route", () => {
+    renderHeader("/favorites");
 
-    renderHeader();
-
-    await user.type(
-      screen.getByPlaceholderText(/search by ingredient/i),
-      "Gin",
+    const favLinks = screen.getAllByRole("link", { name: /^favorites$/i });
+    const activeFav = favLinks.find((el) =>
+      el.classList.contains("nav-link--active"),
     );
-    await user.click(screen.getByRole("button", { name: /search/i }));
-
-    expect(mockSearchRecipes).toHaveBeenCalledWith({
-      ingredient: "Gin",
-      category: "",
-    });
+    expect(activeFav).toBeDefined();
   });
 
-  it("calls searchRecipes with category when only category is selected", async () => {
-    const user = userEvent.setup();
+  // ── Semantic structure ────────────────────────────────────────────────
 
-    renderHeader();
-
-    // Open the Listbox
-    await user.click(screen.getByRole("button", { name: /all categories/i }));
-
-    // HeadlessUI v2 applies inert to the outer container when open — query
-    // the option directly from the DOM to bypass the accessibility-tree filter.
-    await waitFor(() => {
-      const options = document.querySelectorAll('[role="option"]');
-      expect(options.length).toBeGreaterThan(0);
-    });
-
-    const cocktailOption = Array.from(
-      document.querySelectorAll('[role="option"]'),
-    ).find((el) => el.textContent?.trim() === "Cocktail")!;
-
-    await user.click(cocktailOption);
-
-    await user.click(screen.getByRole("button", { name: /search/i }));
-
-    expect(mockSearchRecipes).toHaveBeenCalledWith({
-      ingredient: "",
-      category: "Cocktail",
-    });
+  it("renders inside a <header> element", () => {
+    const { container } = renderHeader();
+    expect(container.querySelector("header")).toBeInTheDocument();
   });
 
-  it("does not call searchRecipes while loading", async () => {
-    const user = userEvent.setup();
-
-    setupStore({ isLoading: true });
-
-    renderHeader();
-
-    await user.click(screen.getByRole("button", { name: /search/i }));
-
-    expect(mockSearchRecipes).not.toHaveBeenCalled();
+  it("applies the bordered modifier class on non-home routes", () => {
+    const { container } = renderHeader("/favorites");
+    expect(container.querySelector(".site-header--bordered")).toBeInTheDocument();
   });
 
-  it("shows aria-busy=true on the search form while loading", () => {
-    setupStore({ isLoading: true });
-
-    renderHeader();
-
-    // Header sets aria-busy on the form element, not disabled on the button.
-    expect(screen.getByRole("search")).toHaveAttribute("aria-busy", "true");
+  it("does not apply the bordered modifier class on the home route", () => {
+    const { container } = renderHeader("/");
+    expect(container.querySelector(".site-header--bordered")).not.toBeInTheDocument();
   });
 });
