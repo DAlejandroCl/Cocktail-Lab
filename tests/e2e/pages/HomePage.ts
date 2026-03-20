@@ -38,7 +38,7 @@ export class HomePage {
     this.favoritesLink = page.getByRole("link", { name: /favorites/i });
     this.logo          = page.getByText("Cocktail Lab");
 
-    this.heroHeading  = page.getByRole("heading", { name: /discover your next/i });
+    this.heroHeading  = page.getByRole("heading", { name: /find your/i });
     this.heroSubtitle = page.getByText(/timeless classics/i);
 
     this.searchForm      = page.getByRole("search");
@@ -47,8 +47,10 @@ export class HomePage {
     this.searchButton    = page.getByRole("button", { name: /^search$/i });
 
     this.browseAllButton  = page.getByRole("button", { name: /browse all recipes/i });
-    this.resultsHeading   = page.getByRole("heading", { name: /featured mixes/i });
-    this.recipeCountLabel = page.getByText(/found \d+ recipe/i);
+    // After a search the heading reads "Results" (not "Featured Mixes")
+    this.resultsHeading   = page.getByRole("heading", { name: /^results$/i });
+    // Counter shows either "X recipes found" or "Showing X of Y recipes"
+    this.recipeCountLabel = page.getByText(/\d+ recipe|showing \d+ of \d+/i);
     this.drinkCards       = page.getByRole("article");
     this.skeletonCards    = page.locator('[role="presentation"][aria-hidden="true"]');
 
