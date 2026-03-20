@@ -7,22 +7,19 @@ import ThemeToggle from "./ThemeToggle";
 ───────────────────────────────────────────────────────────── */
 
 const NAV_LINKS = [
-  { to: "/",          label: "Home",         end: true  },
-  { to: "/favorites", label: "Favorites",    end: false },
-  { to: "/ai",        label: "AI Generator", end: false },
+  { to: "/"         , label: "Home"         , end: true },
+  { to: "/favorites", label: "Favorites"    , end: false },
+  { to: "/ai"       , label: "AI Generator" , end: false },
 ] as const;
 
 const NAV_LINKS_MOBILE = [
-  { to: "/",          label: "Home", end: true  },
+  { to: "/", label: "Home", end: true },
   { to: "/favorites", label: "Favs", end: false },
-  { to: "/ai",        label: "AI",   end: false },
+  { to: "/ai", label: "AI", end: false },
 ] as const;
 
 /* ─────────────────────────────────────────────────────────────
    ANIMATED NAV
-   Underline geometry lives in useState — never in refs.
-   useEffect reads refs inside its callback (allowed) and
-   calls setState there. No ref access during render at all.
 ───────────────────────────────────────────────────────────── */
 
 interface AnimatedNavProps {
@@ -31,21 +28,21 @@ interface AnimatedNavProps {
 }
 
 function AnimatedNav({ links, className = "" }: AnimatedNavProps) {
-  const location  = useLocation();
-  const navRef    = useRef<HTMLDivElement>(null);
-  const linkRefs  = useRef<Map<string, HTMLAnchorElement>>(new Map());
-  const [underline, setUnderline] = useState<{ left: number; width: number } | null>(null);
+  const location = useLocation();
+  const navRef = useRef<HTMLDivElement>(null);
+  const linkRefs = useRef<Map<string, HTMLAnchorElement>>(new Map());
+  const [underline, setUnderline] = useState<{
+    left: number;
+    width: number;
+  } | null>(null);
 
   useEffect(() => {
-    // All ref access lives inside the effect callback — never during render
     const rafId = requestAnimationFrame(() => {
       const nav = navRef.current;
       if (!nav) return;
 
       const activeLink = links.find((l) =>
-        l.end
-          ? location.pathname === l.to
-          : location.pathname.startsWith(l.to),
+        l.end ? location.pathname === l.to : location.pathname.startsWith(l.to),
       );
 
       if (!activeLink) {
@@ -56,11 +53,11 @@ function AnimatedNav({ links, className = "" }: AnimatedNavProps) {
       const activeEl = linkRefs.current.get(activeLink.to);
       if (!activeEl) return;
 
-      const navRect    = nav.getBoundingClientRect();
+      const navRect = nav.getBoundingClientRect();
       const activeRect = activeEl.getBoundingClientRect();
 
       setUnderline({
-        left:  activeRect.left - navRect.left,
+        left: activeRect.left - navRect.left,
         width: activeRect.width,
       });
     });
@@ -91,7 +88,6 @@ function AnimatedNav({ links, className = "" }: AnimatedNavProps) {
         );
       })}
 
-      {/* Underline: position comes from useState, never from refs */}
       {underline && (
         <span
           className="nav-underline"
@@ -104,9 +100,6 @@ function AnimatedNav({ links, className = "" }: AnimatedNavProps) {
 
 /* ─────────────────────────────────────────────────────────────
    LOGO
-   "Lab" letters animate one by one on hover via CSS classes.
-   The parent link handles scale on click.
-   All styles live in index.css — zero inline styles here.
 ───────────────────────────────────────────────────────────── */
 
 function Logo() {
@@ -114,9 +107,15 @@ function Logo() {
     <Link to="/" className="logo-link">
       <span className="logo-cocktail">Cocktail</span>
       <span className="logo-lab" aria-label="Lab">
-        <span className="logo-lab__letter" data-letter="L" aria-hidden="true">L</span>
-        <span className="logo-lab__letter" data-letter="a" aria-hidden="true">a</span>
-        <span className="logo-lab__letter" data-letter="b" aria-hidden="true">b</span>
+        <span className="logo-lab__letter" data-letter="L" aria-hidden="true">
+          L
+        </span>
+        <span className="logo-lab__letter" data-letter="a" aria-hidden="true">
+          a
+        </span>
+        <span className="logo-lab__letter" data-letter="b" aria-hidden="true">
+          b
+        </span>
       </span>
     </Link>
   );
@@ -128,22 +127,25 @@ function Logo() {
 
 export default function Header() {
   const location = useLocation();
-  const isHome   = location.pathname === "/";
+  const isHome = location.pathname === "/";
 
   return (
-    <header className={isHome ? "site-header" : "site-header site-header--bordered"}>
+    <header
+      className={isHome ? "site-header" : "site-header site-header--bordered"}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-
           <Logo />
 
           <AnimatedNav links={NAV_LINKS} className="hidden md:flex gap-8" />
 
           <div className="flex items-center gap-4">
             <ThemeToggle />
-            <AnimatedNav links={NAV_LINKS_MOBILE} className="flex md:hidden gap-5" />
+            <AnimatedNav
+              links={NAV_LINKS_MOBILE}
+              className="flex md:hidden gap-5"
+            />
           </div>
-
         </div>
       </div>
     </header>
