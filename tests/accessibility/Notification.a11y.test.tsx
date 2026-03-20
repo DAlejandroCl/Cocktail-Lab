@@ -85,7 +85,7 @@ describe("Notification — Accessibility", () => {
     setNotification("Closable message", "success");
     renderNotification();
     expect(
-      screen.getByRole("button", { name: /close notification/i }),
+      screen.getByRole("button", { name: /dismiss notification/i }),
     ).toBeInTheDocument();
   });
 
@@ -94,7 +94,7 @@ describe("Notification — Accessibility", () => {
     setNotification("Closable message", "success");
     renderNotification();
 
-    await user.click(screen.getByRole("button", { name: /close notification/i }));
+    await user.click(screen.getByRole("button", { name: /dismiss notification/i }));
 
     await waitFor(() => {
       expect(useAppStore.getState().notification).toBeNull();
@@ -165,7 +165,7 @@ describe("Notification — Accessibility", () => {
     setNotification("Focus pause", "success");
     renderNotification();
 
-    const closeButton = screen.getByRole("button", { name: /close notification/i });
+    const closeButton = screen.getByRole("button", { name: /dismiss notification/i });
 
     act(() => { fireEvent.focus(closeButton); });
     act(() => { vi.advanceTimersByTime(4000); });
