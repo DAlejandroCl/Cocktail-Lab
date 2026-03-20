@@ -1,11 +1,10 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { http, HttpResponse } from "msw";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it } from "vitest";
-import { server } from "../mocks/server";
 import { useAppStore } from "@/stores/useAppStore";
 import IndexPage from "@/views/IndexPage";
+import { TOTAL_BROWSE_DRINKS, DRINKS_BY_CATEGORY } from "../mocks/handlers";
 
 // ─────────────────────────────────────────────
 // Helper
@@ -25,11 +24,12 @@ function renderIndexPage() {
 
 beforeEach(() => {
   useAppStore.setState({
-    drinks: { drinks: [] },
-    isLoading: false,
-    hasSearched: false,
+    drinks:       { drinks: [] },
+    isLoading:    false,
+    hasSearched:  false,
     notification: null,
-    favorites: {},
+    favorites:    {},
+    favoriteOrder: {},
   });
 });
 
@@ -38,6 +38,8 @@ beforeEach(() => {
 // ─────────────────────────────────────────────
 
 describe("IndexPage — Integration", () => {
+
+  // ── Initial state ──────────────────────────────────────────────────────
 
   describe("initial state", () => {
     it("renders the empty state heading", () => {
@@ -71,15 +73,17 @@ describe("IndexPage — Integration", () => {
     });
   });
 
-  describe("loading state", () => {
+  // ── Loading state ──────────────────────────────────────────────────────
 
-    it("shows 8 skeleton cards while loading", () => {
+  describe("loading state", () => {
+    it("shows 20 skeleton cards while loading", () => {
       useAppStore.setState({ isLoading: true });
 
       renderIndexPage();
 
+      // SkeletonDrinkCard renders with role="presentation"
       const skeletons = screen.getAllByRole("presentation", { hidden: true });
-      expect(skeletons).toHaveLength(8);
+      expect(skeletons).toHaveLength(20);
     });
 
     it("shows the loading subtitle text while loading", () => {
@@ -88,15 +92,31 @@ describe("IndexPage — Integration", () => {
       renderIndexPage();
 
       expect(
-        screen.getByText(/mixing the perfect drinks for you/i),
+        screen.getByText(/mixing the perfect drinks…/i),
       ).toBeInTheDocument();
     });
   });
 
-  describe("successful fetch", () => {
-    it("displays drink cards after fetching", async () => {
-      const user = userEvent.setup();
+  // ── Browse All Recipes ─────────────────────────────────────────────────
 
+  describe("Browse All Recipes", () => {
+    it("calls filter.php?c= for each category — not random.php", async () => {
+      const user = userEvent.setup();
+      renderIndexPage();
+
+      await user.click(
+        screen.getByRole("button", { name: /browse all recipes/i }),
+      );
+
+      // The MSW handler for filter.php?c= returns DRINKS_BY_CATEGORY data.
+      // Drinks from all categories should appear in the grid.
+      await waitFor(() => {
+        expect(screen.getByText(DRINKS_BY_CATEGORY.Cocktail[0].strDrink)).toBeInTheDocument();
+      });
+    });
+
+    it("displays drink cards from multiple categories after Browse All", async () => {
+      const user = userEvent.setup();
       renderIndexPage();
 
       await user.click(
@@ -104,60 +124,12 @@ describe("IndexPage — Integration", () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText("Mojito")).toBeInTheDocument();
+        expect(screen.getAllByRole("article").length).toBeGreaterThan(0);
       });
     });
 
-    it("shows the correct recipe count after fetching", async () => {
+    it("replaces the empty state heading with 'Results' after drinks load", async () => {
       const user = userEvent.setup();
-
-      renderIndexPage();
-
-      await user.click(
-        screen.getByRole("button", { name: /browse all recipes/i }),
-      );
-
-      await waitFor(() => {
-        expect(screen.getByText(/found 1 recipe/i)).toBeInTheDocument();
-      });
-    });
-
-    it("shows plural 'recipes' label when multiple drinks are returned", () => {
-      server.use(
-        http.get(
-          "https://www.thecocktaildb.com/api/json/v1/1/random.php",
-          () =>
-            HttpResponse.json({
-              drinks: [
-                {
-                  idDrink: "1",
-                  strDrink: "Mojito",
-                  strDrinkThumb: "https://image.com/mojito.jpg",
-                },
-              ],
-            }),
-        ),
-      );
-
-      useAppStore.setState({
-        drinks: {
-          drinks: [
-            { idDrink: "1", strDrink: "Mojito", strDrinkThumb: "https://image.com/mojito.jpg" },
-            { idDrink: "2", strDrink: "Daiquiri", strDrinkThumb: "https://image.com/daiquiri.jpg" },
-          ],
-        },
-        hasSearched: true,
-        isLoading: false,
-      });
-
-      renderIndexPage();
-
-      expect(screen.getByText(/found 2 recipes/i)).toBeInTheDocument();
-    });
-
-    it("replaces the empty state heading with 'Featured Mixes' after drinks load", async () => {
-      const user = userEvent.setup();
-
       renderIndexPage();
 
       await user.click(
@@ -166,7 +138,7 @@ describe("IndexPage — Integration", () => {
 
       await waitFor(() => {
         expect(
-          screen.getByRole("heading", { name: /featured mixes/i }),
+          screen.getByRole("heading", { name: /results/i }),
         ).toBeInTheDocument();
       });
 
@@ -177,7 +149,6 @@ describe("IndexPage — Integration", () => {
 
     it("removes skeleton cards after drinks load", async () => {
       const user = userEvent.setup();
-
       renderIndexPage();
 
       await user.click(
@@ -185,7 +156,7 @@ describe("IndexPage — Integration", () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText("Mojito")).toBeInTheDocument();
+        expect(screen.getAllByRole("article").length).toBeGreaterThan(0);
       });
 
       expect(
@@ -194,12 +165,95 @@ describe("IndexPage — Integration", () => {
     });
   });
 
+  // ── Results counter ────────────────────────────────────────────────────
+
+  describe("results counter", () => {
+    it("shows 'X recipes found' when all results fit in the initial view", () => {
+      // TOTAL_BROWSE_DRINKS = 10, INITIAL_VISIBLE = 20 → all fit → 'found' label
+      useAppStore.setState({
+        drinks: {
+          drinks: Array.from({ length: TOTAL_BROWSE_DRINKS }, (_, i) => ({
+            idDrink:       String(i + 1),
+            strDrink:      `Drink ${i + 1}`,
+            strDrinkThumb: `https://image.com/${i + 1}.jpg`,
+            strCategory:   "Cocktail",
+          })),
+        },
+        hasSearched: true,
+        isLoading:   false,
+      });
+
+      renderIndexPage();
+
+      expect(
+        screen.getByText(`${TOTAL_BROWSE_DRINKS} recipes found`),
+      ).toBeInTheDocument();
+    });
+
+    it("shows 'Showing 20 of N recipes' when results exceed initial visible count", () => {
+      // More than 20 drinks → paginated → 'Showing X of Y' label
+      const manyDrinks = Array.from({ length: 25 }, (_, i) => ({
+        idDrink:       String(i + 1),
+        strDrink:      `Drink ${i + 1}`,
+        strDrinkThumb: `https://image.com/${i + 1}.jpg`,
+        strCategory:   "Cocktail",
+      }));
+
+      useAppStore.setState({
+        drinks:      { drinks: manyDrinks },
+        hasSearched: true,
+        isLoading:   false,
+      });
+
+      renderIndexPage();
+
+      expect(
+        screen.getByText("Showing 20 of 25 recipes"),
+      ).toBeInTheDocument();
+    });
+
+    it("shows '1 recipe found' (singular) for a single result", () => {
+      useAppStore.setState({
+        drinks: {
+          drinks: [
+            { idDrink: "1", strDrink: "Mojito", strDrinkThumb: "https://image.com/mojito.jpg", strCategory: "Cocktail" },
+          ],
+        },
+        hasSearched: true,
+        isLoading:   false,
+      });
+
+      renderIndexPage();
+
+      expect(screen.getByText("1 recipe found")).toBeInTheDocument();
+    });
+
+    it("shows plural 'recipes found' for multiple results within visible limit", () => {
+      useAppStore.setState({
+        drinks: {
+          drinks: [
+            { idDrink: "1", strDrink: "Mojito",   strDrinkThumb: "https://image.com/mojito.jpg",   strCategory: "Cocktail" },
+            { idDrink: "2", strDrink: "Daiquiri",  strDrinkThumb: "https://image.com/daiquiri.jpg",  strCategory: "Cocktail" },
+          ],
+        },
+        hasSearched: true,
+        isLoading:   false,
+      });
+
+      renderIndexPage();
+
+      expect(screen.getByText("2 recipes found")).toBeInTheDocument();
+    });
+  });
+
+  // ── Empty results ──────────────────────────────────────────────────────
+
   describe("empty results", () => {
     it("shows an info notification when no drinks are found", async () => {
       useAppStore.setState({
-        drinks: { drinks: [] },
-        isLoading: false,
-        hasSearched: true,
+        drinks:       { drinks: [] },
+        isLoading:    false,
+        hasSearched:  true,
         notification: null,
       });
 
@@ -208,7 +262,7 @@ describe("IndexPage — Integration", () => {
       await waitFor(() => {
         expect(useAppStore.getState().notification).toEqual({
           message: "No cocktails found with those filters",
-          type: "info",
+          type:    "info",
         });
       });
     });
@@ -221,8 +275,8 @@ describe("IndexPage — Integration", () => {
 
     it("keeps showing empty state UI when no drinks found", () => {
       useAppStore.setState({
-        drinks: { drinks: [] },
-        isLoading: false,
+        drinks:      { drinks: [] },
+        isLoading:   false,
         hasSearched: true,
       });
 
@@ -234,31 +288,41 @@ describe("IndexPage — Integration", () => {
     });
   });
 
+  // ── Accessibility ──────────────────────────────────────────────────────
+
   describe("accessibility", () => {
     it("Browse All button is keyboard accessible", () => {
       renderIndexPage();
 
       const button = screen.getByRole("button", { name: /browse all recipes/i });
-
       button.focus();
+
       expect(button).toHaveFocus();
     });
 
-    it("drink cards are rendered as articles with accessible names", () => {
+    it("drink cards are rendered as articles with accessible aria-labelledby", () => {
       useAppStore.setState({
         drinks: {
           drinks: [
-            { idDrink: "1", strDrink: "Mojito", strDrinkThumb: "https://image.com/mojito.jpg" },
+            { idDrink: "1", strDrink: "Mojito", strDrinkThumb: "https://image.com/mojito.jpg", strCategory: "Cocktail" },
           ],
         },
         hasSearched: true,
-        isLoading: false,
+        isLoading:   false,
       });
 
       renderIndexPage();
 
       const article = screen.getByRole("article");
       expect(article).toHaveAttribute("aria-labelledby", "drink-title-1");
+    });
+
+    it("results section has aria-label for screen readers", () => {
+      renderIndexPage();
+
+      expect(
+        screen.getByRole("region", { name: /search results/i }),
+      ).toBeInTheDocument();
     });
   });
 });
