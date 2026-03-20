@@ -105,7 +105,7 @@ describe("Header", () => {
     renderHeader();
 
     await user.type(
-      screen.getByPlaceholderText(/search by ingredients/i),
+      screen.getByPlaceholderText(/search by ingredient/i),
       "Gin",
     );
     await user.click(screen.getByRole("button", { name: /search/i }));
