@@ -141,7 +141,7 @@ describe("generateAISlice", () => {
   // ── generateRecipe ────────────────────────────────────────────────────────
 
   it("does nothing when aiIngredients is empty", async () => {
-    const fetchSpy = vi.spyOn(global, "fetch");
+    const fetchSpy = vi.spyOn(window, "fetch");
     await store.getState().generateRecipe();
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(store.getState().isGenerating).toBe(false);
@@ -152,7 +152,7 @@ describe("generateAISlice", () => {
 
     let observedDuringFetch = false;
 
-    vi.spyOn(global, "fetch").mockImplementation(async () => {
+    vi.spyOn(window, "fetch").mockImplementation(async () => {
       observedDuringFetch = store.getState().isGenerating;
       return new Response(JSON.stringify(DEFAULT_AI_RECIPE_RESPONSE), {
         status: 200,
@@ -167,7 +167,7 @@ describe("generateAISlice", () => {
   it("sets generatedRecipe on success and clears isGenerating", async () => {
     store.getState().addIngredient("Vodka");
 
-    vi.spyOn(global, "fetch").mockResolvedValueOnce(
+    vi.spyOn(window, "fetch").mockResolvedValueOnce(
       new Response(JSON.stringify(DEFAULT_AI_RECIPE_RESPONSE), {
         status: 200,
         headers: { "Content-Type": "application/json" },
@@ -187,7 +187,7 @@ describe("generateAISlice", () => {
   it("maps ingredients into strIngredient1..N fields", async () => {
     store.getState().addIngredient("Gin");
 
-    vi.spyOn(global, "fetch").mockResolvedValueOnce(
+    vi.spyOn(window, "fetch").mockResolvedValueOnce(
       new Response(JSON.stringify(DEFAULT_AI_RECIPE_RESPONSE), {
         status: 200,
         headers: { "Content-Type": "application/json" },
@@ -207,7 +207,7 @@ describe("generateAISlice", () => {
   it("sets generationError on API failure and clears isGenerating", async () => {
     store.getState().addIngredient("Rum");
 
-    vi.spyOn(global, "fetch").mockResolvedValueOnce(
+    vi.spyOn(window, "fetch").mockResolvedValueOnce(
       new Response("Internal Server Error", { status: 500, statusText: "Internal Server Error" }),
     );
 
@@ -222,7 +222,7 @@ describe("generateAISlice", () => {
   it("sets generationError on network failure", async () => {
     store.getState().addIngredient("Tequila");
 
-    vi.spyOn(global, "fetch").mockRejectedValueOnce(new Error("Network error"));
+    vi.spyOn(window, "fetch").mockRejectedValueOnce(new Error("Network error"));
 
     await store.getState().generateRecipe();
 
@@ -233,7 +233,7 @@ describe("generateAISlice", () => {
   it("clears previous error before a new generation attempt", async () => {
     store.setState({ generationError: "old error", aiIngredients: ["Vodka"] });
 
-    vi.spyOn(global, "fetch").mockResolvedValueOnce(
+    vi.spyOn(window, "fetch").mockResolvedValueOnce(
       new Response(JSON.stringify(DEFAULT_AI_RECIPE_RESPONSE), {
         status: 200,
         headers: { "Content-Type": "application/json" },
