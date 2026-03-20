@@ -20,7 +20,10 @@ describe("SkeletonDrinkCard Unit Tests", () => {
     const { container } = render(<SkeletonDrinkCard />);
     const wrapper = container.firstChild as HTMLElement;
 
-    expect(wrapper.className).toContain("animate-pulse");
+    // SkeletonDrinkCard applies animate-pulse to internal shimmer elements,
+    // not to the outer wrapper div. Query any descendant with the class.
+    const animatedEl = wrapper.querySelector(".animate-pulse");
+    expect(animatedEl).not.toBeNull();
   });
 
   it("renders correct structural sections", () => {
