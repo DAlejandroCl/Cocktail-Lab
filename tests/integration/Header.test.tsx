@@ -56,181 +56,88 @@ describe("Header — Integration", () => {
     it("renders the Home nav link", () => {
       renderHeader();
 
-      expect(screen.getByRole("link", { name: /^home$/i })).toBeInTheDocument();
+      // Desktop + mobile navs both render a "Home" link — use getAllByRole
+      const homeLinks = screen.getAllByRole("link", { name: /^home$/i });
+      expect(homeLinks.length).toBeGreaterThanOrEqual(1);
     });
 
     it("renders the Favorites nav link", () => {
       renderHeader();
 
-      expect(
-        screen.getByRole("link", { name: /^favorites$/i }),
-      ).toBeInTheDocument();
+      const favLinks = screen.getAllByRole("link", { name: /^favorites$/i });
+      expect(favLinks.length).toBeGreaterThanOrEqual(1);
     });
 
     it("renders the navigation landmark with accessible label", () => {
       renderHeader();
 
+      // Desktop nav: "Main navigation", mobile nav: "Main navigation mobile"
+      // Both are present — assert the desktop one specifically.
       expect(
-        screen.getByRole("navigation", { name: /main navigation/i }),
+        screen.getByRole("navigation", { name: "Main navigation" }),
       ).toBeInTheDocument();
     });
 
-    it("does not render the search form when NOT on home route", () => {
-      renderHeader("/favorites");
+    it("does not render the search form", () => {
+      // SearchForm lives in HeroSection/IndexPage, not in Header.
+      renderHeader("/");
 
       expect(screen.queryByRole("search")).not.toBeInTheDocument();
     });
+  });
 
-    it("renders the search form when on the home route", () => {
+  describe("active link state", () => {
+    it("marks the Home link as active on the / route", () => {
       renderHeader("/");
 
-      expect(screen.getByRole("search")).toBeInTheDocument();
-    });
-  });
-
-  describe("search form", () => {
-    it("renders the ingredient text input with a visually hidden label", () => {
-      renderHeader();
-
-      expect(
-        screen.getByLabelText(/search cocktails by ingredient/i),
-      ).toBeInTheDocument();
-    });
-
-    it("renders the Search submit button", () => {
-      renderHeader();
-
-      expect(
-        screen.getByRole("button", { name: /^search$/i }),
-      ).toBeInTheDocument();
-    });
-
-    it("ingredient input updates its value on typing", async () => {
-      const user = userEvent.setup();
-
-      renderHeader();
-
-      const input = screen.getByLabelText(/search cocktails by ingredient/i);
-      await user.type(input, "Gin");
-
-      expect(input).toHaveValue("Gin");
-    });
-
-    it("submitting with an empty ingredient and no category shows an error notification", async () => {
-      const user = userEvent.setup();
-
-      renderHeader();
-
-      await user.click(screen.getByRole("button", { name: /^search$/i }));
-
-      await waitFor(() => {
-        expect(useAppStore.getState().notification).toEqual({
-          message: "Please enter an ingredient or select a category.",
-          type: "error",
-        });
-      });
-    });
-
-    it("focuses the ingredient input after empty-submit validation error", async () => {
-      const user = userEvent.setup();
-
-      renderHeader();
-
-      const input = screen.getByLabelText(/search cocktails by ingredient/i);
-
-      await user.click(screen.getByRole("button", { name: /^search$/i }));
-
-      await waitFor(() => {
-        expect(input).toHaveFocus();
-      });
-    });
-
-    it("triggers a search and sets hasSearched=true on valid ingredient submit", async () => {
-      const user = userEvent.setup();
-
-      renderHeader();
-
-      await user.type(
-        screen.getByLabelText(/search cocktails by ingredient/i),
-        "Rum",
+      const homeLinks = screen.getAllByRole("link", { name: /^home$/i });
+      const hasActive = homeLinks.some(
+        (el) => el.getAttribute("aria-current") === "page",
       );
-
-      await user.click(screen.getByRole("button", { name: /^search$/i }));
-
-      await waitFor(() => {
-        expect(useAppStore.getState().hasSearched).toBe(true);
-      });
+      expect(hasActive).toBe(true);
     });
 
-    it("the form has aria-busy=true while loading", () => {
-      useAppStore.setState({ isLoading: true });
+    it("marks the Favorites link as active on the /favorites route", () => {
+      renderHeader("/favorites");
 
-      renderHeader();
-
-      expect(screen.getByRole("search")).toHaveAttribute("aria-busy", "true");
-    });
-
-    it("the form has aria-busy=false when not loading", () => {
-      useAppStore.setState({ isLoading: false });
-
-      renderHeader();
-
-      expect(screen.getByRole("search")).toHaveAttribute("aria-busy", "false");
+      const favLinks = screen.getAllByRole("link", { name: /^favorites$/i });
+      const hasActive = favLinks.some(
+        (el) => el.getAttribute("aria-current") === "page",
+      );
+      expect(hasActive).toBe(true);
     });
   });
 
-  describe("categories", () => {
-    it("fetches categories on mount and populates the store", async () => {
+  describe("theme toggle", () => {
+    it("renders a theme toggle button", () => {
       renderHeader();
 
-      await waitFor(() => {
-        expect(useAppStore.getState().categories).toContain("Cocktail");
-      });
-    });
-
-    it("renders category options in the dropdown after the store is populated", async () => {
-      const user = userEvent.setup();
-
-      useAppStore.setState({
-        categories: ["Cocktail", "Shot", "Beer"],
-      });
-
-      renderHeader();
-
-      const trigger = screen.getByRole("button", { name: /all categories/i });
-      await user.click(trigger);
-
-      // HeadlessUI v2 applies inert+aria-hidden to content outside the open
-      // Listbox, making screen.getByRole("option") unable to find the options.
-      // Query the DOM directly to bypass the accessibility-tree filter.
-      await waitFor(() => {
-        const options = document.querySelectorAll('[role="option"]');
-        const labels = Array.from(options).map((o) => o.textContent ?? "");
-
-        expect(labels.some((l) => /cocktail/i.test(l))).toBe(true);
-        expect(labels.some((l) => /shot/i.test(l))).toBe(true);
-        expect(labels.some((l) => /beer/i.test(l))).toBe(true);
-      });
+      const buttons = screen.getAllByRole("button");
+      expect(buttons.length).toBeGreaterThanOrEqual(1);
     });
   });
 
   describe("accessibility", () => {
-    it("the Search button is keyboard-focusable", () => {
-      renderHeader();
+    it("renders inside a header landmark", () => {
+      const { container } = renderHeader();
 
-      const btn = screen.getByRole("button", { name: /^search$/i });
-      btn.focus();
-
-      expect(btn).toHaveFocus();
+      expect(container.querySelector("header")).toBeInTheDocument();
     });
 
-    it("the ingredient input is keyboard-focusable", () => {
-      renderHeader();
+    it("applies the bordered modifier on non-home routes", () => {
+      const { container } = renderHeader("/favorites");
 
-      const input = screen.getByLabelText(/search cocktails by ingredient/i);
-      input.focus();
+      expect(
+        container.querySelector(".site-header--bordered"),
+      ).toBeInTheDocument();
+    });
 
-      expect(input).toHaveFocus();
+    it("does not apply the bordered modifier on the home route", () => {
+      const { container } = renderHeader("/");
+
+      expect(
+        container.querySelector(".site-header--bordered"),
+      ).not.toBeInTheDocument();
     });
   });
 });
