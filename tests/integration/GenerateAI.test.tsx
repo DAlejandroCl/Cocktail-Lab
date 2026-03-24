@@ -53,7 +53,8 @@ describe("GenerateAI view", () => {
 
   it("renders the page heading", () => {
     renderGenerateAI();
-    expect(screen.getByRole("heading", { name: /ai recipe generator/i })).toBeInTheDocument();
+    // GenerateAI.tsx h1 reads "Your Home Bar", not "AI Recipe Generator"
+    expect(screen.getByRole("heading", { name: /your home bar/i })).toBeInTheDocument();
   });
 
   it("renders the ingredient input", () => {
@@ -192,13 +193,14 @@ describe("GenerateAI view", () => {
     const card = screen.getByRole("article", { name: /generated recipe/i });
 
     expect(within(card).getByText(DEFAULT_AI_RECIPE_RESPONSE.recipe.strDrink)).toBeInTheDocument();
-    expect(within(card).getByText(/ai created/i)).toBeInTheDocument();
+    // Badge text in GenerateAI.tsx is "AI Crafted", not "AI Created"
+    expect(within(card).getByText(/ai crafted/i)).toBeInTheDocument();
     expect(within(card).getByRole("region", { name: /ingredients/i })).toBeInTheDocument();
     expect(within(card).getByRole("region", { name: /instructions/i })).toBeInTheDocument();
     expect(within(card).getByText(/vodka/i)).toBeInTheDocument();
   });
 
-  it("shows 'Add to Favorites' and 'Save Creation' buttons after generation", async () => {
+  it("shows 'Add to Favorites' and 'Save to My Creations' buttons after generation", async () => {
     const user = userEvent.setup();
     renderGenerateAI();
 
@@ -208,7 +210,8 @@ describe("GenerateAI view", () => {
     await screen.findByRole("article", { name: /generated recipe/i });
 
     expect(screen.getByRole("button", { name: /add to favorites/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /save creation/i })).toBeInTheDocument();
+    // aria-label is "Save to My Creations" (not "Save Creation" which is the visible text)
+    expect(screen.getByRole("button", { name: /save to my creations/i })).toBeInTheDocument();
   });
 
   // ── Error state ───────────────────────────────────────────────────────────
@@ -261,10 +264,14 @@ describe("GenerateAI view", () => {
     await user.click(screen.getByRole("button", { name: /generate recipe/i }));
     await screen.findByRole("article", { name: /generated recipe/i });
 
-    await user.click(screen.getByRole("button", { name: /save creation/i }));
+    // aria-label before saving is "Save to My Creations"
+    await user.click(screen.getByRole("button", { name: /save to my creations/i }));
 
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: /saved/i })).toBeDisabled(),
+      // aria-label after saving is "Recipe already saved to My Creations"
+      expect(
+        screen.getByRole("button", { name: /recipe already saved to my creations/i }),
+      ).toBeDisabled(),
     );
 
     expect(useAppStore.getState().aiRecipes).toHaveLength(1);
