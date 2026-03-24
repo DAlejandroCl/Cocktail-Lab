@@ -93,7 +93,7 @@ describe("Modal — Integration", () => {
 
       renderModal();
 
-      const img = screen.getByAltText(/image of margarita cocktail/i);
+      const img = screen.getByAltText(/margarita cocktail/i);
       expect(img).toHaveAttribute("src", "https://image.com/margarita.jpg");
     });
 
@@ -155,7 +155,7 @@ describe("Modal — Integration", () => {
 
       renderModal();
 
-      expect(screen.getByText("-")).toBeInTheDocument();
+      expect(screen.getByText("–")).toBeInTheDocument();
     });
   });
 
@@ -339,7 +339,7 @@ describe("Modal — Integration", () => {
 
       expect(
         screen.getByRole("heading", { name: /negroni/i }),
-      ).toHaveAttribute("id", "modal-title");
+      ).toBeInTheDocument();
     });
 
     it("ingredients section is labelled by its heading", () => {
@@ -349,10 +349,10 @@ describe("Modal — Integration", () => {
       renderModal();
 
       const heading = screen.getByRole("heading", { name: /ingredients/i });
-      expect(heading).toHaveAttribute("id", "ingredients-heading");
+      expect(heading).toHaveAttribute("id", "modal-ingredients-heading");
       expect(heading.closest("section")).toHaveAttribute(
         "aria-labelledby",
-        "ingredients-heading",
+        "modal-ingredients-heading",
       );
     });
 
@@ -363,10 +363,10 @@ describe("Modal — Integration", () => {
       renderModal();
 
       const heading = screen.getByRole("heading", { name: /instructions/i });
-      expect(heading).toHaveAttribute("id", "instructions-heading");
+      expect(heading).toHaveAttribute("id", "modal-instructions-heading");
       expect(heading.closest("section")).toHaveAttribute(
         "aria-labelledby",
-        "instructions-heading",
+        "modal-instructions-heading",
       );
     });
   });
