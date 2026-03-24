@@ -195,8 +195,8 @@ describe("GenerateAI view", () => {
     expect(within(card).getByText(DEFAULT_AI_RECIPE_RESPONSE.recipe.strDrink)).toBeInTheDocument();
     // Badge text in GenerateAI.tsx is "AI Crafted", not "AI Created"
     expect(within(card).getByText(/ai crafted/i)).toBeInTheDocument();
-    expect(within(card).getByRole("region", { name: /ingredients/i })).toBeInTheDocument();
-    expect(within(card).getByRole("region", { name: /instructions/i })).toBeInTheDocument();
+    expect(within(card).getByRole("region", { name: /^ingredients$/i })).toBeInTheDocument();
+    expect(within(card).getByRole("region", { name: /^instructions$/i })).toBeInTheDocument();
     expect(within(card).getByText(/vodka/i)).toBeInTheDocument();
   });
 
