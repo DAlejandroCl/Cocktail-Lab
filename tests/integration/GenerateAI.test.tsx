@@ -197,7 +197,9 @@ describe("GenerateAI view", () => {
     expect(within(card).getByText(/ai crafted/i)).toBeInTheDocument();
     expect(within(card).getByRole("region", { name: /^ingredients$/i })).toBeInTheDocument();
     expect(within(card).getByRole("region", { name: /^instructions$/i })).toBeInTheDocument();
-    expect(within(card).getByText(/vodka/i)).toBeInTheDocument();
+    // "Vodka" appears twice in the card: once in the recipe ingredients list
+    // and once in the "Your ingredients used" section — use getAllByText.
+    expect(within(card).getAllByText(/vodka/i).length).toBeGreaterThanOrEqual(1);
   });
 
   it("shows 'Add to Favorites' and 'Save to My Creations' buttons after generation", async () => {
