@@ -144,7 +144,7 @@ export default function Header() {
             <ThemeToggle />
             <AnimatedNav
               links={NAV_LINKS_MOBILE}
-              aria-label="Main navigation"
+              aria-label="Main navigation mobile"
               className="flex md:hidden gap-5"
             />
           </div>
