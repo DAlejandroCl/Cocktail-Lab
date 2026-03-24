@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -111,7 +111,10 @@ describe("IndexPage — Integration", () => {
       // The MSW handler for filter.php?c= returns DRINKS_BY_CATEGORY data.
       // Drinks from all categories should appear in the grid.
       await waitFor(() => {
-        expect(screen.getByText(DRINKS_BY_CATEGORY.Cocktail[0].strDrink)).toBeInTheDocument();
+        // HeroSection ticker also renders drink names (duplicated for animation),
+        // so getByText('Mojito') finds multiple elements. Scope to the results region.
+        const resultsRegion = screen.getByRole("region", { name: /search results/i });
+        expect(within(resultsRegion).getAllByText(DRINKS_BY_CATEGORY.Cocktail[0].strDrink)[0]).toBeInTheDocument();
       });
     });
 
