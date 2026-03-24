@@ -52,10 +52,14 @@ describe("Header — Accessibility", () => {
 
   it("renders the navigation landmark with an accessible label", () => {
     renderHeader("/");
-    // AnimatedNav now renders a <nav aria-label="Main navigation"> element.
-    // getAllByRole because both desktop and mobile navs share the same label.
-    const navs = screen.getAllByRole("navigation", { name: /main navigation/i });
-    expect(navs.length).toBeGreaterThanOrEqual(1);
+    // Desktop nav has aria-label="Main navigation",
+    // mobile nav has aria-label="Main navigation mobile" — both are unique.
+    expect(
+      screen.getByRole("navigation", { name: "Main navigation" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("navigation", { name: "Main navigation mobile" }),
+    ).toBeInTheDocument();
   });
 
   it("sets aria-current=page on the active nav link", () => {
