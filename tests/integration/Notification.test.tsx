@@ -97,7 +97,7 @@ describe("Notification — Integration", () => {
       renderNotification();
 
       expect(
-        screen.getByRole("button", { name: /close notification/i }),
+        screen.getByRole("button", { name: /dismiss notification/i }),
       ).toBeInTheDocument();
     });
 
@@ -106,7 +106,7 @@ describe("Notification — Integration", () => {
       renderNotification();
 
       fireEvent.click(
-        screen.getByRole("button", { name: /close notification/i }),
+        screen.getByRole("button", { name: /dismiss notification/i }),
       );
 
       expect(useAppStore.getState().notification).toBeNull();
@@ -132,11 +132,11 @@ describe("Notification — Integration", () => {
       expect(useAppStore.getState().notification).not.toBeNull();
     });
 
-    it("info notification auto-dismisses after 6000ms", () => {
+    it("info notification auto-dismisses after 5000ms", () => {
       setNotification("Your list is empty", "info");
       renderNotification();
 
-      act(() => { vi.advanceTimersByTime(5999); });
+      act(() => { vi.advanceTimersByTime(4999); });
       expect(useAppStore.getState().notification).not.toBeNull();
 
       act(() => { vi.advanceTimersByTime(1); });
@@ -193,11 +193,11 @@ describe("Notification — Integration", () => {
       renderNotification();
 
       act(() => { fireEvent.mouseEnter(screen.getByRole("status")); });
-      act(() => { vi.advanceTimersByTime(6000); });
+      act(() => { vi.advanceTimersByTime(5000); });
       expect(useAppStore.getState().notification).not.toBeNull();
 
       act(() => { fireEvent.mouseLeave(screen.getByRole("status")); });
-      act(() => { vi.advanceTimersByTime(6000); });
+      act(() => { vi.advanceTimersByTime(5000); });
 
       expect(useAppStore.getState().notification).toBeNull();
     });
