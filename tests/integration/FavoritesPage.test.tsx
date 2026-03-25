@@ -67,6 +67,24 @@ function renderFavoritesPage() {
   );
 }
 
+
+// DrinkCard articles have aria-labelledby="drink-title-{id}".
+// FavoritesPage itself is now an <article> (to avoid a double <main>),
+// so getByRole("article") returns multiple elements.
+// Use these helpers to query only DrinkCard articles.
+function getDrinkCards() {
+  return screen.getAllByRole("article").filter(
+    (el) => el.getAttribute("aria-labelledby")?.startsWith("drink-title-"),
+  );
+}
+
+function queryDrinkCard() {
+  const cards = screen.getAllByRole("article", { hidden: false }).filter(
+    (el) => el.getAttribute("aria-labelledby")?.startsWith("drink-title-"),
+  );
+  return cards.length > 0 ? cards[0] : null;
+}
+
 function seedFavorite(...recipes: RecipeDetail[]) {
   const favorites = Object.fromEntries(recipes.map((r) => [r.idDrink, r]));
   useAppStore.setState({ favorites });
@@ -110,7 +128,7 @@ describe("FavoritesPage — Integration", () => {
     it("does not render any drink cards when favorites is empty", () => {
       renderFavoritesPage();
 
-      expect(screen.queryByRole("article")).not.toBeInTheDocument();
+      expect(queryDrinkCard()).toBeNull();
     });
 
     it("does not show the recipe count when favorites is empty", () => {
@@ -139,7 +157,7 @@ describe("FavoritesPage — Integration", () => {
     it("renders a DrinkCard for each saved favorite", () => {
       renderFavoritesPage();
 
-      expect(screen.getByRole("article")).toBeInTheDocument();
+      expect(getDrinkCards()).toHaveLength(1);
       expect(screen.getByText("Mojito")).toBeInTheDocument();
     });
 
@@ -183,7 +201,7 @@ describe("FavoritesPage — Integration", () => {
 
       renderFavoritesPage();
 
-      expect(screen.getAllByRole("article")).toHaveLength(2);
+      expect(getDrinkCards()).toHaveLength(2);
       expect(screen.getByText("Mojito")).toBeInTheDocument();
       expect(screen.getByText("Daiquiri")).toBeInTheDocument();
     });
@@ -199,7 +217,7 @@ describe("FavoritesPage — Integration", () => {
 
       renderFavoritesPage();
 
-      const card = screen.getByRole("article");
+      const [card] = getDrinkCards();
       const removeButton = within(card).getByRole("button", {
         name: /remove mojito from favorites/i,
       });
@@ -216,7 +234,7 @@ describe("FavoritesPage — Integration", () => {
 
       renderFavoritesPage();
 
-      const card = screen.getByRole("article");
+      const [card] = getDrinkCards();
       const removeButton = within(card).getByRole("button", {
         name: /remove mojito from favorites/i,
       });
@@ -240,7 +258,7 @@ describe("FavoritesPage — Integration", () => {
 
       renderFavoritesPage();
 
-      const card = screen.getByRole("article");
+      const [card] = getDrinkCards();
       const removeButton = within(card).getByRole("button", {
         name: /remove mojito from favorites/i,
       });
@@ -286,7 +304,7 @@ describe("FavoritesPage — Integration", () => {
 
       renderFavoritesPage();
 
-      const card = screen.getByRole("article");
+      const [card] = getDrinkCards();
       const removeButton = within(card).getByRole("button", {
         name: /remove mojito from favorites/i,
       });
@@ -309,8 +327,8 @@ describe("FavoritesPage — Integration", () => {
 
       renderFavoritesPage();
 
-      const article = screen.getByRole("article");
-      expect(article).toHaveAttribute("aria-labelledby", "drink-title-1");
+      const [drinkCard] = getDrinkCards();
+      expect(drinkCard).toHaveAttribute("aria-labelledby", "drink-title-1");
     });
 
     it("favorite button has a descriptive aria-label", () => {
@@ -328,7 +346,7 @@ describe("FavoritesPage — Integration", () => {
 
       renderFavoritesPage();
 
-      const card = screen.getByRole("article");
+      const [card] = getDrinkCards();
       const button = within(card).getByRole("button", {
         name: /remove mojito from favorites/i,
       });
