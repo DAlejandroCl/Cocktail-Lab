@@ -20,7 +20,7 @@ test.describe("AI Recipe Generator", () => {
     test("navigating to /ai shows the AI Generator page", async ({ page, aiGeneratorPage }) => {
       await aiGeneratorPage.goto();
       await expect(page).toHaveURL("/ai");
-      await expect(page.getByRole("heading", { name: /ai recipe generator/i })).toBeVisible();
+      await expect(page.getByRole("heading", { name: /your home bar/i })).toBeVisible();
     });
 
     test("AI Generator nav link navigates to /ai", async ({ homePage, aiGeneratorPage }) => {
@@ -174,7 +174,7 @@ test.describe("AI Recipe Generator", () => {
     test("recipe card shows the AI Created badge", async ({ aiGeneratorPage }) => {
       await aiGeneratorPage.goto();
       await aiGeneratorPage.addIngredientsAndGenerate(["Gin"]);
-      await expect(aiGeneratorPage.page.getByText(/ai created/i)).toBeVisible();
+      await expect(aiGeneratorPage.page.getByText(/ai crafted/i)).toBeVisible();
     });
 
     test("recipe card shows ingredient and instruction sections", async ({ aiGeneratorPage }) => {
@@ -182,8 +182,8 @@ test.describe("AI Recipe Generator", () => {
       await aiGeneratorPage.addIngredientsAndGenerate(["Rum"]);
 
       const card = aiGeneratorPage.recipeCard;
-      await expect(card.getByRole("region", { name: /ingredients/i })).toBeVisible();
-      await expect(card.getByRole("region", { name: /instructions/i })).toBeVisible();
+      await expect(card.getByRole("region", { name: "Ingredients", exact: true })).toBeVisible();
+      await expect(card.getByRole("region", { name: /^instructions$/i })).toBeVisible();
     });
 
     test("recipe card shows the user's ingredients", async ({ aiGeneratorPage }) => {
