@@ -63,6 +63,27 @@ const mockRecipeDetail: RecipeDetail = {
 // Helpers
 // ─────────────────────────────────────────────
 
+
+// DrinkCard articles have aria-labelledby="drink-title-{id}".
+// FavoritesPage itself is now an <article>, so getByRole("article")
+// returns multiple elements. Filter to only DrinkCard articles.
+function getDrinkCards() {
+  return screen.getAllByRole("article").filter(
+    (el) => el.getAttribute("aria-labelledby")?.startsWith("drink-title-"),
+  );
+}
+
+function queryDrinkCard() {
+  try {
+    const cards = screen.getAllByRole("article").filter(
+      (el) => el.getAttribute("aria-labelledby")?.startsWith("drink-title-"),
+    );
+    return cards.length > 0 ? cards[0] : null;
+  } catch {
+    return null;
+  }
+}
+
 function renderApp(initialEntries: string[] = ["/"]) {
   return render(
     <MemoryRouter initialEntries={initialEntries}>
@@ -128,7 +149,7 @@ describe("Favorites Flow — Integration", () => {
     it("does not render any DrinkCard when favorites is empty", () => {
       renderApp(["/favorites"]);
 
-      expect(screen.queryByRole("article")).not.toBeInTheDocument();
+      expect(queryDrinkCard()).toBeNull();
     });
   });
 
@@ -141,7 +162,7 @@ describe("Favorites Flow — Integration", () => {
       renderApp(["/favorites"]);
 
       expect(screen.getByText("Mojito")).toBeInTheDocument();
-      expect(screen.getByRole("article")).toBeInTheDocument();
+      expect(getDrinkCards()).toHaveLength(1);
     });
 
     it("shows the correct recipe count", () => {
@@ -316,7 +337,7 @@ describe("Favorites Flow — Integration", () => {
 
       renderApp(["/favorites"]);
 
-      const card = screen.getByRole("article");
+      const [card] = getDrinkCards();
       const removeButton = within(card).getByRole("button", {
         name: /remove mojito from favorites/i,
       });
@@ -333,7 +354,7 @@ describe("Favorites Flow — Integration", () => {
 
       renderApp(["/favorites"]);
 
-      const card = screen.getByRole("article");
+      const [card] = getDrinkCards();
       const removeButton = within(card).getByRole("button", {
         name: /remove mojito from favorites/i,
       });
@@ -357,7 +378,7 @@ describe("Favorites Flow — Integration", () => {
 
       renderApp(["/favorites"]);
 
-      const card = screen.getByRole("article");
+      const [card] = getDrinkCards();
       const removeButton = within(card).getByRole("button", {
         name: /remove mojito from favorites/i,
       });
