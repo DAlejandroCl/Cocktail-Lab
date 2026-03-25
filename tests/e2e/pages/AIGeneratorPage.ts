@@ -42,7 +42,7 @@ export class AIGeneratorPage {
     this.errorAlert           = page.getByRole("alert");
 
     this.addToFavoritesButton = page.getByRole("button", { name: /add to favorites/i });
-    this.saveCreationButton   = page.getByRole("button", { name: /save creation|saved/i });
+    this.saveCreationButton   = page.getByRole("button", { name: /save to my creations|recipe already saved to my creations/i });
   }
 
   // ── Navigation ──────────────────────────────────────────────────────────────
