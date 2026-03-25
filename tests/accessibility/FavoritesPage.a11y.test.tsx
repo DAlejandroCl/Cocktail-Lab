@@ -54,7 +54,12 @@ describe("FavoritesPage — Accessibility", () => {
   it("renders a main landmark", () => {
     renderFavoritesPage();
 
-    expect(screen.getByRole("main")).toBeInTheDocument();
+    // FavoritesPage renders inside Layout's <main>. The component itself uses
+    // <article aria-labelledby="favorites-heading"> to avoid a double-main.
+    // When rendered in isolation (without Layout), assert the article landmark.
+    expect(
+      screen.getByRole("article", { name: /my favorites|no favorites/i }),
+    ).toBeInTheDocument();
   });
 
   it("has no accessibility violations with favorites present", async () => {
