@@ -75,7 +75,7 @@ test.describe("Navigation", () => {
     test("logo click navigates back to home from /favorites", async ({ page, favoritesPage }) => {
       await favoritesPage.goto();
 
-      await page.getByText("Cocktail Lab").click();
+      await page.locator(".logo-link").click();
 
       await expect(page).toHaveURL("/");
     });
