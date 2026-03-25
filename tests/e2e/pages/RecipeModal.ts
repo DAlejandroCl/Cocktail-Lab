@@ -22,20 +22,18 @@ export class RecipeModal {
 
     this.dialog = page.locator('[role="dialog"][aria-modal="true"]');
 
-    this.panel = page.locator(
-      '[aria-labelledby="modal-title"]:not([role="dialog"])',
-    );
+    this.panel = page.locator('[role="dialog"] > div').first();
 
-    this.title            = page.locator("#modal-title");
-    this.image            = page.getByAltText(/image of .+ cocktail/i);
+    this.title            = page.getByRole("heading", { level: 2 }).first();
+    this.image            = page.getByAltText(/.+ cocktail/i);
     this.closeButtonTop   = page.getByLabel("Close modal").first();
 
     this.ingredientsSection = page.locator(
-      "section[aria-labelledby='ingredients-heading']",
+      "section[aria-labelledby='modal-ingredients-heading']",
     );
 
     this.instructionsSection = page.locator(
-      "section[aria-labelledby='instructions-heading']",
+      "section[aria-labelledby='modal-instructions-heading']",
     );
 
     this.closeButtonBottom = page
