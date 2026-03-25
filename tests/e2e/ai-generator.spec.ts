@@ -149,7 +149,7 @@ test.describe("AI Recipe Generator", () => {
   test.describe("Recipe generation", () => {
     test("shows loading indicator during generation", async ({ page, aiGeneratorPage }) => {
       await page.route("**/api/ai/generate-recipe", async (route) => {
-        await page.waitForTimeout(300);
+        await new Promise((resolve) => setTimeout(resolve, 300));
         await route.fulfill({ json: AI_RECIPE_RESPONSE });
       });
 
@@ -174,7 +174,7 @@ test.describe("AI Recipe Generator", () => {
     test("recipe card shows the AI Created badge", async ({ aiGeneratorPage }) => {
       await aiGeneratorPage.goto();
       await aiGeneratorPage.addIngredientsAndGenerate(["Gin"]);
-      await expect(aiGeneratorPage.page.getByText(/ai crafted/i)).toBeVisible();
+      await expect(aiGeneratorPage.recipeCard.getByText(/ai crafted/i)).toBeVisible();
     });
 
     test("recipe card shows ingredient and instruction sections", async ({ aiGeneratorPage }) => {
@@ -285,7 +285,7 @@ test.describe("AI Recipe Generator", () => {
 
     test("loading indicator has role=status and aria-live", async ({ page, aiGeneratorPage }) => {
       await page.route("**/api/ai/generate-recipe", async (route) => {
-        await page.waitForTimeout(200);
+        await new Promise((resolve) => setTimeout(resolve, 200));
         await route.fulfill({ json: AI_RECIPE_RESPONSE });
       });
 
