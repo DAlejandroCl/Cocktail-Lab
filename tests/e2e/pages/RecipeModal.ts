@@ -24,7 +24,7 @@ export class RecipeModal {
 
     this.panel = page.locator('[role="dialog"] > div').first();
 
-    this.title            = page.getByRole("heading", { level: 2 }).first();
+    this.title            = page.locator('[role="dialog"]').getByRole("heading", { level: 2 });
     this.image            = page.getByAltText(/.+ cocktail/i);
     this.closeButtonTop   = page.getByLabel("Close modal").first();
 
