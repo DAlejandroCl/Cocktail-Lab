@@ -98,8 +98,12 @@ describe("FavoritesPage — Accessibility", () => {
 
     renderFavoritesPage();
 
-    const article = screen.getByRole("article");
-    expect(article).toHaveAttribute(
+    // FavoritesPage itself is now an <article>. Query the DrinkCard article
+    // specifically by its expected aria-labelledby to avoid the ambiguity.
+    const drinkArticle = screen.getByRole("article", {
+      name: new RegExp(recipe.strDrink, "i"),
+    });
+    expect(drinkArticle).toHaveAttribute(
       "aria-labelledby",
       `drink-title-${recipe.idDrink}`,
     );
