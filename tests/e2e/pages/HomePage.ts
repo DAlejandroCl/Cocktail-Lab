@@ -36,7 +36,7 @@ export class HomePage {
 
     this.homeLink      = page.getByRole("link", { name: /home/i });
     this.favoritesLink = page.getByRole("link", { name: /favorites/i });
-    this.logo          = page.getByText("Cocktail Lab");
+    this.logo          = page.locator(".logo-link");
 
     this.heroHeading  = page.getByRole("heading", { name: /find your/i });
     this.heroSubtitle = page.getByText(/timeless classics/i);
