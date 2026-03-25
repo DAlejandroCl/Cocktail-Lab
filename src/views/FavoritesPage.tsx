@@ -92,7 +92,7 @@ export default function FavoritesPage() {
   }, [hasFavorites, setNotification]);
 
   return (
-    <main className="relative min-h-[60vh]">
+    <article aria-labelledby="favorites-heading" className="relative min-h-[60vh]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-24">
 
         <div
@@ -101,6 +101,7 @@ export default function FavoritesPage() {
         >
           <div>
             <h2
+              id="favorites-heading"
               className="text-xl font-bold uppercase tracking-tighter"
               style={{ color: "var(--text-primary)" }}
             >
@@ -139,6 +140,6 @@ export default function FavoritesPage() {
           <FavoritesEmptyState />
         )}
       </div>
-    </main>
+    </article>
   );
 }
