@@ -110,7 +110,9 @@ test.describe("Browse and Favorite", () => {
       await homePage.favoriteButton(homePage.firstCard()).click();
       await homePage.goToFavorites();
 
-      await expect(page.getByText(RECIPE_DETAIL.strDrink)).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: RECIPE_DETAIL.strDrink })
+      ).toBeVisible();
     });
 
     test("recipe count label shows '1 recipe saved'", async ({ homePage, favoritesPage }) => {
@@ -133,7 +135,9 @@ test.describe("Browse and Favorite", () => {
       await favoritesPage.goToHome();
       await homePage.goToFavorites();
 
-      await expect(page.getByText(RECIPE_DETAIL.strDrink)).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: RECIPE_DETAIL.strDrink })
+      ).toBeVisible();
     });
   });
 
