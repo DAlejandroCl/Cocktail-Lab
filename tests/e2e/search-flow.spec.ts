@@ -71,7 +71,9 @@ test.describe("Search flow", () => {
       await homePage.goto();
       await homePage.searchByIngredient("Rum");
 
-      await expect(page.getByText(DRINK.strDrink)).toBeVisible();
+      await expect(
+        page.getByRole("region", { name: /search results/i }).getByText(DRINK.strDrink)
+      ).toBeVisible();
     });
 
     test("can search again with a different ingredient", async ({ homePage }) => {
