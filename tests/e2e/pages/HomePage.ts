@@ -35,7 +35,7 @@ export class HomePage {
     this.page = page;
 
     this.homeLink      = page.getByRole("link", { name: /home/i });
-    this.favoritesLink = page.getByRole("link", { name: /favorites/i });
+    this.favoritesLink = page.getByRole("link", { name: /favorites|favs/i }).first();
     this.logo          = page.locator(".logo-link");
 
     this.heroHeading  = page.getByRole("heading", { name: /find your/i });
@@ -51,7 +51,7 @@ export class HomePage {
     this.resultsHeading   = page.getByRole("heading", { name: /^results$/i });
     // Counter shows either "X recipes found" or "Showing X of Y recipes"
     this.recipeCountLabel = page.getByText(/\d+ recipe|showing \d+ of \d+/i);
-    this.drinkCards       = page.getByRole("article");
+    this.drinkCards       = page.locator('article[aria-labelledby^="drink-title-"]');
     this.skeletonCards    = page.locator('[role="presentation"][aria-hidden="true"]');
 
     this.emptyStateHeading = page.getByRole("heading", { name: /your perfect mix awaits/i });
