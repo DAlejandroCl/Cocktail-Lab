@@ -91,7 +91,7 @@ test.describe("Navigation", () => {
       await favoritesPage.goto();
 
       await expect(page).toHaveURL("/favorites");
-      const favLink = page.getByRole("link", { name: /favorites/i });
+      const favLink = page.getByRole("link", { name: /favorites|favs/i }).first();
       await expect(favLink).toHaveAttribute("aria-current", "page");
     });
 
