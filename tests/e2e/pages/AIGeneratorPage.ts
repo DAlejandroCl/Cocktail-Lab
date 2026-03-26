@@ -28,7 +28,7 @@ export class AIGeneratorPage {
   constructor(page: Page) {
     this.page = page;
 
-    this.navLink = page.getByRole("link", { name: /ai generator/i });
+    this.navLink = page.getByRole("link", { name: /ai generator|^ai$/i }).first();
 
     this.ingredientInput      = page.getByPlaceholder(/search an ingredient/i);
     this.addIngredientButton  = page.getByRole("button", { name: /add ingredient/i });
