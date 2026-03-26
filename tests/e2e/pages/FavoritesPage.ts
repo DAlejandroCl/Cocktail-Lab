@@ -19,12 +19,12 @@ export class FavoritesPage {
   constructor(page: Page) {
     this.page = page;
 
-    this.favoritesNavLink = page.getByRole("link", { name: /favorites/i });
+    this.favoritesNavLink = page.getByRole("link", { name: /favorites|favs/i }).first();
     this.homeNavLink      = page.getByRole("link", { name: /home/i });
 
     this.pageHeading      = page.getByRole("heading", { name: /my favorites/i });
     this.recipeCountLabel = page.getByText(/\d+ recipe[s]? saved/i);
-    this.drinkCards       = page.getByRole("article");
+    this.drinkCards       = page.locator('article[aria-labelledby^="drink-title-"]');
 
     this.emptyHeading     = page.getByRole("heading", { name: /no favorites yet/i });
     this.emptyDescription = page.getByText(/start exploring recipes/i);
