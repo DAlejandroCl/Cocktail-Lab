@@ -120,7 +120,14 @@ export async function mockDefaultApi(page: Page) {
   });
 
   await page.route(/thecocktaildb\.com\/api\/json\/v1\/1\/lookup\.php/, async (route) => {
-    await route.fulfill({ json: { drinks: [RECIPE_DETAIL] } });
+    const url = new URL(route.request().url());
+    const requestedId = url.searchParams.get("i");
+    // Return a recipe whose idDrink matches the requested id so that
+    // isFavorite(drink.idDrink) returns true for the card that was clicked.
+    const recipe = requestedId
+      ? { ...RECIPE_DETAIL, idDrink: requestedId, strDrink: RECIPE_DETAIL.strDrink }
+      : RECIPE_DETAIL;
+    await route.fulfill({ json: { drinks: [recipe] } });
   });
 }
 
