@@ -54,9 +54,14 @@ build/
 # =========================================================
 # Environment variables
 # =========================================================
+# Block all .env files by default
 .env
 .env.*
+# Allow the committed template (no real secrets inside)
 !.env.example
+# Block Vercel-pulled local env files (may contain sensitive tokens)
+.env.local
+.env*.local
 
 # =========================================================
 # Vite
@@ -106,3 +111,9 @@ Desktop.ini
 *.tmp
 *.temp
 .cache/
+
+# =========================================================
+# Vercel
+# =========================================================
+# Local project link — machine-specific, not needed in CI or other devs' machines
+.vercel
