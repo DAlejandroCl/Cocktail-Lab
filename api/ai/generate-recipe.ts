@@ -1,12 +1,9 @@
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 /* ─────────────────────────────────────────────────────────────────────────────
    TYPES
 ───────────────────────────────────────────────────────────────────────────── */
-
-interface RequestBody {
-  ingredients: string[];
-}
 
 interface AIIngredient {
   name: string;
@@ -92,47 +89,39 @@ function parseGeminiResponse(raw: string): AIRecipeResponse {
 
 /* ─────────────────────────────────────────────────────────────────────────────
    HANDLER
-   Vercel Edge Function — runs on the server, API key never reaches the client.
+   Vercel Node.js Function — runs on the server, the API key never reaches
+   the client bundle. Uses VercelRequest/VercelResponse (Node.js HTTP types)
+   instead of the Web Fetch API, which is what Vercel provides by default
+   for files inside /api/.
 ───────────────────────────────────────────────────────────────────────────── */
 
-export default async function handler(req: Request): Promise<Response> {
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse,
+): Promise<void> {
   // ── Method guard ────────────────────────────────────────────────────────────
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405,
-      headers: { "Content-Type": "application/json" },
-    });
+    res.status(405).json({ error: "Method not allowed" });
+    return;
   }
 
   // ── API key guard ───────────────────────────────────────────────────────────
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     console.error("GEMINI_API_KEY is not set");
-    return new Response(
-      JSON.stringify({ error: "AI service is not configured" }),
-      { status: 503, headers: { "Content-Type": "application/json" } },
-    );
+    res.status(503).json({ error: "AI service is not configured" });
+    return;
   }
 
-  // ── Parse & validate body ───────────────────────────────────────────────────
-  let body: RequestBody;
-  try {
-    body = (await req.json()) as RequestBody;
-  } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
+  // ── Validate body ───────────────────────────────────────────────────────────
+  // Vercel parses JSON bodies automatically when Content-Type is application/json
+  const { ingredients } = req.body as { ingredients?: unknown };
+
+  if (!validateIngredients(ingredients)) {
+    res.status(400).json({
+      error: "Invalid ingredients. Provide between 1 and 10 non-empty strings.",
     });
-  }
-
-  if (!validateIngredients(body.ingredients)) {
-    return new Response(
-      JSON.stringify({
-        error:
-          "Invalid ingredients. Provide between 1 and 10 non-empty strings.",
-      }),
-      { status: 400, headers: { "Content-Type": "application/json" } },
-    );
+    return;
   }
 
   // ── Call Gemini ─────────────────────────────────────────────────────────────
@@ -148,23 +137,15 @@ export default async function handler(req: Request): Promise<Response> {
       },
     });
 
-    const result = await model.generateContent(buildPrompt(body.ingredients));
+    const result = await model.generateContent(buildPrompt(ingredients));
     const raw = result.response.text();
-
     const data = parseGeminiResponse(raw);
 
-    return new Response(JSON.stringify(data), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+    res.status(200).json(data);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unknown AI error";
     console.error("Gemini API error:", message);
-
-    return new Response(
-      JSON.stringify({ error: `Generation failed: ${message}` }),
-      { status: 500, headers: { "Content-Type": "application/json" } },
-    );
+    res.status(500).json({ error: `Generation failed: ${message}` });
   }
 }
