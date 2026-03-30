@@ -71,16 +71,16 @@ function mapToGeneratedRecipe(
     strInstructions: recipe.strInstructions,
 
     // ── Ingredients (explicit — preserves TS types) ───────────────────────
-    strIngredient1:  ing(list,  0),
-    strIngredient2:  ing(list,  1),
-    strIngredient3:  ing(list,  2),
-    strIngredient4:  ing(list,  3),
-    strIngredient5:  ing(list,  4),
-    strIngredient6:  ing(list,  5),
-    strIngredient7:  ing(list,  6),
-    strIngredient8:  ing(list,  7),
-    strIngredient9:  ing(list,  8),
-    strIngredient10: ing(list,  9),
+    strIngredient1: ing(list, 0),
+    strIngredient2: ing(list, 1),
+    strIngredient3: ing(list, 2),
+    strIngredient4: ing(list, 3),
+    strIngredient5: ing(list, 4),
+    strIngredient6: ing(list, 5),
+    strIngredient7: ing(list, 6),
+    strIngredient8: ing(list, 7),
+    strIngredient9: ing(list, 8),
+    strIngredient10: ing(list, 9),
     strIngredient11: ing(list, 10),
     strIngredient12: ing(list, 11),
     strIngredient13: ing(list, 12),
@@ -88,16 +88,16 @@ function mapToGeneratedRecipe(
     strIngredient15: ing(list, 14),
 
     // ── Measures (explicit) ───────────────────────────────────────────────
-    strMeasure1:  msr(list,  0),
-    strMeasure2:  msr(list,  1),
-    strMeasure3:  msr(list,  2),
-    strMeasure4:  msr(list,  3),
-    strMeasure5:  msr(list,  4),
-    strMeasure6:  msr(list,  5),
-    strMeasure7:  msr(list,  6),
-    strMeasure8:  msr(list,  7),
-    strMeasure9:  msr(list,  8),
-    strMeasure10: msr(list,  9),
+    strMeasure1: msr(list, 0),
+    strMeasure2: msr(list, 1),
+    strMeasure3: msr(list, 2),
+    strMeasure4: msr(list, 3),
+    strMeasure5: msr(list, 4),
+    strMeasure6: msr(list, 5),
+    strMeasure7: msr(list, 6),
+    strMeasure8: msr(list, 7),
+    strMeasure9: msr(list, 8),
+    strMeasure10: msr(list, 9),
     strMeasure11: msr(list, 10),
     strMeasure12: msr(list, 11),
     strMeasure13: msr(list, 12),
@@ -113,7 +113,9 @@ function mapToGeneratedRecipe(
 
 // ─── API Call ─────────────────────────────────────────────────────────────────
 
-async function callAIRecipeAPI(ingredients: string[]): Promise<GeneratedRecipe> {
+async function callAIRecipeAPI(
+  ingredients: string[],
+): Promise<GeneratedRecipe> {
   const response = await fetch("/api/ai/generate-recipe", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -121,9 +123,9 @@ async function callAIRecipeAPI(ingredients: string[]): Promise<GeneratedRecipe> 
   });
 
   if (!response.ok) {
-        const err = await response.json().catch(() => ({})) as { error?: string };
-        throw new Error(err.error ?? `API Error: ${response.statusText}`);
-      }
+    const err = (await response.json().catch(() => ({}))) as { error?: string };
+    throw new Error(err.error ?? `API Error: ${response.statusText}`);
+  }
 
   const data: AIRecipeResponse = await response.json();
   return mapToGeneratedRecipe(data, ingredients);
@@ -146,8 +148,16 @@ export const createGenerateAISlice: StateCreator<
   addIngredient: (ingredient) => {
     const { aiIngredients } = get();
     const normalized = ingredient.trim().toLowerCase();
-    if (!normalized || aiIngredients.map((i) => i.toLowerCase()).includes(normalized)) return;
-    set({ aiIngredients: [...aiIngredients, ingredient.trim()] }, false, "ai/addIngredient");
+    if (
+      !normalized ||
+      aiIngredients.map((i) => i.toLowerCase()).includes(normalized)
+    )
+      return;
+    set(
+      { aiIngredients: [...aiIngredients, ingredient.trim()] },
+      false,
+      "ai/addIngredient",
+    );
   },
 
   removeIngredient: (ingredient) => {
@@ -164,8 +174,9 @@ export const createGenerateAISlice: StateCreator<
   },
 
   generateRecipe: async () => {
-    const { aiIngredients } = get();
-    if (aiIngredients.length === 0) return;
+    const { aiIngredients, isGenerating } = get();
+
+    if (aiIngredients.length === 0 || isGenerating) return;
 
     set(
       { isGenerating: true, generationError: null, generatedRecipe: null },
@@ -175,15 +186,40 @@ export const createGenerateAISlice: StateCreator<
 
     try {
       const recipe = await callAIRecipeAPI(aiIngredients);
-      set({ generatedRecipe: recipe, isGenerating: false }, false, "ai/generateRecipe/success");
+
+      set(
+        {
+          generatedRecipe: recipe,
+          isGenerating: false,
+        },
+        false,
+        "ai/generateRecipe/success",
+      );
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error occurred";
-      set({ generationError: message, isGenerating: false }, false, "ai/generateRecipe/error");
+      const message =
+        error instanceof Error ? error.message : "Unexpected error";
+
+      const userMessage = message.toLowerCase().includes("network")
+        ? "Network error. Check your connection and try again."
+        : "Failed to generate recipe. Please try again.";
+
+      set(
+        {
+          generationError: userMessage,
+          isGenerating: false,
+        },
+        false,
+        "ai/generateRecipe/error",
+      );
     }
   },
 
   clearGeneratedRecipe: () => {
-    set({ generatedRecipe: null, generationError: null }, false, "ai/clearGeneratedRecipe");
+    set(
+      { generatedRecipe: null, generationError: null },
+      false,
+      "ai/clearGeneratedRecipe",
+    );
   },
 
   saveAiRecipe: (recipe) => {
