@@ -71,17 +71,10 @@ function validateIngredients(ingredients: unknown): ingredients is string[] {
 }
 
 function parseGeminiResponse(raw: string): AIRecipeResponse {
-  // Strip markdown code fences if Gemini adds them despite instructions
-  const cleaned = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+  const parsed = JSON.parse(raw) as unknown;
 
-  const parsed = JSON.parse(cleaned) as unknown;
-
-  if (
-    typeof parsed !== "object" ||
-    parsed === null ||
-    !("recipe" in parsed)
-  ) {
-    throw new Error("Invalid response shape from AI");
+  if (typeof parsed !== "object" || parsed === null || !("recipe" in parsed)) {
+    throw new Error("Invalid response structure from AI");
   }
 
   return parsed as AIRecipeResponse;
@@ -134,7 +127,8 @@ export default async function handler(
         temperature: 0.8,
         topP: 0.9,
         maxOutputTokens: 1024,
-      },
+        responseMimeType: "application/json",
+  },
     });
 
     const result = await model.generateContent(buildPrompt(ingredients));
