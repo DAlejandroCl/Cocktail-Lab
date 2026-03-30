@@ -21,29 +21,36 @@ interface AIRecipeResponse {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   PROMPT
+   CLIENT
+───────────────────────────────────────────────────────────────────────────── */
+
+const client = new OpenAI({
+  apiKey: process.env.GROQ_API_KEY,
+  baseURL: "https://api.groq.com/openai/v1",
+});
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   PROMPT (STRICT JSON)
 ───────────────────────────────────────────────────────────────────────────── */
 
 function buildPrompt(ingredients: string[]): string {
   return `
-You are a professional mixologist AI.
+Return ONLY valid JSON.
 
-TASK:
-Generate a creative cocktail recipe using ONLY these ingredients:
+Create a cocktail using ONLY these ingredients:
 ${ingredients.join(", ")}
 
-STRICT RULES:
-- Return ONLY valid JSON (no markdown, no text)
-- No explanations
-- No backticks
-- No comments
-- Output MUST be parseable JSON
+Rules:
+- No markdown
+- No explanation
+- No text outside JSON
+- Must be valid JSON
 
-FORMAT:
+Format:
 {
   "recipe": {
-    "strDrink": "string",
-    "strDrinkThumb": "https://www.thecocktaildb.com/images/media/drink/vrwquq1478252802.jpg",
+    "strDrink": "Name",
+    "strDrinkThumb": "https://www.thecocktaildb.com/images/media/drink/tquyyt1451299548.jpg",
     "strCategory": "Cocktail",
     "strInstructions": "Step 1. Step 2. Step 3.",
     "ingredients": [
@@ -51,14 +58,14 @@ FORMAT:
     ]
   }
 }
-`.trim();
+`;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   PARSER (LLAMA SAFE)
+   SAFE PARSER
 ───────────────────────────────────────────────────────────────────────────── */
 
-function parseAIResponse(raw: string): AIRecipeResponse {
+function safeParse(raw: string): AIRecipeResponse {
   try {
     const cleaned = raw
       .replace(/```json/gi, "")
@@ -68,12 +75,14 @@ function parseAIResponse(raw: string): AIRecipeResponse {
     const parsed = JSON.parse(cleaned);
 
     if (!parsed?.recipe) {
-      throw new Error("Invalid AI structure");
+      throw new Error("Invalid structure");
     }
 
     return parsed;
-  } catch {
-    throw new Error("Failed to parse AI response");
+  } catch (error) {
+    console.error("PARSE ERROR:", error);
+    console.error("RAW RESPONSE:", raw);
+    throw new Error("Invalid AI response format");
   }
 }
 
@@ -81,18 +90,17 @@ function parseAIResponse(raw: string): AIRecipeResponse {
    FALLBACK
 ───────────────────────────────────────────────────────────────────────────── */
 
-function fallbackRecipe(ingredients: string[]): AIRecipeResponse {
+function fallback(ingredients: string[]): AIRecipeResponse {
   return {
     recipe: {
-      strDrink: "AI Fallback Cocktail",
+      strDrink: "Simple Mix",
       strDrinkThumb:
-        "https://www.thecocktaildb.com/images/media/drink/vrwquq1478252802.jpg",
+        "https://www.thecocktaildb.com/images/media/drink/tquyyt1451299548.jpg",
       strCategory: "Cocktail",
-      strInstructions:
-        "Mix all ingredients with ice. Shake well. Serve chilled.",
+      strInstructions: "Mix all ingredients. Shake with ice. Serve in a glass.",
       ingredients: ingredients.map((i) => ({
         name: i,
-        measure: "1 part",
+        measure: "to taste",
       })),
     },
   };
@@ -102,42 +110,34 @@ function fallbackRecipe(ingredients: string[]): AIRecipeResponse {
    HANDLER
 ───────────────────────────────────────────────────────────────────────────── */
 
-export default async function handler(
-  req: VercelRequest,
-  res: VercelResponse,
-): Promise<void> {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
-    res.status(405).json({ error: "Method not allowed" });
-    return;
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
   const apiKey = process.env.GROQ_API_KEY;
 
   if (!apiKey) {
-    res.status(503).json({ error: "AI not configured" });
-    return;
+    console.error("Missing GROQ_API_KEY");
+    return res.status(500).json({
+      error: "Server misconfiguration: missing API key",
+    });
   }
 
-  const { ingredients } = req.body;
+  const { ingredients } = req.body as { ingredients?: string[] };
 
   if (!Array.isArray(ingredients) || ingredients.length === 0) {
-    res.status(400).json({ error: "Invalid ingredients" });
-    return;
+    return res.status(400).json({ error: "Invalid ingredients" });
   }
-
-  const client = new OpenAI({
-    baseURL: "https://api.groq.com/openai/v1",
-    apiKey,
-  });
 
   try {
     const completion = await client.chat.completions.create({
       model: "llama3-70b-8192",
-      temperature: 0.7,
+      temperature: 0.6,
       messages: [
         {
           role: "system",
-          content: "You are a JSON-only API.",
+          content: "You ONLY return JSON.",
         },
         {
           role: "user",
@@ -146,15 +146,20 @@ export default async function handler(
       ],
     });
 
-    const raw = completion.choices[0]?.message?.content || "";
-    const data = parseAIResponse(raw);
+    const raw = completion.choices[0]?.message?.content;
 
-    res.status(200).json(data);
+    if (!raw) {
+      throw new Error("Empty AI response");
+    }
+
+    const parsed = safeParse(raw);
+
+    return res.status(200).json(parsed);
   } catch (error) {
-    console.error("Groq error:", error);
+    console.error("AI ERROR:", error);
 
-    const fallback = fallbackRecipe(ingredients);
+    const data = fallback(ingredients);
 
-    res.status(200).json(fallback);
+    return res.status(200).json(data);
   }
 }
