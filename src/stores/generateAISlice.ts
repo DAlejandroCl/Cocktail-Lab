@@ -121,8 +121,9 @@ async function callAIRecipeAPI(ingredients: string[]): Promise<GeneratedRecipe> 
   });
 
   if (!response.ok) {
-    throw new Error(`API Error: ${response.statusText}`);
-  }
+        const err = await response.json().catch(() => ({})) as { error?: string };
+        throw new Error(err.error ?? `API Error: ${response.statusText}`);
+      }
 
   const data: AIRecipeResponse = await response.json();
   return mapToGeneratedRecipe(data, ingredients);
