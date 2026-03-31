@@ -1,23 +1,3 @@
-/**
- * api/ai/generate-recipe.ts
- *
- * Vercel Serverless Function
- * Stack: @ai-sdk/groq + ai (Vercel AI SDK) + Zod generateObject
- *
- * Modelo principal: llama-3.3-70b-versatile
- *   → Reemplazo oficial de llama3-70b-8192 (deprecado el 30/08/2025)
- *   → Soporta structured outputs / json_object mode en Groq
- *
- * Imagen: URL real de TheCocktailDB según categoría del cóctel.
- *   Groq no ofrece generación de imágenes en su free tier.
- *   Usar imágenes reales de la DB garantiza coherencia visual con la app.
- *
- * Rate-limit: Free tier Groq ≈ 30 RPM → backoff exponencial automático.
- *
- * INSTALACIÓN REQUERIDA (una sola vez):
- *   npm install @ai-sdk/groq ai
- */
-
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { createGroq } from "@ai-sdk/groq";
 import { generateObject } from "ai";
@@ -28,8 +8,6 @@ import { z } from "zod";
 const groqClient = createGroq({
   apiKey: process.env.GROQ_API_KEY ?? "",
 });
-
-// ─── Imagen por categoría — URLs reales de TheCocktailDB ─────────────────────
 
 const CATEGORY_IMAGES: Record<string, string> = {
   cocktail:
@@ -52,7 +30,7 @@ function getImageForCategory(category: string): string {
   );
 }
 
-// ─── Zod schema de salida estructurada ───────────────────────────────────────
+// ─── Zod schemas ───────────────────────────────────────
 
 const IngredientSchema = z.object({
   name: z
@@ -119,7 +97,7 @@ const RecipeSchema = z.object({
     ),
 });
 
-// ─── System prompt — persona Marcus, bartender experto ───────────────────────
+// ─── System prompt — Marcus ───────────────────────
 
 const SYSTEM_PROMPT = `You are Marcus, a world-class head bartender with 20+ years of experience working at award-winning cocktail bars in New York, London, and Tokyo.
 
@@ -137,7 +115,7 @@ YOUR CRAFT PHILOSOPHY:
 
 You are responding to a JSON schema. Output ONLY the object the schema expects.`;
 
-// ─── Call con retry para rate limiting ───────────────────────────────────────
+// ─── Retry call for rate limiting ───────────────────────────────────────
 
 async function callGroqWithRetry(
   ingredients: string[],
@@ -169,7 +147,7 @@ async function callGroqWithRetry(
       message.toLowerCase().includes("too many requests");
 
     if (isRateLimit && attempt < 2) {
-      const backoff = 1500 * Math.pow(2, attempt); // 1.5s → 3s
+      const backoff = 1500 * Math.pow(2, attempt);
       await new Promise((r) => setTimeout(r, backoff));
       return callGroqWithRetry(ingredients, attempt + 1);
     }
@@ -178,7 +156,7 @@ async function callGroqWithRetry(
   }
 }
 
-// ─── Response types (compatibles con el slice existente) ─────────────────────
+// ─── Response types  ─────────────────────
 
 interface AIIngredient {
   name: string;
@@ -207,7 +185,7 @@ function mapToResponse(recipe: z.infer<typeof RecipeSchema>): AIRecipeResponse {
   };
 }
 
-// ─── Fallback inteligente — medidas correctas por tipo de ingrediente ─────────
+// ─── Intelligent Fallback   ─────────
 
 function smartMeasure(ingredient: string): string {
   const lower = ingredient.toLowerCase();
