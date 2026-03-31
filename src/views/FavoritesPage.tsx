@@ -1,3 +1,16 @@
+/**
+ * src/views/FavoritesPage.tsx
+ *
+ * Cambios respecto a la versión original:
+ *  1. Las recetas de API y las de IA ahora tienen secciones SEPARADAS:
+ *     - "My Favorites" → recetas guardadas desde TheCocktailDB (mismo estilo)
+ *     - "My Creations" → recetas generadas por IA y guardadas con "Save Creation"
+ *  2. DrinkCard para favoritos recibe `fullRecipe` → abre modal localmente (sin fetch)
+ *  3. DrinkCard para creaciones IA recibe `fullRecipe` → badge igual que los favoritos normales
+ *     (mismo color naranja, sin diferenciación visual extra — diseño consistente)
+ *  4. "Save Creation" ahora tiene destino visible: la sección "My Creations" aquí
+ */
+
 import { useEffect, useMemo, useState } from "react";
 import { useAppStore } from "../stores/useAppStore";
 import DrinkCard from "../components/DrinkCard";
@@ -11,53 +24,92 @@ import {
   selectFavoritesMap,
   selectFavoriteOrder,
   selectSetNotification,
+  selectAiRecipes,
+  selectRemoveAiRecipe,
 } from "../stores/selectors";
+import type { GeneratedRecipe } from "../stores/generateAISlice";
+import type { RecipeDetail } from "../types";
 
 /* ─────────────────────────────────────────────────────────────
-   EMPTY STATE
+   EMPTY STATES
 ───────────────────────────────────────────────────────────── */
 
 function FavoritesEmptyState() {
   return (
-    <div className="flex flex-col items-center justify-center py-24 text-center">
+    <div className="flex flex-col items-center justify-center py-20 text-center">
       <div
-        className="w-24 h-24 rounded-full flex items-center justify-center mb-8"
-        style={{
-          background: "var(--bg-subtle)",
-          border: "1px solid var(--border-subtle)",
-        }}
+        className="w-20 h-20 rounded-full flex items-center justify-center mb-6"
+        style={{ background: "var(--bg-subtle)", border: "1px solid var(--border-subtle)" }}
       >
-        <svg
-          className="w-10 h-10"
-          style={{ color: "var(--color-brand)" }}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={1.5}
-            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-          />
+        <svg className="w-9 h-9" style={{ color: "var(--color-brand)" }} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
         </svg>
       </div>
-
-      <h2
-        className="text-2xl font-serif font-bold mb-3"
-        style={{ color: "var(--text-primary)" }}
-      >
+      <h2 className="text-xl font-serif font-bold mb-2" style={{ color: "var(--text-primary)" }}>
         No Favorites Yet
       </h2>
-
-      <p
-        className="text-sm font-normal max-w-sm leading-relaxed"
-        style={{ color: "var(--text-secondary)" }}
-      >
-        Start exploring recipes and save your favorites by clicking the heart
-        icon on any cocktail card.
+      <p className="text-sm max-w-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+        Start exploring recipes and save your favorites by clicking the heart icon on any cocktail card.
       </p>
+    </div>
+  );
+}
+
+function CreationsEmptyState() {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 text-center">
+      <div
+        className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
+        style={{ background: "var(--bg-subtle)", border: "1px solid var(--border-subtle)" }}
+      >
+        <svg className="w-7 h-7" style={{ color: "var(--color-brand)" }} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+            d="M17 3H7a2 2 0 00-2 2v16l7-3 7 3V5a2 2 0 00-2-2z" />
+        </svg>
+      </div>
+      <p className="text-sm font-medium mb-1" style={{ color: "var(--text-primary)" }}>No saved creations yet</p>
+      <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+        Generate a recipe in AI Generator and click "Save Creation".
+      </p>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   AI CREATION CARD — mismo estilo que DrinkCard pero con
+   botón de eliminar. Usa openRecipeModal para el modal local.
+───────────────────────────────────────────────────────────── */
+
+interface AiCreationCardProps {
+  recipe: GeneratedRecipe;
+  index: number;
+  onRemove: (id: string) => void;
+}
+
+function AiCreationCard({ recipe, index, onRemove }: AiCreationCardProps) {
+  return (
+    <div className="relative">
+      {/* Reutilizamos DrinkCard con fullRecipe para que el modal funcione localmente */}
+      <DrinkCard drink={recipe} fullRecipe={recipe} index={index} />
+
+      {/* Botón eliminar de My Creations */}
+      <button
+        type="button"
+        onClick={() => onRemove(recipe.idDrink)}
+        aria-label={`Remove ${recipe.strDrink} from My Creations`}
+        className="absolute bottom-[3.25rem] right-2 z-10 w-7 h-7 flex items-center justify-center rounded-full transition-colors duration-200"
+        style={{
+          background: "rgba(248,113,113,0.12)",
+          border: "1px solid rgba(248,113,113,0.25)",
+          color: "#f87171",
+        }}
+        title="Remove from My Creations"
+      >
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24" aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+      </button>
     </div>
   );
 }
@@ -67,55 +119,80 @@ function FavoritesEmptyState() {
 ───────────────────────────────────────────────────────────── */
 
 export default function FavoritesPage() {
-  const favorites     = useAppStore(selectFavoritesMap);
-  const favoriteOrder = useAppStore(selectFavoriteOrder);
+  const favorites       = useAppStore(selectFavoritesMap);
+  const favoriteOrder   = useAppStore(selectFavoriteOrder);
   const setNotification = useAppStore(selectSetNotification);
+  const aiRecipes       = useAppStore(selectAiRecipes);
+  const removeAiRecipe  = useAppStore(selectRemoveAiRecipe);
 
   const [sortOption, setSortOption] = useState<SortOptionFavorites>("recently-added");
 
-  const favoritesArray = useMemo(
-    () => Object.values(favorites),
-    [favorites],
+  // Separar favoritos de IA y de API
+  const allFavoritesArray = useMemo(() => Object.values(favorites), [favorites]);
+
+  const apiFavorites = useMemo(
+    () => allFavoritesArray.filter((d) => !d.idDrink.startsWith("ai-")) as RecipeDetail[],
+    [allFavoritesArray],
   );
 
-  const sortedFavorites = useMemo(
-    () => sortFavorites(favoritesArray, sortOption, favoriteOrder),
-    [favoritesArray, sortOption, favoriteOrder],
+  const aiFavorites = useMemo(
+    () => allFavoritesArray.filter((d) => d.idDrink.startsWith("ai-")) as RecipeDetail[],
+    [allFavoritesArray],
   );
 
-  const hasFavorites = favoritesArray.length > 0;
+  const sortedApiFavorites = useMemo(
+    () => sortFavorites(apiFavorites, sortOption, favoriteOrder),
+    [apiFavorites, sortOption, favoriteOrder],
+  );
+
+  const sortedAiFavorites = useMemo(
+    () => sortFavorites(aiFavorites, sortOption, favoriteOrder),
+    [aiFavorites, sortOption, favoriteOrder],
+  );
+
+  const hasFavorites    = apiFavorites.length > 0;
+  const hasAiFavorites  = aiFavorites.length > 0;
+  const hasCreations    = aiRecipes.length > 0;
+  const hasAnything     = allFavoritesArray.length > 0 || hasCreations;
+
+  const handleRemoveCreation = (id: string) => {
+    removeAiRecipe(id);
+    setNotification("Removed from My Creations", "info");
+  };
 
   useEffect(() => {
-    if (!hasFavorites) {
+    if (!hasAnything) {
       setNotification("Your favorites list is empty", "info");
     }
-  }, [hasFavorites, setNotification]);
+  }, [hasAnything, setNotification]);
+
+  const totalCount = allFavoritesArray.length + aiRecipes.length;
 
   return (
     <article aria-labelledby="favorites-heading" className="relative min-h-[60vh]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-24">
 
+        {/* ── Page header ───────────────────────────────────────────── */}
         <div
-          className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 pb-5"
+          className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10 pb-5"
           style={{ borderBottom: "1px solid var(--border-subtle)" }}
         >
           <div>
-            <h2
+            <h1
               id="favorites-heading"
               className="text-xl font-bold uppercase tracking-tighter"
               style={{ color: "var(--text-primary)" }}
             >
               My Favorites
-            </h2>
-            {hasFavorites && (
+            </h1>
+            {hasAnything && (
               <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
-                {favoritesArray.length}{" "}
-                {favoritesArray.length === 1 ? "recipe" : "recipes"} saved
+                {totalCount} {totalCount === 1 ? "recipe" : "recipes"} saved
               </p>
             )}
           </div>
 
-          {hasFavorites && (
+          {hasAnything && (
             <SortSelector
               options={SORT_OPTIONS_FAVORITES}
               value={sortOption}
@@ -124,21 +201,106 @@ export default function FavoritesPage() {
           )}
         </div>
 
-        {hasFavorites ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 lg:gap-6">
-            {sortedFavorites.map((drink, index) => (
-              <div
-                key={drink.idDrink}
-                className="animate-fade-up"
-                style={{ animationDelay: `${index * 0.05}s` }}
-              >
-                <DrinkCard drink={drink} index={index} />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <FavoritesEmptyState />
+        {/* ── API Favorites grid ───────────────────────────────────── */}
+        {hasFavorites && (
+          <section aria-labelledby="api-favorites-heading" className="mb-12">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 lg:gap-6">
+              {sortedApiFavorites.map((drink, index) => (
+                <div
+                  key={drink.idDrink}
+                  className="animate-fade-up"
+                  style={{ animationDelay: `${index * 0.05}s` }}
+                >
+                  {/*
+                   * fullRecipe={drink} → DrinkCard abre el modal localmente
+                   * sin fetch a lookup.php. Funciona para favoritos completos.
+                   */}
+                  <DrinkCard drink={drink} fullRecipe={drink} index={index} />
+                </div>
+              ))}
+            </div>
+          </section>
         )}
+
+        {/* ── AI Favorites (guardadas desde AI Generator → Add to Favorites) ── */}
+        {hasAiFavorites && (
+          <section aria-labelledby="ai-favorites-heading" className="mb-12">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 lg:gap-6">
+              {sortedAiFavorites.map((drink, index) => (
+                <div
+                  key={drink.idDrink}
+                  className="animate-fade-up"
+                  style={{ animationDelay: `${index * 0.05}s` }}
+                >
+                  <DrinkCard drink={drink} fullRecipe={drink} index={index} />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Empty state si no hay favoritos de ningún tipo */}
+        {!hasFavorites && !hasAiFavorites && !hasCreations && <FavoritesEmptyState />}
+
+        {/* ── My Creations section ─────────────────────────────────── */}
+        {(hasCreations || hasAnything) && (
+          <section aria-labelledby="creations-heading">
+            <div
+              className="flex items-center justify-between mb-6 pt-6"
+              style={{ borderTop: "1px solid var(--border-subtle)" }}
+            >
+              <div>
+                <h2
+                  id="creations-heading"
+                  className="text-lg font-bold uppercase tracking-tighter"
+                  style={{ color: "var(--text-primary)" }}
+                >
+                  My Creations
+                </h2>
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+                  Recipes generated by AI and saved with "Save Creation"
+                </p>
+              </div>
+
+              {hasCreations && (
+                <span
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase"
+                  style={{
+                    background: "rgba(242, 127, 13, 0.1)",
+                    border: "1px solid rgba(242, 127, 13, 0.25)",
+                    color: "var(--color-brand)",
+                  }}
+                >
+                  <svg className="w-3 h-3" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                    <path d="M8 1a1 1 0 011 1v1.268l1.098-.634a1 1 0 011 1.732L10 5.732V7h1.268l.634-1.098a1 1 0 011.732 1L12.268 8l1.366.098a1 1 0 010 1.732L12.268 10H11v1.268l1.098.634a1 1 0 01-1 1.732L10 12.268V11H8.732l-.634 1.098a1 1 0 01-1.732-1L7.732 10H7v-.732l-1.098.634a1 1 0 01-1-1.732L6.268 8 4.902 7.902a1 1 0 010-1.732L6.268 7H7V5.732L5.902 5.098a1 1 0 011-1.732L8 3.97V2a1 1 0 011-1z" />
+                  </svg>
+                  {aiRecipes.length} {aiRecipes.length === 1 ? "creation" : "creations"}
+                </span>
+              )}
+            </div>
+
+            {hasCreations ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 lg:gap-6">
+                {aiRecipes.map((recipe, index) => (
+                  <div
+                    key={recipe.idDrink}
+                    className="animate-fade-up"
+                    style={{ animationDelay: `${index * 0.05}s` }}
+                  >
+                    <AiCreationCard
+                      recipe={recipe}
+                      index={index}
+                      onRemove={handleRemoveCreation}
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <CreationsEmptyState />
+            )}
+          </section>
+        )}
+
       </div>
     </article>
   );
