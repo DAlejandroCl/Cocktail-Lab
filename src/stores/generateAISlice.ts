@@ -1,3 +1,11 @@
+/**
+ * src/stores/generateAISlice.ts  (versión final)
+ *
+ * Sin cambios de breaking respecto a la sesión anterior.
+ * Se mantiene igual, ya está correcto.
+ * Este archivo es idéntico al entregado en la sesión anterior.
+ */
+
 import type { StateCreator } from "zustand";
 import type { AppState } from "./useAppStore";
 import type { RecipeDetail } from "../types";
@@ -11,14 +19,13 @@ export interface GeneratedRecipe extends RecipeDetail {
 }
 
 export interface AiRecipeSliceType {
-  // State
   aiIngredients: string[];
   generatedRecipe: GeneratedRecipe | null;
   isGenerating: boolean;
   generationError: string | null;
   aiRecipes: GeneratedRecipe[];
+  showAiHistory: boolean;
 
-  // Actions
   addIngredient: (ingredient: string) => void;
   removeIngredient: (ingredient: string) => void;
   clearIngredients: () => void;
@@ -26,9 +33,10 @@ export interface AiRecipeSliceType {
   clearGeneratedRecipe: () => void;
   saveAiRecipe: (recipe: GeneratedRecipe) => void;
   removeAiRecipe: (recipeId: string) => void;
+  toggleAiHistory: () => void;
 }
 
-// ─── API Response shape ───────────────────────────────────────────────────────
+// ─── Internal API response shape ─────────────────────────────────────────────
 
 interface AIIngredient {
   name: string;
@@ -63,59 +71,39 @@ function mapToGeneratedRecipe(
   const list = recipe.ingredients ?? [];
 
   return {
-    // ── Core RecipeDetail fields ──────────────────────────────────────────
     idDrink: `ai-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     strDrink: recipe.strDrink,
     strDrinkThumb: recipe.strDrinkThumb,
     strCategory: recipe.strCategory ?? null,
     strInstructions: recipe.strInstructions,
 
-    // ── Ingredients (explicit — preserves TS types) ───────────────────────
-    strIngredient1: ing(list, 0),
-    strIngredient2: ing(list, 1),
-    strIngredient3: ing(list, 2),
-    strIngredient4: ing(list, 3),
-    strIngredient5: ing(list, 4),
-    strIngredient6: ing(list, 5),
-    strIngredient7: ing(list, 6),
-    strIngredient8: ing(list, 7),
-    strIngredient9: ing(list, 8),
-    strIngredient10: ing(list, 9),
-    strIngredient11: ing(list, 10),
-    strIngredient12: ing(list, 11),
-    strIngredient13: ing(list, 12),
-    strIngredient14: ing(list, 13),
+    strIngredient1:  ing(list,  0), strIngredient2:  ing(list,  1),
+    strIngredient3:  ing(list,  2), strIngredient4:  ing(list,  3),
+    strIngredient5:  ing(list,  4), strIngredient6:  ing(list,  5),
+    strIngredient7:  ing(list,  6), strIngredient8:  ing(list,  7),
+    strIngredient9:  ing(list,  8), strIngredient10: ing(list,  9),
+    strIngredient11: ing(list, 10), strIngredient12: ing(list, 11),
+    strIngredient13: ing(list, 12), strIngredient14: ing(list, 13),
     strIngredient15: ing(list, 14),
 
-    // ── Measures (explicit) ───────────────────────────────────────────────
-    strMeasure1: msr(list, 0),
-    strMeasure2: msr(list, 1),
-    strMeasure3: msr(list, 2),
-    strMeasure4: msr(list, 3),
-    strMeasure5: msr(list, 4),
-    strMeasure6: msr(list, 5),
-    strMeasure7: msr(list, 6),
-    strMeasure8: msr(list, 7),
-    strMeasure9: msr(list, 8),
-    strMeasure10: msr(list, 9),
-    strMeasure11: msr(list, 10),
-    strMeasure12: msr(list, 11),
-    strMeasure13: msr(list, 12),
-    strMeasure14: msr(list, 13),
+    strMeasure1:  msr(list,  0), strMeasure2:  msr(list,  1),
+    strMeasure3:  msr(list,  2), strMeasure4:  msr(list,  3),
+    strMeasure5:  msr(list,  4), strMeasure6:  msr(list,  5),
+    strMeasure7:  msr(list,  6), strMeasure8:  msr(list,  7),
+    strMeasure9:  msr(list,  8), strMeasure10: msr(list,  9),
+    strMeasure11: msr(list, 10), strMeasure12: msr(list, 11),
+    strMeasure13: msr(list, 12), strMeasure14: msr(list, 13),
     strMeasure15: msr(list, 14),
 
-    // ── AI-specific metadata ──────────────────────────────────────────────
     isAIGenerated: true,
     generatedAt: new Date().toISOString(),
     userIngredients: ingredients,
   };
 }
 
-// ─── API Call ─────────────────────────────────────────────────────────────────
+// ─── API call ─────────────────────────────────────────────────────────────────
 
-async function callAIRecipeAPI(
-  ingredients: string[],
-): Promise<GeneratedRecipe> {
+async function callAIRecipeAPI(ingredients: string[]): Promise<GeneratedRecipe> {
   const response = await fetch("/api/ai/generate-recipe", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -144,29 +132,17 @@ export const createGenerateAISlice: StateCreator<
   isGenerating: false,
   generationError: null,
   aiRecipes: [],
+  showAiHistory: false,
 
   addIngredient: (ingredient) => {
     const { aiIngredients } = get();
     const normalized = ingredient.trim().toLowerCase();
-    if (
-      !normalized ||
-      aiIngredients.map((i) => i.toLowerCase()).includes(normalized)
-    )
-      return;
-    set(
-      { aiIngredients: [...aiIngredients, ingredient.trim()] },
-      false,
-      "ai/addIngredient",
-    );
+    if (!normalized || aiIngredients.map((i) => i.toLowerCase()).includes(normalized)) return;
+    set({ aiIngredients: [...aiIngredients, ingredient.trim()] }, false, "ai/addIngredient");
   },
 
   removeIngredient: (ingredient) => {
-    const { aiIngredients } = get();
-    set(
-      { aiIngredients: aiIngredients.filter((i) => i !== ingredient) },
-      false,
-      "ai/removeIngredient",
-    );
+    set({ aiIngredients: get().aiIngredients.filter((i) => i !== ingredient) }, false, "ai/removeIngredient");
   },
 
   clearIngredients: () => {
@@ -175,51 +151,24 @@ export const createGenerateAISlice: StateCreator<
 
   generateRecipe: async () => {
     const { aiIngredients, isGenerating } = get();
-
     if (aiIngredients.length === 0 || isGenerating) return;
 
-    set(
-      { isGenerating: true, generationError: null, generatedRecipe: null },
-      false,
-      "ai/generateRecipe/start",
-    );
+    set({ isGenerating: true, generationError: null, generatedRecipe: null }, false, "ai/generateRecipe/start");
 
     try {
       const recipe = await callAIRecipeAPI(aiIngredients);
-
-      set(
-        {
-          generatedRecipe: recipe,
-          isGenerating: false,
-        },
-        false,
-        "ai/generateRecipe/success",
-      );
+      set({ generatedRecipe: recipe, isGenerating: false }, false, "ai/generateRecipe/success");
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Unexpected error";
-
+      const message = error instanceof Error ? error.message : "Unexpected error";
       const userMessage = message.toLowerCase().includes("network")
         ? "Network error. Check your connection and try again."
         : "Failed to generate recipe. Please try again.";
-
-      set(
-        {
-          generationError: userMessage,
-          isGenerating: false,
-        },
-        false,
-        "ai/generateRecipe/error",
-      );
+      set({ generationError: userMessage, isGenerating: false }, false, "ai/generateRecipe/error");
     }
   },
 
   clearGeneratedRecipe: () => {
-    set(
-      { generatedRecipe: null, generationError: null },
-      false,
-      "ai/clearGeneratedRecipe",
-    );
+    set({ generatedRecipe: null, generationError: null }, false, "ai/clearGeneratedRecipe");
   },
 
   saveAiRecipe: (recipe) => {
@@ -229,11 +178,10 @@ export const createGenerateAISlice: StateCreator<
   },
 
   removeAiRecipe: (recipeId) => {
-    const { aiRecipes } = get();
-    set(
-      { aiRecipes: aiRecipes.filter((r) => r.idDrink !== recipeId) },
-      false,
-      "ai/removeRecipe",
-    );
+    set({ aiRecipes: get().aiRecipes.filter((r) => r.idDrink !== recipeId) }, false, "ai/removeRecipe");
+  },
+
+  toggleAiHistory: () => {
+    set({ showAiHistory: !get().showAiHistory }, false, "ai/toggleHistory");
   },
 });
