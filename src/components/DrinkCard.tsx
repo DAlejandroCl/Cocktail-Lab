@@ -1,31 +1,3 @@
-/**
- * src/components/DrinkCard.tsx
- *
- * Componente polimórfico: funciona tanto con `Drink` (API externa)
- * como con `RecipeDetail` completo (recetas de IA / favoritos cacheados).
- *
- * ─── SOLUCIÓN AL BUG ─────────────────────────────────────────────────────────
- *
- * Problema original:
- *   Cuando una receta de IA se guarda en favoritos, su `idDrink` es `ai-xxx`.
- *   Al hacer click en "View Recipe", el DrinkCard llamaba a `selectRecipe(id)`
- *   que hacía fetch a `lookup.php?i=ai-xxx` → 404 → modal nunca abría.
- *
- * Solución:
- *   1. La prop `drink` ahora acepta tanto `Drink` como `RecipeDetail`.
- *   2. Si el `idDrink` empieza por "ai-" O si la prop `fullRecipe` está
- *      presente, se llama a `openRecipeModal(fullRecipe)` en lugar de
- *      `selectRecipe(id)` — sin ningún fetch externo.
- *   3. El botón de favorito también usa `openRecipeModal` cuando tiene datos
- *      completos, evitando el fetch a lookup.php.
- *
- * Retro-compatibilidad:
- *   - Las tarjetas de la IndexPage siguen pasando solo `drink: Drink`,
- *     sin cambios necesarios en IndexPage.tsx.
- *   - Las tarjetas de FavoritesPage pueden pasar `fullRecipe` para activar
- *     el modo local. Ver ejemplo en el comentario al final del archivo.
- */
-
 import { memo, useCallback, useState } from "react";
 import type { Drink, RecipeDetail } from "../types";
 import { useAppStore } from "../stores/useAppStore";
@@ -42,11 +14,6 @@ import {
 
 interface DrinkCardProps {
   drink: Drink;
-  /**
-   * Cuando se tiene el objeto `RecipeDetail` completo (favoritos, recetas IA),
-   * pásalo aquí para que "View Recipe" y favorito abran el modal localmente
-   * sin consultar la API externa.
-   */
   fullRecipe?: RecipeDetail;
   index?: number;
 }
@@ -86,11 +53,6 @@ function DrinkCardComponent({ drink, fullRecipe, index = 0 }: DrinkCardProps) {
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
 
-  /**
-   * Determina si esta tarjeta pertenece a una receta de IA.
-   * Criterio: el ID empieza por "ai-" (generado en el slice) o
-   * el prop `fullRecipe` tiene `isAIGenerated`.
-   */
   const isAiCard =
     drink.idDrink.startsWith("ai-") ||
     (fullRecipe != null && "isAIGenerated" in fullRecipe);
@@ -99,13 +61,10 @@ function DrinkCardComponent({ drink, fullRecipe, index = 0 }: DrinkCardProps) {
 
   const handleSelectRecipe = useCallback(() => {
     if (fullRecipe) {
-      // Modo local: datos completos disponibles, sin fetch
       openRecipeModal(fullRecipe);
     } else if (isAiCard) {
-      // ID de IA pero sin fullRecipe → no hay datos para mostrar, notificar
       setNotification("Recipe details not available", "error");
     } else {
-      // Modo API: fetch a TheCocktailDB (comportamiento original)
       selectRecipe(drink.idDrink);
     }
   }, [drink.idDrink, fullRecipe, isAiCard, openRecipeModal, selectRecipe, setNotification]);
@@ -124,14 +83,12 @@ function DrinkCardComponent({ drink, fullRecipe, index = 0 }: DrinkCardProps) {
         return;
       }
 
-      // Si tenemos los datos completos (IA o ya cargados), los usamos directamente
       if (fullRecipe) {
         addFavorite(fullRecipe);
         setNotification("Added to favorites", "success");
         return;
       }
 
-      // Receta de la API externa sin fullRecipe → hay que hacer fetch
       setIsLoadingDetails(true);
       try {
         const response = await fetch(
@@ -279,19 +236,3 @@ export default memo(
   DrinkCardComponent,
   (prev, next) => prev.drink.idDrink === next.drink.idDrink && prev.fullRecipe === next.fullRecipe,
 );
-
-/*
- * ─── USO EN FavoritesPage.tsx ────────────────────────────────────────────────
- *
- * Cambio mínimo requerido: pasar `fullRecipe` en las tarjetas de favoritos.
- *
- * ANTES:
- *   <DrinkCard drink={drink} index={index} />
- *
- * DESPUÉS:
- *   <DrinkCard drink={drink} fullRecipe={drink} index={index} />
- *
- * Esto funciona porque `favorites` ya almacena objetos `RecipeDetail`
- * completos (con todos los ingredientes y strInstructions).
- * No hay ningún otro cambio necesario en FavoritesPage.tsx.
- */

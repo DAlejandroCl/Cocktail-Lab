@@ -1,16 +1,3 @@
-/**
- * src/views/FavoritesPage.tsx
- *
- * Cambios respecto a la versión original:
- *  1. Las recetas de API y las de IA ahora tienen secciones SEPARADAS:
- *     - "My Favorites" → recetas guardadas desde TheCocktailDB (mismo estilo)
- *     - "My Creations" → recetas generadas por IA y guardadas con "Save Creation"
- *  2. DrinkCard para favoritos recibe `fullRecipe` → abre modal localmente (sin fetch)
- *  3. DrinkCard para creaciones IA recibe `fullRecipe` → badge igual que los favoritos normales
- *     (mismo color naranja, sin diferenciación visual extra — diseño consistente)
- *  4. "Save Creation" ahora tiene destino visible: la sección "My Creations" aquí
- */
-
 import { useEffect, useMemo, useState } from "react";
 import { useAppStore } from "../stores/useAppStore";
 import DrinkCard from "../components/DrinkCard";
@@ -77,8 +64,7 @@ function CreationsEmptyState() {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   AI CREATION CARD — mismo estilo que DrinkCard pero con
-   botón de eliminar. Usa openRecipeModal para el modal local.
+   AI CREATION CARD 
 ───────────────────────────────────────────────────────────── */
 
 interface AiCreationCardProps {
@@ -90,15 +76,13 @@ interface AiCreationCardProps {
 function AiCreationCard({ recipe, index, onRemove }: AiCreationCardProps) {
   return (
     <div className="relative">
-      {/* Reutilizamos DrinkCard con fullRecipe para que el modal funcione localmente */}
       <DrinkCard drink={recipe} fullRecipe={recipe} index={index} />
 
-      {/* Botón eliminar de My Creations */}
       <button
         type="button"
         onClick={() => onRemove(recipe.idDrink)}
         aria-label={`Remove ${recipe.strDrink} from My Creations`}
-        className="absolute bottom-[3.25rem] right-2 z-10 w-7 h-7 flex items-center justify-center rounded-full transition-colors duration-200"
+        className="absolute bottom-13 right-2 z-10 w-7 h-7 flex items-center justify-center rounded-full transition-colors duration-200"
         style={{
           background: "rgba(248,113,113,0.12)",
           border: "1px solid rgba(248,113,113,0.25)",
@@ -127,7 +111,6 @@ export default function FavoritesPage() {
 
   const [sortOption, setSortOption] = useState<SortOptionFavorites>("recently-added");
 
-  // Separar favoritos de IA y de API
   const allFavoritesArray = useMemo(() => Object.values(favorites), [favorites]);
 
   const apiFavorites = useMemo(
@@ -172,7 +155,6 @@ export default function FavoritesPage() {
     <article aria-labelledby="favorites-heading" className="relative min-h-[60vh]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-24">
 
-        {/* ── Page header ───────────────────────────────────────────── */}
         <div
           className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10 pb-5"
           style={{ borderBottom: "1px solid var(--border-subtle)" }}
@@ -201,7 +183,6 @@ export default function FavoritesPage() {
           )}
         </div>
 
-        {/* ── API Favorites grid ───────────────────────────────────── */}
         {hasFavorites && (
           <section aria-labelledby="api-favorites-heading" className="mb-12">
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 lg:gap-6">
@@ -211,10 +192,6 @@ export default function FavoritesPage() {
                   className="animate-fade-up"
                   style={{ animationDelay: `${index * 0.05}s` }}
                 >
-                  {/*
-                   * fullRecipe={drink} → DrinkCard abre el modal localmente
-                   * sin fetch a lookup.php. Funciona para favoritos completos.
-                   */}
                   <DrinkCard drink={drink} fullRecipe={drink} index={index} />
                 </div>
               ))}
@@ -222,7 +199,6 @@ export default function FavoritesPage() {
           </section>
         )}
 
-        {/* ── AI Favorites (guardadas desde AI Generator → Add to Favorites) ── */}
         {hasAiFavorites && (
           <section aria-labelledby="ai-favorites-heading" className="mb-12">
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 lg:gap-6">
@@ -239,10 +215,8 @@ export default function FavoritesPage() {
           </section>
         )}
 
-        {/* Empty state si no hay favoritos de ningún tipo */}
         {!hasFavorites && !hasAiFavorites && !hasCreations && <FavoritesEmptyState />}
 
-        {/* ── My Creations section ─────────────────────────────────── */}
         {(hasCreations || hasAnything) && (
           <section aria-labelledby="creations-heading">
             <div

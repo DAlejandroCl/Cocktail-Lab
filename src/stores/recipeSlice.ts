@@ -1,13 +1,3 @@
-/**
- * src/stores/recipeSlice.ts
- *
- * Cambios respecto a la versión anterior:
- *  - Añadida acción `openRecipeModal(recipe: RecipeDetail)`:
- *    Permite abrir el Modal directamente con datos ya disponibles en memoria
- *    (recetas de IA, favoritos cacheados) SIN hacer fetch a la API externa.
- *    Es la pieza clave para solucionar el bug de favoritos en recetas de IA.
- */
-
 import type { StateCreator } from "zustand";
 import {
   getCategories,
@@ -33,20 +23,8 @@ export type RecipesSliceType = {
 
   fetchCategories: () => Promise<void>;
   searchRecipes: (searchFilters: SearchFilters) => Promise<void>;
-
-  /**
-   * Selecciona una receta de la API externa por ID.
-   * Hace fetch a TheCocktailDB → solo para bebidas con ID numérico real.
-   */
   selectRecipe: (id: Drink["idDrink"]) => Promise<void>;
-
-  /**
-   * Abre el modal con datos ya disponibles en memoria.
-   * Úsalo para recetas de IA (`ai-xxx`) y favoritos persistidos
-   * donde el objeto `RecipeDetail` completo ya está en el store.
-   */
   openRecipeModal: (recipe: RecipeDetail) => void;
-
   closeModal: () => void;
 };
 
@@ -96,7 +74,6 @@ export const createRecipesSlice: StateCreator<RecipesSliceType> = (set, get) => 
     }
   },
 
-  // ── Nueva acción: abre el modal sin fetch ──────────────────────────────────
   openRecipeModal: (recipe) => {
     set({ selectedRecipe: recipe, modal: true });
   },

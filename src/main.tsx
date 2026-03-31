@@ -4,10 +4,7 @@ import "./index.css";
 import AppRouter from "./router";
 
 /* ─────────────────────────────────────────────────────────────
-   THEME INITIALIZATION — Runs before React mounts to avoid
-   flash of wrong theme (FOWT). Reads persisted Zustand state
-   from localStorage and applies the correct class to <html>
-   before the first paint.
+   THEME INITIALIZATION
 ───────────────────────────────────────────────────────────── */
 
 (function initTheme() {

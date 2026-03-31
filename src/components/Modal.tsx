@@ -1,18 +1,3 @@
-/**
- * src/components/Modal.tsx
- *
- * Cambios respecto a la versión anterior:
- *  - Polimorfismo: detecta si la receta es de IA (`idDrink.startsWith("ai-")`)
- *    para mostrar el badge "✦ AI Generated" en lugar de la categoría.
- *  - El modal ya funcionaba con el `selectedRecipe` del store.
- *    Ahora que `openRecipeModal()` puede poblarlo con datos locales de IA,
- *    el modal simplemente renderiza lo que encuentra en `selectedRecipe`
- *    sin ningún cambio en su lógica de fetch (que no tiene).
- *  - Añadido badge visual para recetas de IA.
- *  - La frase estática "A carefully crafted cocktail..." se personaliza
- *    levemente para recetas de IA.
- */
-
 import { Dialog, Transition } from "@headlessui/react";
 import { Fragment, useState, useRef } from "react";
 import { XMarkIcon } from "@heroicons/react/20/solid";
@@ -126,7 +111,6 @@ export default function Modal() {
   const recipeId  = selectedRecipe?.idDrink ?? "";
   const isFavorite = useAppStore(selectIsFavorite(recipeId));
 
-  // Detección de receta de IA (el ID no existe en TheCocktailDB)
   const isAiRecipe = recipeId.startsWith("ai-");
 
   if (!modal || !selectedRecipe) return null;
@@ -220,7 +204,6 @@ export default function Modal() {
                 </button>
 
                 <div className="flex-1 overflow-y-auto custom-scrollbar">
-                  {/* ── Hero image ─────────────────────────────────────────── */}
                   <div className="relative overflow-hidden" style={{ aspectRatio: "16/9" }}>
                     <img
                       src={selectedRecipe.strDrinkThumb}
@@ -236,7 +219,6 @@ export default function Modal() {
                       }}
                     />
 
-                    {/* Badge: AI o Categoría */}
                     <span className="absolute bottom-4 left-4">
                       {isAiRecipe ? (
                         <AIBadge />
@@ -251,7 +233,6 @@ export default function Modal() {
                     </span>
                   </div>
 
-                  {/* ── Content ────────────────────────────────────────────── */}
                   <div className="px-6 py-6 space-y-8 pb-32">
                     <div>
                       <Dialog.Title
@@ -271,7 +252,6 @@ export default function Modal() {
                       </p>
                     </div>
 
-                    {/* Ingredients */}
                     <section aria-labelledby="modal-ingredients-heading">
                       <h3
                         id="modal-ingredients-heading"
@@ -308,7 +288,6 @@ export default function Modal() {
                       </ul>
                     </section>
 
-                    {/* Instructions */}
                     {steps.length > 0 && (
                       <section aria-labelledby="modal-instructions-heading">
                         <h3
@@ -343,7 +322,6 @@ export default function Modal() {
                   </div>
                 </div>
 
-                {/* Footer */}
                 <div
                   className="absolute bottom-0 left-0 right-0 flex items-center gap-3 p-4"
                   style={{

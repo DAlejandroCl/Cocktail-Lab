@@ -1,11 +1,3 @@
-/**
- * src/stores/selectors.ts
- *
- * Cambios:
- *  - Añadido `selectOpenRecipeModal` → para el DrinkCard polimórfico
- *  - Añadido `selectShowAiHistory` + `selectToggleAiHistory` → para lazy-load
- */
-
 import type { RecipesSliceType } from "./recipeSlice";
 import type { FavoritesSliceType } from "./favoritesSlice";
 import type { NotificationSliceType } from "./notificationSlice";

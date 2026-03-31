@@ -38,8 +38,6 @@ function Ticker({ items, reverse = false }: { items: string[]; reverse?: boolean
 
 /* ─────────────────────────────────────────────────────────────
    LAVA LAMP BACKGROUND
-   Two organic blobs — orange left, blue right — that morph and
-   drift slowly to create the lava lamp effect.
 ───────────────────────────────────────────────────────────── */
 
 function MeshGradient() {
@@ -138,18 +136,12 @@ export default function HeroSection({ categories, isLoading, onSubmit, resultsRe
       aria-label="Search cocktails"
       style={{ minHeight: "calc(100vh - 64px)" }}
     >
-      {/* ── Mesh gradient background ── */}
       <MeshGradient />
-
-      {/* ── Top ticker ── */}
       <Ticker items={COCKTAILS} />
-
-      {/* ── Bubble clip zone — clipped between tickers ── */}
       <div className="hero-bubble-zone" aria-hidden="true">
         <Bubbles />
       </div>
 
-      {/* ── Main content ── */}
       <div
         className="relative flex-1 flex flex-col items-center justify-center text-center px-4 sm:px-6 lg:px-8"
         style={{ zIndex: 3 }}
@@ -176,7 +168,6 @@ export default function HeroSection({ categories, isLoading, onSubmit, resultsRe
         </div>
       </div>
 
-      {/* ── Scroll arrow ── */}
       <div className="flex justify-center py-6" style={{ zIndex: 3 }}>
         <ScrollArrow onClick={handleScrollToResults} />
       </div>

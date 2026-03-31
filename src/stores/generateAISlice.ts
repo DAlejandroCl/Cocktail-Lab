@@ -1,11 +1,3 @@
-/**
- * src/stores/generateAISlice.ts  (versión final)
- *
- * Sin cambios de breaking respecto a la sesión anterior.
- * Se mantiene igual, ya está correcto.
- * Este archivo es idéntico al entregado en la sesión anterior.
- */
-
 import type { StateCreator } from "zustand";
 import type { AppState } from "./useAppStore";
 import type { RecipeDetail } from "../types";
