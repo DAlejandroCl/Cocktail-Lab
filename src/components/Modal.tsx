@@ -1,3 +1,18 @@
+/**
+ * src/components/Modal.tsx
+ *
+ * Cambios respecto a la versión anterior:
+ *  - Polimorfismo: detecta si la receta es de IA (`idDrink.startsWith("ai-")`)
+ *    para mostrar el badge "✦ AI Generated" en lugar de la categoría.
+ *  - El modal ya funcionaba con el `selectedRecipe` del store.
+ *    Ahora que `openRecipeModal()` puede poblarlo con datos locales de IA,
+ *    el modal simplemente renderiza lo que encuentra en `selectedRecipe`
+ *    sin ningún cambio en su lógica de fetch (que no tiene).
+ *  - Añadido badge visual para recetas de IA.
+ *  - La frase estática "A carefully crafted cocktail..." se personaliza
+ *    levemente para recetas de IA.
+ */
+
 import { Dialog, Transition } from "@headlessui/react";
 import { Fragment, useState, useRef } from "react";
 import { XMarkIcon } from "@heroicons/react/20/solid";
@@ -28,16 +43,10 @@ function IngredientRow({
       className="flex items-center justify-between px-4 py-3 gap-4"
       style={{ borderBottom: "1px solid var(--border-subtle)" }}
     >
-      <span
-        className="text-sm font-medium"
-        style={{ color: "var(--text-primary)" }}
-      >
+      <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
         {ingredient}
       </span>
-      <span
-        className="text-sm font-bold shrink-0"
-        style={{ color: "var(--color-brand)" }}
-      >
+      <span className="text-sm font-bold shrink-0" style={{ color: "var(--color-brand)" }}>
         {measure?.trim() || "–"}
       </span>
     </li>
@@ -48,13 +57,7 @@ function IngredientRow({
    STEP ROW
 ───────────────────────────────────────────────────────────── */
 
-function StepRow({
-  step,
-  index,
-}: {
-  step: string;
-  index: number;
-}) {
+function StepRow({ step, index }: { step: string; index: number }) {
   return (
     <li className="flex gap-4">
       <span
@@ -62,10 +65,7 @@ function StepRow({
         aria-hidden="true"
         style={
           index === 0
-            ? {
-                background: "var(--color-brand)",
-                color: "#ffffff",
-              }
+            ? { background: "var(--color-brand)", color: "#ffffff" }
             : {
                 background: "rgba(242, 127, 13, 0.12)",
                 border: "1px solid rgba(242, 127, 13, 0.3)",
@@ -75,13 +75,36 @@ function StepRow({
       >
         {index + 1}
       </span>
-      <p
-        className="text-sm leading-relaxed pt-0.5"
-        style={{ color: "var(--text-secondary)" }}
-      >
+      <p className="text-sm leading-relaxed pt-0.5" style={{ color: "var(--text-secondary)" }}>
         {step}
       </p>
     </li>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   AI BADGE
+───────────────────────────────────────────────────────────── */
+
+function AIBadge() {
+  return (
+    <span
+      className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider"
+      style={{
+        background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)",
+        color: "#ffffff",
+      }}
+    >
+      <svg
+        className="w-3 h-3"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        aria-hidden="true"
+      >
+        <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" />
+      </svg>
+      AI Generated
+    </span>
   );
 }
 
@@ -90,18 +113,21 @@ function StepRow({
 ───────────────────────────────────────────────────────────── */
 
 export default function Modal() {
-  const modal = useAppStore(selectModal);
-  const closeModal = useAppStore(selectCloseModal);
+  const modal          = useAppStore(selectModal);
+  const closeModal     = useAppStore(selectCloseModal);
   const selectedRecipe = useAppStore(selectSelectedRecipe);
-  const addFavorite = useAppStore(selectAddFavorite);
+  const addFavorite    = useAppStore(selectAddFavorite);
   const removeFavorite = useAppStore(selectRemoveFavorite);
   const setNotification = useAppStore(selectSetNotification);
 
   const [isAnimating, setIsAnimating] = useState(false);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
-  const recipeId = selectedRecipe?.idDrink ?? "";
+  const recipeId  = selectedRecipe?.idDrink ?? "";
   const isFavorite = useAppStore(selectIsFavorite(recipeId));
+
+  // Detección de receta de IA (el ID no existe en TheCocktailDB)
+  const isAiRecipe = recipeId.startsWith("ai-");
 
   if (!modal || !selectedRecipe) return null;
 
@@ -119,10 +145,8 @@ export default function Modal() {
 
   const ingredients = Array.from({ length: 15 }, (_, i) => {
     const n = i + 1;
-    const ingredient =
-      selectedRecipe[`strIngredient${n}` as keyof typeof selectedRecipe];
-    const measure =
-      selectedRecipe[`strMeasure${n}` as keyof typeof selectedRecipe];
+    const ingredient = selectedRecipe[`strIngredient${n}` as keyof typeof selectedRecipe];
+    const measure    = selectedRecipe[`strMeasure${n}` as keyof typeof selectedRecipe];
     return ingredient && String(ingredient).trim()
       ? { ingredient: String(ingredient), measure: measure as string | null }
       : null;
@@ -155,10 +179,7 @@ export default function Modal() {
           <div
             className="fixed inset-0"
             aria-hidden="true"
-            style={{
-              background: "rgba(0,0,0,0.6)",
-              backdropFilter: "blur(10px)",
-            }}
+            style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(10px)" }}
           />
         </Transition.Child>
 
@@ -199,10 +220,8 @@ export default function Modal() {
                 </button>
 
                 <div className="flex-1 overflow-y-auto custom-scrollbar">
-                  <div
-                    className="relative overflow-hidden"
-                    style={{ aspectRatio: "16/9" }}
-                  >
+                  {/* ── Hero image ─────────────────────────────────────────── */}
+                  <div className="relative overflow-hidden" style={{ aspectRatio: "16/9" }}>
                     <img
                       src={selectedRecipe.strDrinkThumb}
                       alt={`${selectedRecipe.strDrink} cocktail`}
@@ -217,19 +236,22 @@ export default function Modal() {
                       }}
                     />
 
-                    {selectedRecipe.strCategory && (
-                      <span
-                        className="absolute bottom-4 left-4 inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider"
-                        style={{
-                          background: "var(--color-brand)",
-                          color: "#ffffff",
-                        }}
-                      >
-                        {selectedRecipe.strCategory}
-                      </span>
-                    )}
+                    {/* Badge: AI o Categoría */}
+                    <span className="absolute bottom-4 left-4">
+                      {isAiRecipe ? (
+                        <AIBadge />
+                      ) : selectedRecipe.strCategory ? (
+                        <span
+                          className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider"
+                          style={{ background: "var(--color-brand)", color: "#ffffff" }}
+                        >
+                          {selectedRecipe.strCategory}
+                        </span>
+                      ) : null}
+                    </span>
                   </div>
 
+                  {/* ── Content ────────────────────────────────────────────── */}
                   <div className="px-6 py-6 space-y-8 pb-32">
                     <div>
                       <Dialog.Title
@@ -243,10 +265,13 @@ export default function Modal() {
                         className="text-sm italic mt-1.5"
                         style={{ color: "var(--text-muted)" }}
                       >
-                        A carefully crafted cocktail for the discerning palate.
+                        {isAiRecipe
+                          ? "Crafted by AI from your personal ingredient selection."
+                          : "A carefully crafted cocktail for the discerning palate."}
                       </p>
                     </div>
 
+                    {/* Ingredients */}
                     <section aria-labelledby="modal-ingredients-heading">
                       <h3
                         id="modal-ingredients-heading"
@@ -270,7 +295,6 @@ export default function Modal() {
                         </svg>
                         Ingredients
                       </h3>
-
                       <ul
                         className="rounded-xl overflow-hidden"
                         style={{
@@ -279,15 +303,12 @@ export default function Modal() {
                         }}
                       >
                         {ingredients.map(({ ingredient, measure }) => (
-                          <IngredientRow
-                            key={ingredient}
-                            ingredient={ingredient}
-                            measure={measure}
-                          />
+                          <IngredientRow key={ingredient} ingredient={ingredient} measure={measure} />
                         ))}
                       </ul>
                     </section>
 
+                    {/* Instructions */}
                     {steps.length > 0 && (
                       <section aria-labelledby="modal-instructions-heading">
                         <h3
@@ -312,7 +333,6 @@ export default function Modal() {
                           </svg>
                           Instructions
                         </h3>
-
                         <ol className="space-y-5">
                           {steps.map((step, i) => (
                             <StepRow key={i} step={step} index={i} />
@@ -323,6 +343,7 @@ export default function Modal() {
                   </div>
                 </div>
 
+                {/* Footer */}
                 <div
                   className="absolute bottom-0 left-0 right-0 flex items-center gap-3 p-4"
                   style={{
@@ -343,9 +364,7 @@ export default function Modal() {
                     type="button"
                     onClick={handleFavoriteClick}
                     aria-pressed={isFavorite}
-                    aria-label={
-                      isFavorite ? "Remove from favorites" : "Add to favorites"
-                    }
+                    aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
                     className={`favorite-btn w-12 h-12 rounded-xl ${isFavorite ? "is-active" : ""} ${isAnimating ? "scale-110" : ""}`}
                   >
                     <svg
