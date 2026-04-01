@@ -1,11 +1,10 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { createGroq } from "@ai-sdk/groq";
-import { generateText, Output } from "ai";
+import Groq from "groq-sdk";
 import { z } from "zod";
 
-// ─── Groq client ──────────────────────────────────────────────────────────────
+// ─── Groq client ───────────────────────────────────────────────────────
 
-const groqClient = createGroq({
+const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY ?? "",
 });
 
@@ -31,77 +30,34 @@ async function resolveImageFromCocktailDB(slug: string): Promise<string> {
     return data.drinks?.[0]?.strDrinkThumb ?? FALLBACK;
   } catch {
     clearTimeout(timeoutId);
-    console.warn(`[generate-recipe] CocktailDB image lookup failed for slug="${slug}", using fallback`);
     return FALLBACK;
   }
 }
 
-// ─── Zod schemas ─────────────────────────────────────────────────────
+// ─── Zod schemas ─────────────────────────────────────────────────
 
 const IngredientSchema = z.object({
-  name: z
-    .string()
-    .describe(
-      "Ingredient name as in TheCocktailDB. Can include ingredients NOT in the user list " +
-        "if needed to balance the cocktail (e.g. 'Angostura bitters', 'Simple syrup', " +
-        "'Egg white', 'Salt', 'Mint'). These additions are encouraged.",
-    ),
-  measure: z
-    .string()
-    .describe(
-      "Precise professional measure:\n" +
-        "- Spirits/liqueurs: oz (e.g. '1.5 oz', '0.75 oz')\n" +
-        "- Bitters: dashes ONLY (e.g. '2 dashes', '3 dashes') — NEVER oz\n" +
-        "- Syrups/sweeteners: oz (e.g. '0.5 oz', '0.25 oz')\n" +
-        "- Citrus juice: oz (e.g. '0.75 oz', '1 oz')\n" +
-        "- Carbonated mixers: oz or 'to fill'\n" +
-        "- Egg white: '1 white'\n" +
-        "- Garnishes: descriptive ('sprig', 'twist', 'wedge', 'pinch')\n" +
-        "NEVER use the same measure for every ingredient.",
-    ),
+  name: z.string().min(1),
+  measure: z.string().min(1),
 });
 
 const RecipeSchema = z.object({
-  strDrink: z
-    .string()
-    .describe(
-      "Creative cocktail name with narrative, elegance, or wit. Title Case. " +
-        "FORBIDDEN: 'Classic Mix', 'House Special', 'Simple Cocktail', any generic name. " +
-        "GOOD examples: 'Crimson Tide Reverie', 'Cartagena Sunset', 'Quantum Spritz', 'Last Train Home'.",
-    ),
-  strCategory: z
-    .enum(["Cocktail", "Shot", "Punch / Party Drink", "Soft Drink", "Other/Unknown"])
-    .describe("Most accurate TheCocktailDB category for this drink."),
-  strInstructions: z
-    .string()
-    .describe(
-      "Professional preparation method as a single paragraph. Sentences separated by '. '. " +
-        "Technique MUST match ingredients: egg white → dry shake first; " +
-        "carbonation → build in glass, never shake; cream → gentle roll; " +
-        "spirit-forward → stir; citrus → shake hard + double strain; herbs → muddle first. " +
-        "Must include: glass type (first sentence), ice type, order of additions, " +
-        "technique with duration, straining method, garnish. Minimum 5 sentences.",
-    ),
-  ingredients: z
-    .array(IngredientSchema)
-    .min(3)
-    .max(12)
-    .describe(
-      "User's ingredients as BASE plus complementary balancing ingredients. " +
-        "Total base spirit: 1.5–2.5 oz. Citrus: 0.5–1 oz. Sweetener: 0.25–0.75 oz.",
-    ),
-  imageSlug: z
-    .string()
-    .describe(
-      "Name of a real TheCocktailDB cocktail visually similar in COLOR to this drink. " +
-        "Red/pink → 'Cosmopolitan'; Yellow → 'Margarita'; Green → 'Mojito'; " +
-        "Brown → 'Old Fashioned'; White/foamy → 'Pisco Sour'; " +
-        "Orange → 'Tequila Sunrise'; Clear → 'Martini'. " +
-        "Return ONLY the drink name.",
-    ),
+  strDrink: z.string().min(1),
+  strCategory: z.enum([
+    "Cocktail",
+    "Shot",
+    "Punch / Party Drink",
+    "Soft Drink",
+    "Other/Unknown",
+  ]),
+  strInstructions: z.string().min(1),
+  ingredients: z.array(IngredientSchema).min(2).max(15),
+  imageSlug: z.string().min(1),
 });
 
-// ─── System prompt — Don Aurelio V3 ───────────────────────────
+type RecipeOutput = z.infer<typeof RecipeSchema>;
+
+// ─── System prompt — Don Aurelio V3 ─────────────────────────────────────────────
 
 const SYSTEM_PROMPT = `You are Don Aurelio, a legendary master mixologist with 50 years of experience.
 You have worked at the Savoy (London), El Floridita (Havana), and Bar Hemingway (Paris).
@@ -113,146 +69,173 @@ CORE RULES (MANDATORY)
 ━━━━━━━━━━━━━━━━━━━
 
 1. OUTPUT FORMAT
-- Return ONLY valid JSON
-- No markdown
-- No explanations
-- No text outside JSON
+- Return ONLY valid JSON — nothing else
+- No markdown, no code blocks, no backticks
+- No explanations before or after the JSON
 - No trailing commas
 - Must be directly parseable with JSON.parse()
 
-2. LANGUAGE
-- EVERYTHING must be in ENGLISH
-- (name, ingredients, measures, instructions)
+2. LANGUAGE: EVERYTHING in ENGLISH
 
-3. STRUCTURE (STRICT)
-You MUST follow EXACTLY this structure:
+3. JSON STRUCTURE (STRICT — follow exactly):
 {
-  "strDrink": string,
+  "strDrink": "string",
   "strCategory": "Cocktail" | "Shot" | "Punch / Party Drink" | "Soft Drink" | "Other/Unknown",
-  "strInstructions": string,
-  "ingredients": [{ "name": string, "measure": string }],
-  "imageSlug": string
+  "strInstructions": "string",
+  "ingredients": [
+    { "name": "string", "measure": "string" }
+  ],
+  "imageSlug": "string"
 }
 
 ━━━━━━━━━━━━━━━━━━━
-CREATIVE ENGINE (CRITICAL)
+CREATIVE ENGINE
 ━━━━━━━━━━━━━━━━━━━
 
 4. INGREDIENT LOGIC (BALANCE FIRST)
-- Use user ingredients as BASE (mandatory)
-- ADD missing ingredients for proper balance:
-  - Acid (lemon, lime)
-  - Sweet (syrup, honey, liqueur)
-  - Bitterness (bitters, aperitif)
-  - Body (egg white, cream if needed)
+Use user ingredients as BASE. ADD balancing elements:
+- Acid → lemon juice, lime juice
+- Sweet → simple syrup, honey, agave
+- Bitter → Angostura bitters, Campari
+- Body → egg white, cream (only if it fits)
 
-A cocktail MUST respect: SPIRIT + ACID + SWEET + (OPTIONAL BITTER/BODY)
-Unbalanced drinks are INVALID.
+Formula: SPIRIT + ACID + SWEET + (OPTIONAL BITTER/BODY)
+A cocktail without balance is INVALID.
 
-━━━━━━━━━━━━━━━━━━━
 5. MEASURE RULES (STRICT)
-━━━━━━━━━━━━━━━━━━━
+- Spirits: 1.5–2 oz each, max 2.5 oz total alcohol
+- Citrus juice: 0.75 oz
+- Syrups: 0.5 oz
+- Bitters: 2 dashes (NEVER oz — NEVER "1 oz" for bitters)
+- Egg white: 1 white
+- Carbonated mixers: to fill
+- NEVER use "1 oz" for every single ingredient
 
-- Spirits: 1.5–2.5 oz total
-- Citrus: 0.5–1 oz
-- Sweeteners: 0.25–0.75 oz
-- Bitters: ALWAYS "dashes" (NEVER oz)
-- Egg white: "1 white"
-- Carbonated mixers: "to fill" OR oz
+6. INSTRUCTIONS (MANDATORY QUALITY)
+Single paragraph, minimum 5 sentences, separated by ". "
+Must include in order:
+1. Glass type (first sentence)
+2. Ice preparation
+3. Order of ingredients added
+4. Technique + duration (ADAPT: dry shake for egg white; build for carbonation; stir for spirit-forward; shake+double strain for citrus)
+5. Straining method
+6. Garnish
 
-CRITICAL:
-- NEVER repeat the same measure for all ingredients
-- Measures MUST be realistic and varied
-- Avoid "1 oz" everywhere (this is incorrect)
+7. NAMING RULES
+Title Case, unique, creative, with narrative or personality.
+GOOD: "Crimson Tide Reverie", "Cartagena Sunset", "Last Train Home"
+FORBIDDEN: "Classic Mix", "House Special", "Simple Cocktail", generic names
 
-━━━━━━━━━━━━━━━━━━━
-6. INSTRUCTIONS (HIGH QUALITY)
-━━━━━━━━━━━━━━━━━━━
-
-- Minimum 5 sentences
-- Must be a single paragraph
-- Must include:
-  - Glass type (FIRST sentence)
-  - Ice type
-  - Order of ingredients
-  - Technique with duration
-  - Straining method
-  - Garnish
-
-TECHNIQUE MUST ADAPT:
-- Egg white → DRY SHAKE (no ice) → then wet shake
-- Carbonation → BUILD in glass → DO NOT SHAKE
-- Cream/dairy → gentle shake or roll
-- Spirit-forward → stir, not shake
-- Citrus → shake hard + double strain
-- Herbs → muddle first
-
-Write like a head bartender training professionals.
+8. imageSlug
+A real TheCocktailDB drink name that LOOKS like the final drink color:
+- Red/pink → "Cosmopolitan"
+- Yellow → "Margarita"
+- Green → "Mojito"
+- Brown → "Old Fashioned"
+- White/foamy → "Pisco Sour"
+- Orange → "Tequila Sunrise"
+- Clear → "Martini"
+Return only the cocktail name.
 
 ━━━━━━━━━━━━━━━━━━━
-7. NAMING RULES (VERY IMPORTANT)
+FINAL CHECK
 ━━━━━━━━━━━━━━━━━━━
-
-- MUST be unique, creative, and memorable
-- Title Case
-- Must have personality or narrative
-
-GOOD STYLES:
-- Poetic → "Crimson Tide Reverie"
-- Geographic → "Cartagena Sunset"
-- Conceptual → "Quantum Spritz"
-- Emotional → "Last Train Home"
-
-FORBIDDEN (NEVER USE):
-- "Classic Mix"
-- "House Special"
-- "Simple Cocktail"
-- Literal names like "Vodka Orange Mix"
-
-NEVER reuse names.
-
-━━━━━━━━━━━━━━━━━━━
-8. VISUAL MATCH (imageSlug)
-━━━━━━━━━━━━━━━━━━━
-
-Select a REAL CocktailDB drink name that visually matches the color:
-- Red/Pink → Cosmopolitan, Clover Club
-- Yellow → Margarita, Whiskey Sour
-- Green → Mojito, Gimlet
-- Brown → Old Fashioned, Manhattan
-- White/Foamy → Pisco Sour
-- Orange → Aperol Spritz, Tequila Sunrise
-- Clear → Martini
-
-Return ONLY the cocktail name (no extra text).
-
-━━━━━━━━━━━━━━━━━━━
-9. VARIABILITY ENFORCEMENT
-━━━━━━━━━━━━━━━━━━━
-
-- NEVER reuse names, instructions, or measures
-- Each recipe MUST feel handcrafted and unique
-- Avoid templates and repetition
-
-━━━━━━━━━━━━━━━━━━━
-FINAL VALIDATION (MANDATORY)
-━━━━━━━━━━━━━━━━━━━
-
-Before responding, verify:
-- JSON is valid with no markdown
-- No repeated measures
-- Instructions ≥ 5 sentences
-- Name is creative and NOT generic
-- Technique matches ingredients
+Before responding verify:
+- Output is pure JSON (no markdown, no backticks)
+- Name is creative (not generic)
+- Measures are varied and realistic
+- Instructions ≥ 5 sentences with correct technique
 - Cocktail is balanced
 
-If ANY rule fails → FIX IT before responding.
+Return ONLY the JSON object.`;
 
-Return ONLY JSON.`;
+// ─── Groq API Call using object mode ──────────────────────────────
 
-// ─── Response Types ───────────────────────────────────────────────────────
+async function callGroq(ingredients: string[], attempt = 0): Promise<RecipeOutput> {
+  const userPrompt =
+    `A customer has these ingredients available:\n\n` +
+    `${ingredients.join(", ")}\n\n` +
+    `Create a balanced, professional, and original cocktail recipe following ALL rules.\n` +
+    `Return ONLY the JSON object — no markdown, no backticks, no extra text.`;
 
-type RecipeOutput = z.infer<typeof RecipeSchema>;
+  let rawContent = "";
+
+  try {
+    const completion = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      response_format: { type: "json_object" },
+      temperature: 0.85,
+      max_tokens: 1000,
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: userPrompt },
+      ],
+    });
+
+    rawContent = completion.choices[0]?.message?.content ?? "";
+
+    if (!rawContent) {
+      throw new Error("Empty response from Groq");
+    }
+
+    const cleaned = rawContent
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/\s*```$/i, "")
+      .trim();
+
+    const parsed: unknown = JSON.parse(cleaned);
+
+    const result = RecipeSchema.safeParse(parsed);
+
+    if (!result.success) {
+      console.error(
+        `[generate-recipe] Zod validation failed (attempt ${attempt + 1}):`,
+        result.error.flatten(),
+      );
+      throw new Error(`Schema validation failed: ${result.error.message}`);
+    }
+
+    return result.data;
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+
+    console.error(
+      `[generate-recipe] Attempt ${attempt + 1} failed:`,
+      message,
+    );
+
+    if (rawContent) {
+      console.error("[generate-recipe] Raw content was:", rawContent.slice(0, 500));
+    }
+
+    const isRateLimit =
+      message.includes("429") ||
+      message.toLowerCase().includes("rate limit") ||
+      message.toLowerCase().includes("too many requests");
+
+    if (isRateLimit && attempt < 2) {
+      const backoff = 1500 * Math.pow(2, attempt);
+      console.warn(`[generate-recipe] Rate limited — retrying in ${backoff}ms`);
+      await new Promise((r) => setTimeout(r, backoff));
+      return callGroq(ingredients, attempt + 1);
+    }
+
+    if (
+      message.includes("Schema validation failed") ||
+      message.includes("JSON.parse") ||
+      message.includes("Unexpected token")
+    ) {
+      if (attempt < 1) {
+        console.warn("[generate-recipe] Parse/validation error — retrying once");
+        return callGroq(ingredients, attempt + 1);
+      }
+    }
+
+    throw err;
+  }
+}
+
+// ─── Response types ───────────────────────────────────────────────────────────
 
 interface AIIngredient {
   name: string;
@@ -269,48 +252,7 @@ interface AIRecipeResponse {
   };
 }
 
-// ─── Retry Call ─────────────────────────────────────────────────
-
-async function callGroqWithRetry(
-  ingredients: string[],
-  attempt = 0,
-): Promise<RecipeOutput> {
-  try {
-    const { output } = await generateText({
-      model: groqClient("llama-3.3-70b-versatile"),
-      output: Output.object({ schema: RecipeSchema }),
-      system: SYSTEM_PROMPT,
-      prompt:
-        `A customer has these ingredients available:\n\n` +
-        `${ingredients.join(", ")}\n\n` +
-        `Create a balanced, professional, and original cocktail recipe following ALL rules.`,
-      temperature: 0.85,
-      maxOutputTokens: 1000,
-    });
-
-    return output;
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-
-    console.error(`[generate-recipe] Groq call failed (attempt ${attempt + 1}):`, message);
-
-    const isRateLimit =
-      message.includes("429") ||
-      message.toLowerCase().includes("rate limit") ||
-      message.toLowerCase().includes("too many requests");
-
-    if (isRateLimit && attempt < 2) {
-      const backoff = 1500 * Math.pow(2, attempt);
-      console.warn(`[generate-recipe] Rate limited — retrying in ${backoff}ms`);
-      await new Promise((r) => setTimeout(r, backoff));
-      return callGroqWithRetry(ingredients, attempt + 1);
-    }
-
-    throw err;
-  }
-}
-
-// ─── Smart fallback ─────────────────────────────────────
+// ─── Smart fallback ───────────────────────────────────────────────────────────
 
 function smartMeasure(ingredient: string): string {
   const lower = ingredient.toLowerCase();
@@ -341,7 +283,10 @@ function buildFallback(ingredients: string[]): AIRecipeResponse {
         "Double-strain through a fine mesh strainer into the chilled coupe. " +
         "Express a citrus twist over the surface, run it along the rim, and drop it in as garnish.",
       ingredients: [
-        ...ingredients.slice(0, 6).map((name) => ({ name, measure: smartMeasure(name) })),
+        ...ingredients.slice(0, 6).map((name) => ({
+          name,
+          measure: smartMeasure(name),
+        })),
         { name: "Angostura bitters", measure: "2 dashes" },
         { name: "Simple syrup", measure: "0.5 oz" },
       ],
@@ -357,7 +302,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (!process.env.GROQ_API_KEY) {
-    console.error("[generate-recipe] Missing GROQ_API_KEY env variable");
+    console.error("[generate-recipe] Missing GROQ_API_KEY");
     return res.status(500).json({ error: "Server misconfiguration" });
   }
 
@@ -379,8 +324,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const sanitized = (ingredients as string[]).map((i) => i.trim());
 
   try {
-    const recipe = await callGroqWithRetry(sanitized);
-
+    const recipe = await callGroq(sanitized);
     const strDrinkThumb = await resolveImageFromCocktailDB(recipe.imageSlug);
 
     const payload: AIRecipeResponse = {
@@ -397,10 +341,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json(payload);
   } catch (err) {
     console.error(
-      "[generate-recipe] Unrecoverable error — returning fallback:",
-      err instanceof Error
-        ? { message: err.message, stack: err.stack }
-        : err,
+      "[generate-recipe] Unrecoverable — using fallback:",
+      err instanceof Error ? err.message : err,
     );
     return res.status(200).json(buildFallback(sanitized));
   }
