@@ -6,8 +6,6 @@ import { DEFAULT_AI_RECIPE_RESPONSE } from "../../mocks/handlers";
 
 // ─── Store factory ─────────────────────────────────────────────────────────────
 
-// createGenerateAISlice expects the full AppState as its generic, but we can
-// test it in isolation by casting — the slice only reads its own keys from get().
 const createTestStore = () =>
   createStore<AiRecipeSliceType>()(
     (set, get, api) =>
@@ -94,7 +92,6 @@ describe("generateAISlice", () => {
 
   it("clears the generated recipe and any error", () => {
     const recipe = makeGeneratedRecipe();
-    // Manually set state to simulate a previous generation
     store.setState({ generatedRecipe: recipe, generationError: "some error" });
 
     store.getState().clearGeneratedRecipe();
@@ -197,10 +194,8 @@ describe("generateAISlice", () => {
     await store.getState().generateRecipe();
 
     const recipe = store.getState().generatedRecipe!;
-    // First ingredient from the mock response
     expect(recipe.strIngredient1).toBe(DEFAULT_AI_RECIPE_RESPONSE.recipe.ingredients[0].name);
     expect(recipe.strMeasure1).toBe(DEFAULT_AI_RECIPE_RESPONSE.recipe.ingredients[0].measure);
-    // Slot beyond the list should be null
     expect(recipe.strIngredient5).toBeNull();
   });
 
@@ -216,7 +211,7 @@ describe("generateAISlice", () => {
     const s = store.getState();
     expect(s.isGenerating).toBe(false);
     expect(s.generatedRecipe).toBeNull();
-    expect(s.generationError).toMatch(/API Error/i);
+    expect(s.generationError).toBe("Failed to generate recipe. Please try again.");
   });
 
   it("sets generationError on network failure", async () => {
@@ -226,7 +221,9 @@ describe("generateAISlice", () => {
 
     await store.getState().generateRecipe();
 
-    expect(store.getState().generationError).toBe("Network error");
+    expect(store.getState().generationError).toBe(
+      "Network error. Check your connection and try again.",
+    );
     expect(store.getState().isGenerating).toBe(false);
   });
 
