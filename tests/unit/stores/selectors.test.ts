@@ -19,7 +19,6 @@ import {
   selectSetNotification,
   selectClearNotification,
   selectHasSearched,
-  // AI selectors
   selectAiIngredients,
   selectGeneratedRecipe,
   selectIsGenerating,
@@ -102,10 +101,11 @@ const mockState = {
   isLoading:      false,
   hasSearched:    true,
 
-  fetchCategories: vi.fn(),
-  searchRecipes:   vi.fn(),
-  selectRecipe:    vi.fn(),
-  closeModal:      vi.fn(),
+  fetchCategories:  vi.fn(),
+  searchRecipes:    vi.fn(),
+  selectRecipe:     vi.fn(),
+  openRecipeModal:  vi.fn(),
+  closeModal:       vi.fn(),
 
   /* ── FavoritesSlice ── */
   favorites:      { "1": mockRecipe },
@@ -125,6 +125,7 @@ const mockState = {
   isGenerating:     false,
   generationError:  null,
   aiRecipes:        [mockAiRecipe],
+  showAiHistory:    false,
 
   addIngredient:        vi.fn(),
   removeIngredient:     vi.fn(),
@@ -133,6 +134,7 @@ const mockState = {
   clearGeneratedRecipe: vi.fn(),
   saveAiRecipe:         vi.fn(),
   removeAiRecipe:       vi.fn(),
+  toggleAiHistory:      vi.fn(),
 } satisfies AppState;
 
 /* ================================================== */
