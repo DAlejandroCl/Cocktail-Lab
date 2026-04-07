@@ -202,7 +202,7 @@ describe("GenerateAI view", () => {
     expect(within(card).getAllByText(/vodka/i).length).toBeGreaterThanOrEqual(1);
   });
 
-  it("shows 'Add to Favorites' and 'Save to My Creations' buttons after generation", async () => {
+  it("shows 'Save Creation' and 'Re-craft Recipe' buttons after generation", async () => {
     const user = userEvent.setup();
     renderGenerateAI();
 
@@ -211,9 +211,10 @@ describe("GenerateAI view", () => {
 
     await screen.findByRole("article", { name: /generated recipe/i });
 
-    expect(screen.getByRole("button", { name: /add to favorites/i })).toBeInTheDocument();
-    // aria-label is "Save to My Creations" (not "Save Creation" which is the visible text)
+    // Primary action: Save Creation (aria-label "Save to My Creations")
     expect(screen.getByRole("button", { name: /save to my creations/i })).toBeInTheDocument();
+    // Secondary action: Re-craft Recipe
+    expect(screen.getByRole("button", { name: /re-craft recipe with same ingredients/i })).toBeInTheDocument();
   });
 
   // ── Error state ───────────────────────────────────────────────────────────
@@ -238,7 +239,7 @@ describe("GenerateAI view", () => {
 
   // ── Save to favorites ─────────────────────────────────────────────────────
 
-  it("adds the recipe to favorites and shows a success notification", async () => {
+  it("saves the recipe to favorites via the store directly after generation", async () => {
     const user = userEvent.setup();
     renderGenerateAI();
 
@@ -246,14 +247,14 @@ describe("GenerateAI view", () => {
     await user.click(screen.getByRole("button", { name: /generate recipe/i }));
     await screen.findByRole("article", { name: /generated recipe/i });
 
-    await user.click(screen.getByRole("button", { name: /add to favorites/i }));
+    // In the refactored GenerateAI view, "Add to Favorites" was replaced by
+    // "Save Creation". Favorites are added via the modal (from FavoritesPage).
+    // This test now verifies the Save Creation flow instead.
+    await user.click(screen.getByRole("button", { name: /save to my creations/i }));
 
     await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent(/added to favorites/i),
+      expect(useAppStore.getState().aiRecipes).toHaveLength(1),
     );
-
-    const { favorites } = useAppStore.getState();
-    expect(Object.keys(favorites)).toHaveLength(1);
   });
 
   // ── Save creation ─────────────────────────────────────────────────────────
