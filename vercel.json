@@ -1,0 +1,10 @@
+{
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "functions": {
+    "api/ai/generate-recipe.ts": {
+      "maxDuration": 10
+    }
+  }
+}
