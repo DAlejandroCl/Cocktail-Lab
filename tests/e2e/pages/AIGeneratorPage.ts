@@ -22,8 +22,8 @@ export class AIGeneratorPage {
   readonly errorAlert: Locator;
 
   // ── Recipe actions ─────────────────────────────────────────────────────────
-  readonly addToFavoritesButton: Locator;
   readonly saveCreationButton: Locator;
+  readonly reCraftButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -41,8 +41,8 @@ export class AIGeneratorPage {
     this.recipeCard           = page.getByRole("article", { name: /generated recipe/i });
     this.errorAlert           = page.getByRole("alert");
 
-    this.addToFavoritesButton = page.getByRole("button", { name: /add to favorites/i });
     this.saveCreationButton   = page.getByRole("button", { name: /save to my creations|recipe already saved to my creations/i });
+    this.reCraftButton        = page.getByRole("button", { name: /re-craft recipe with same ingredients/i });
   }
 
   // ── Navigation ──────────────────────────────────────────────────────────────
