@@ -53,7 +53,6 @@ describe("GenerateAI view", () => {
 
   it("renders the page heading", () => {
     renderGenerateAI();
-    // GenerateAI.tsx h1 reads "Your Home Bar", not "AI Recipe Generator"
     expect(screen.getByRole("heading", { name: /your home bar/i })).toBeInTheDocument();
   });
 
@@ -193,12 +192,9 @@ describe("GenerateAI view", () => {
     const card = screen.getByRole("article", { name: /generated recipe/i });
 
     expect(within(card).getByText(DEFAULT_AI_RECIPE_RESPONSE.recipe.strDrink)).toBeInTheDocument();
-    // Badge text in GenerateAI.tsx is "AI Crafted", not "AI Created"
     expect(within(card).getByText(/ai crafted/i)).toBeInTheDocument();
     expect(within(card).getByRole("region", { name: /^ingredients$/i })).toBeInTheDocument();
     expect(within(card).getByRole("region", { name: /^instructions$/i })).toBeInTheDocument();
-    // "Vodka" appears twice in the card: once in the recipe ingredients list
-    // and once in the "Your ingredients used" section — use getAllByText.
     expect(within(card).getAllByText(/vodka/i).length).toBeGreaterThanOrEqual(1);
   });
 
@@ -211,9 +207,7 @@ describe("GenerateAI view", () => {
 
     await screen.findByRole("article", { name: /generated recipe/i });
 
-    // Primary action: Save Creation (aria-label "Save to My Creations")
     expect(screen.getByRole("button", { name: /save to my creations/i })).toBeInTheDocument();
-    // Secondary action: Re-craft Recipe
     expect(screen.getByRole("button", { name: /re-craft recipe with same ingredients/i })).toBeInTheDocument();
   });
 
@@ -247,9 +241,6 @@ describe("GenerateAI view", () => {
     await user.click(screen.getByRole("button", { name: /generate recipe/i }));
     await screen.findByRole("article", { name: /generated recipe/i });
 
-    // In the refactored GenerateAI view, "Add to Favorites" was replaced by
-    // "Save Creation". Favorites are added via the modal (from FavoritesPage).
-    // This test now verifies the Save Creation flow instead.
     await user.click(screen.getByRole("button", { name: /save to my creations/i }));
 
     await waitFor(() =>
@@ -267,11 +258,9 @@ describe("GenerateAI view", () => {
     await user.click(screen.getByRole("button", { name: /generate recipe/i }));
     await screen.findByRole("article", { name: /generated recipe/i });
 
-    // aria-label before saving is "Save to My Creations"
     await user.click(screen.getByRole("button", { name: /save to my creations/i }));
 
     await waitFor(() =>
-      // aria-label after saving is "Recipe already saved to My Creations"
       expect(
         screen.getByRole("button", { name: /recipe already saved to my creations/i }),
       ).toBeDisabled(),
