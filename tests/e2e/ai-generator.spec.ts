@@ -195,12 +195,16 @@ test.describe("AI Recipe Generator", () => {
       await expect(card.getByText("Tequila")).toBeVisible();
     });
 
-    test("shows Add to Favorites and Save Creation buttons after generation", async ({ aiGeneratorPage }) => {
+    test("shows Save Creation and Re-craft Recipe buttons after generation", async ({ aiGeneratorPage }) => {
       await aiGeneratorPage.goto();
       await aiGeneratorPage.addIngredientsAndGenerate(["Vodka"]);
 
-      await expect(aiGeneratorPage.addToFavoritesButton).toBeVisible();
+      // Primary action: Save Creation (aria-label "Save to My Creations")
       await expect(aiGeneratorPage.saveCreationButton).toBeVisible();
+      // Secondary action: Re-craft Recipe
+      await expect(
+        aiGeneratorPage.page.getByRole("button", { name: /re-craft recipe with same ingredients/i }),
+      ).toBeVisible();
     });
   });
 
@@ -233,14 +237,14 @@ test.describe("AI Recipe Generator", () => {
   // ── Favorites integration ───────────────────────────────────────────────────
 
   test.describe("Save to Favorites", () => {
-    test("clicking Add to Favorites shows a success notification", async ({ page, aiGeneratorPage }) => {
+    test("clicking Save Creation shows a success notification", async ({ page, aiGeneratorPage }) => {
       await aiGeneratorPage.goto();
       await aiGeneratorPage.addIngredientsAndGenerate(["Whiskey"]);
-      await aiGeneratorPage.addToFavoritesButton.click();
+      await aiGeneratorPage.saveCreationButton.click();
 
       await expect(
         page.getByRole("status").or(page.getByRole("alert")),
-      ).toContainText(/added to favorites/i);
+      ).toContainText(/saved to my creations/i);
     });
 
     test("saving as creation disables the Save Creation button", async ({ aiGeneratorPage }) => {
@@ -253,16 +257,17 @@ test.describe("AI Recipe Generator", () => {
       ).toBeDisabled();
     });
 
-    test("favorites saved via AI show up on the Favorites page", async ({
+    test("creations saved via AI show up in My Creations on the Favorites page", async ({
       aiGeneratorPage,
       favoritesPage,
     }) => {
       await aiGeneratorPage.goto();
       await aiGeneratorPage.addIngredientsAndGenerate(["Campari"]);
-      await aiGeneratorPage.addToFavoritesButton.click();
+      await aiGeneratorPage.saveCreationButton.click();
 
       await favoritesPage.goto();
 
+      // My Creations section shows the saved AI recipe card
       await expect(favoritesPage.drinkCards.first()).toBeVisible();
     });
   });
