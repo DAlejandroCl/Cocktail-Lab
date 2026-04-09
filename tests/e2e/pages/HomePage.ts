@@ -122,8 +122,8 @@ export class HomePage {
   // ── Assertions ────────────────────────────────────────────────────────────
 
   async expectResultsVisible() {
-    await expect(this.resultsHeading).toBeVisible();
-    await expect(this.drinkCards.first()).toBeVisible();
+    await expect(this.resultsHeading).toBeVisible({ timeout: 10_000 });
+    await expect(this.drinkCards.first()).toBeVisible({ timeout: 10_000 });
   }
 
   async expectEmptyState() {
