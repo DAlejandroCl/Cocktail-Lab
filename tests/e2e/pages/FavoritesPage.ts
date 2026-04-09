@@ -24,7 +24,7 @@ export class FavoritesPage {
 
     this.pageHeading      = page.getByRole("heading", { name: /my favorites/i });
     this.recipeCountLabel = page.getByText(/\d+ recipe[s]? saved/i);
-    this.drinkCards       = page.locator('article[aria-labelledby^="drink-title-"]');
+    this.drinkCards       = page.locator('article[aria-labelledby^="drink-title-"], article[aria-labelledby^="creation-title-"]');
 
     this.emptyHeading     = page.getByRole("heading", { name: /no favorites yet/i });
     this.emptyDescription = page.getByText(/start exploring recipes/i);
