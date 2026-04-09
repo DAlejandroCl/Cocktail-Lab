@@ -1,4 +1,3 @@
-import axios from "axios";
 import {
   CategoriesAPIResponseSchema,
   DrinksAPIResponse,
@@ -8,27 +7,38 @@ import {
 import type { SearchFilters } from "../types";
 import { z } from "zod";
 
+// ─── HTTP helper ──────────────────────────────────────────────────────────────
+// Uses the native fetch API instead of Axios.
+// Zod handles response validation, so Axios adds no value here.
+
 async function safeGet<T>(url: string): Promise<T | null> {
   try {
-    const response = await axios.get(url);
+    const response = await fetch(url);
 
-    if (
-      !response ||
-      typeof response.data !== "object" ||
-      response.data === null
-    ) {
+    if (!response.ok) {
+      console.error("Network/API error:", response.status, response.statusText);
+      return null;
+    }
+
+    const data: unknown = await response.json();
+
+    if (typeof data !== "object" || data === null) {
       console.error("Invalid API response shape");
       return null;
     }
 
-    return response.data as T;
+    return data as T;
   } catch (error) {
     console.error("Network/API error:", error);
     return null;
   }
 }
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
 type Drink = z.infer<typeof DrinkAPIResponse>;
+
+// ─── Endpoints ────────────────────────────────────────────────────────────────
 
 const CATEGORIES_API_URL =
   "https://www.thecocktaildb.com/api/json/v1/1/list.php?c=list";
@@ -41,6 +51,8 @@ const SEARCH_API_BASE =
 
 const LOOKUP_API_BASE =
   "https://www.thecocktaildb.com/api/json/v1/1/lookup.php";
+
+// ─── Public API ───────────────────────────────────────────────────────────────
 
 export async function getCategories(): Promise<string[]> {
   const data = await safeGet<unknown>(CATEGORIES_API_URL);
@@ -95,6 +107,60 @@ export async function getRecipes(filters: SearchFilters): Promise<Drink[]> {
 
   return results;
 }
+
+export async function getRecipeById(id: string) {
+  const url = `${LOOKUP_API_BASE}?i=${encodeURIComponent(id)}`;
+
+  const data = await safeGet<unknown>(url);
+
+  if (!data || typeof data !== "object") {
+    throw new Error("Invalid API response");
+  }
+
+  if (
+    !("drinks" in data) ||
+    !Array.isArray((data as { drinks: unknown }).drinks) ||
+    (data as { drinks: unknown[] }).drinks.length === 0
+  ) {
+    throw new Error("Recipe not found");
+  }
+
+  const drinks = (data as { drinks: unknown[] }).drinks;
+
+  const parsed = RecipeAPIResponseSchema.safeParse(drinks[0]);
+
+  if (!parsed.success) {
+    console.error("Invalid recipe schema:", parsed.error);
+    throw new Error("Invalid recipe data");
+  }
+
+  return parsed.data;
+}
+
+export async function getBrowseRecipes(categories: string[]): Promise<Drink[]> {
+  const DRINKS_PER_CATEGORY = 12;
+
+  const categoryResults = await Promise.all(
+    categories.map(async (cat) => {
+      const drinks = await searchByCategory(cat);
+      return drinks
+        .slice(0, DRINKS_PER_CATEGORY)
+        .map((d) => ({ ...d, strCategory: cat }));
+    }),
+  );
+
+  const all = deduplicate(categoryResults.flat());
+
+  // Fisher-Yates shuffle for variety
+  for (let i = all.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [all[i], all[j]] = [all[j], all[i]];
+  }
+
+  return all;
+}
+
+// ─── Private helpers ──────────────────────────────────────────────────────────
 
 async function enrichWithCategories(drinks: Drink[]): Promise<Drink[]> {
   return Promise.all(
@@ -165,58 +231,6 @@ async function searchByCategory(category: string): Promise<Drink[]> {
   }
 
   return parsed.data.drinks ?? [];
-}
-
-export async function getRecipeById(id: string) {
-  const url = `${LOOKUP_API_BASE}?i=${encodeURIComponent(id)}`;
-
-  const data = await safeGet<unknown>(url);
-
-  if (!data || typeof data !== "object") {
-    throw new Error("Invalid API response");
-  }
-
-  if (
-    !("drinks" in data) ||
-    !Array.isArray((data as { drinks: unknown }).drinks) ||
-    (data as { drinks: unknown[] }).drinks.length === 0
-  ) {
-    throw new Error("Recipe not found");
-  }
-
-  const drinks = (data as { drinks: unknown[] }).drinks;
-
-  const parsed = RecipeAPIResponseSchema.safeParse(drinks[0]);
-
-  if (!parsed.success) {
-    console.error("Invalid recipe schema:", parsed.error);
-    throw new Error("Invalid recipe data");
-  }
-
-  return parsed.data;
-}
-
-export async function getBrowseRecipes(categories: string[]): Promise<Drink[]> {
-
-  const DRINKS_PER_CATEGORY = 12;
-
-  const categoryResults = await Promise.all(
-    categories.map(async (cat) => {
-      const drinks = await searchByCategory(cat);
-      return drinks
-        .slice(0, DRINKS_PER_CATEGORY)
-        .map((d) => ({ ...d, strCategory: cat }));
-    }),
-  );
-
-  const all = deduplicate(categoryResults.flat());
-
-  for (let i = all.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [all[i], all[j]] = [all[j], all[i]];
-  }
-
-  return all;
 }
 
 function deduplicate(drinks: Drink[]): Drink[] {
