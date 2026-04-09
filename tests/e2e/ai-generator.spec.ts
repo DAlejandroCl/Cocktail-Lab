@@ -267,8 +267,10 @@ test.describe("AI Recipe Generator", () => {
 
       await favoritesPage.goto();
 
-      // My Creations section shows the saved AI recipe card
-      await expect(favoritesPage.drinkCards.first()).toBeVisible();
+      // My Creations section shows the saved AI recipe card.
+      // Timeout extended: Zustand persist rehydrates from localStorage after
+      // navigation, which can be slow in CI across all browser engines.
+      await expect(favoritesPage.drinkCards.first()).toBeVisible({ timeout: 10_000 });
     });
   });
 
