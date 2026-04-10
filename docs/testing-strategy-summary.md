@@ -1,6 +1,6 @@
 # 📋 Testing Strategy — Quick Reference
 
-> **702 tests · 5 stages · all passing**  
+> **702 tests · 5 stages · all passing · CI green ✅**  
 > Full details → [`docs/testing-strategy.md`](testing-strategy.md)
 
 ---
@@ -9,15 +9,16 @@
 
 | Stage | Tool | Files | Tests | Duration |
 |-------|------|:-----:|:-----:|:--------:|
-| Unit — Stores | Vitest | 4 | 44 | ~13.9s |
-| Unit — Components, Services & Utils | Vitest | 10 | 102 | ~4.1s |
-| Accessibility | Vitest + jest-axe | 9 | 87 | ~2.9s |
-| Integration | Vitest + MSW | 7 | 129 | ~2.9s |
-| E2E | Playwright | 3 | 340 | ~2m32s |
-| **Total** | | **33** | **702** | **~2m56s** |
+| Unit — Stores | Vitest | 6 | 44 | ~2.6s |
+| Unit — Components, Services & Utils | Vitest + Testing Library | 13 | 162 | ~6.9s |
+| Accessibility | Vitest + jest-axe | 9 | 82 | ~6.2s |
+| Integration | Vitest + MSW | 8 | 145 | ~7.1s |
+| E2E | Playwright (5 browsers) | 4 | 269 | ~13m45s |
+| **Total** | | **40** | **702** | **~14m** |
 
-```
-npm run test:all   →  runs all 5 stages in sequence, prints this table
+```bash
+npm run test:all   # runs all 5 stages in sequence, prints this table
+npm run test:ci    # same but with --bail (stops on first failure)
 ```
 
 ---
@@ -38,88 +39,85 @@ npm run test:all   →  runs all 5 stages in sequence, prints this table
 
 | Layer | What is mocked | How |
 |-------|---------------|-----|
-| Unit — slices | Nothing | Pure store in isolation (`zustand/vanilla`) |
-| Unit — services | HTTP client | `vi.mock("axios")` |
-| Unit — schemas | Nothing | Pure Zod functions |
-| Unit — components | Global state | `vi.mock` + selector intercept pattern |
-| Accessibility | Global state (where needed) | Same as components |
-| Integration | Network | MSW `setupServer` — Node level |
-| E2E | Network | `page.route()` — browser level |
+| Unit — Stores | Service layer (recipeService) | `vi.mock('@/services/recipeService')` |
+| Unit — Components | Zustand store | `vi.mock('@/stores/useAppStore')` |
+| Accessibility | Zustand store (real state via `setState`) | `useAppStore.setState(...)` |
+| Integration | HTTP (TheCocktailDB + AI API) | MSW `server.use(http.post(...))` |
+| E2E | HTTP (page-level route interception) | `page.route('**/api/**', ...)` |
 
 ---
 
-## Coverage
+## Layer Summary
 
-Thresholds enforced by `vitest.config.ts` — `npm run test:coverage` fails if any is not met.
+### Unit — Stores
+Tests each Zustand slice in isolation using `createStore` from `zustand/vanilla`. Verifies all actions, initial state, and edge cases. `selectors.test.ts` uses `mockState satisfies AppState` for compile-time type coverage.
 
-| Scope | Threshold | Actual |
-|-------|:---------:|:------:|
-| Zod schemas (`utils/`) | 100% | **100%** |
-| Zustand slices (`stores/`) | ≥ 95% | **100%** |
-| Service layer (`services/`) | ≥ 90% stmts / ≥ 85% branches | **95% / 87%** |
-| Components (`components/`) | ≥ 75% stmts / ≥ 70% branches | **97.6% avg** |
-| Global minimum | ≥ 80% stmts / ≥ 75% branches | **97.95% / 91.59%** |
+### Unit — Components
+`vi.mock('@/stores/useAppStore')` returns a selector-based mock. Tests assert visible output and accessible behavior (role queries, aria attributes). No CSS or className assertions.
 
-Three files have branches below 100% for structural reasons — not missing tests:
+### Accessibility
+`jest-axe` audits run on every component and full page. Catches: missing labels, heading hierarchy violations, invalid ARIA, contrast issues. FavoritesPage tests verify `h2 My Favorites → h3 My Creations → h3 DrinkCard` heading order.
 
-- **`Layout.tsx` (50% branches)** — skip link DOM edge case unreachable in jsdom without scroll position manipulation
-- **`Notification.tsx` (82% branches)** — `prefersReducedMotion` branch; `window.matchMedia` not implemented in happy-dom; affects CSS classes only
-- **`recipeService.ts` (87% branches)** — `!data`/`!parsed.success` guards in private helpers reachable only through `getRecipes`; equivalent paths in public API fully covered
+### Integration
+MSW intercepts all HTTP. Real Zustand store (reset in `beforeEach`). Tests full user flows: search → results → open modal → add to favorites → notification appears.
 
----
+**AI Generator integration tests:**
+- `shows 'Save Creation' and 'Re-craft Recipe' buttons after generation`
+- `saves the recipe to favorites via the store directly after generation`
+- `saves the recipe to My Creations and disables the button`
 
-## Accessibility Testing
+### E2E (Playwright)
+5 browser engines: Chromium, Firefox, WebKit, Mobile Chrome, Mobile Safari. 1 retry on CI. Page Object Models in `tests/e2e/pages/`. API mocked via `page.route()` with `AI_RECIPE_RESPONSE` fixture.
 
-| Component | axe audit | ARIA roles | Keyboard nav | Focus management |
-|-----------|:---------:|:----------:|:------------:|:----------------:|
-| DrinkCard | ✓ | ✓ | ✓ | — |
-| ErrorBoundary | ✓ | ✓ | — | ✓ |
-| FavoritesPage | ✓ | ✓ | — | — |
-| Header | ✓ | ✓ | ✓ | ✓ |
-| IndexPage | ✓ | ✓ | — | — |
-| Layout | ✓ | ✓ | — | ✓ skip link |
-| Modal | ✓ | ✓ | ✓ | ✓ |
-| Navigation | ✓ | ✓ | ✓ | — |
-| Notification | ✓ | ✓ | ✓ | — |
-| SkeletonDrinkCard | ✓ | ✓ | — | — |
+**Key E2E flows:**
+- Full ingredient → generate → save creation → navigate to Favorites → card visible
+- Search by ingredient/category → results → open modal → add/remove favorite
+- Keyboard navigation through the AI ingredient autocomplete
+- Modal focus trap and Escape close behavior
 
 ---
 
-## npm Scripts
+## Running the Suite
 
 ```bash
-# Full suite
-npm run test:all          # all 5 stages + summary table
-npm run test:all:bail     # stop on first stage failure
-npm run test:ci           # CI=true + bail (used in GitHub Actions)
+# All stages
+npm run test:all
 
 # Individual stages
-npm run test:unit         # unit tests (stores, components, services, utils)
-npm run test:a11y         # accessibility audits (axe-core)
-npm run test:integration  # integration tests with MSW
-npm run test:e2e          # Playwright — real Chromium
-
-# Coverage
-npm run test:coverage     # enforces thresholds; HTML report → coverage/
+npm run test:unit         # stores + components + services + utils
+npm run test:a11y         # accessibility audits
+npm run test:integration  # integration with MSW
+npm run test:e2e          # Playwright (5 browsers)
 
 # Development
 npm run test              # Vitest watch mode
 npm run test:e2e:ui       # Playwright interactive UI
-npm run test:e2e:debug    # Playwright headed + debugger
+npm run test:e2e:debug    # Playwright debug mode
+
+# Coverage
+npm run test:coverage
 ```
 
 ---
 
-## Key Implementation Notes
+## Where to Put a New Test
 
-**HeadlessUI v2 `inert` on open Listbox** — when the category dropdown is open, HeadlessUI applies `inert=""` to the surrounding layout container. Testing Library cannot find `[role="option"]` through the accessibility tree. Workaround: `document.querySelectorAll('[role="option"]')` directly.
+| What you're testing | Where |
+|--------------------|-------|
+| Zustand slice action | `tests/unit/stores/{slice}.test.ts` |
+| New selector | `tests/unit/stores/selectors.test.ts` (add to `mockState`) |
+| React component behavior | `tests/unit/components/{Component}.test.tsx` |
+| Component accessibility | `tests/accessibility/{Component}.a11y.test.tsx` |
+| Multi-component user flow | `tests/integration/{Feature}.test.tsx` |
+| New E2E user journey | `tests/e2e/{feature}.spec.ts` (+ page object if needed) |
+| New page object locator | `tests/e2e/pages/{Page}.ts` |
 
-**`waitFor` + fake timers** — `waitFor` polls via `setInterval`, which never advances with fake timers active. After `act(() => vi.advanceTimersByTime(N))`, read `useAppStore.getState()` directly instead.
+---
 
-**`userEvent.setup({ advanceTimers })`** — the `.bind(vi)` expression is evaluated at collect phase before `beforeEach` runs, throwing `STACK_TRACE_ERROR`. Use `fireEvent` for all interactions inside fake-timer tests.
+## Key Invariants
 
-**`vi.mock` + `React.lazy`** — `vi.mock("@/views/IndexPage")` does not intercept `lazy(() => import("./views/IndexPage"))` — the alias is resolved differently at runtime. Solution: let the real views load and mock `useAppStore` instead.
-
-**MSW fixtures must satisfy Zod** — `RecipeService` passes all responses through `safeGet`, which runs Zod schemas. A fixture missing required fields causes `safeParse` to fail silently, returning an empty array with no error. Every mock fixture includes `idDrink`, `strDrink`, and `strDrinkThumb` as a valid URL.
-
-**`act` import** — `act` does not exist in Vitest. Always import from `@testing-library/react`.
+- `selectors.test.ts` `mockState` must satisfy `AppState` — any new action added to a slice must be added here too
+- Error messages in `generateAISlice.ts` are user-friendly strings — tests assert exact strings, not raw error messages
+- `FavoritesPage` heading hierarchy: `h2` → `h3` — axe tests enforce this
+- `drinkCards` locator in `FavoritesPage.ts` must match both `drink-title-*` AND `creation-title-*` articles
+- `expectResultsVisible()` in `HomePage.ts` uses `{ timeout: 10_000 }` to prevent Firefox flakiness
