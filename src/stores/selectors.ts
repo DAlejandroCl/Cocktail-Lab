@@ -19,7 +19,7 @@ export const selectModal            = (s: AppState) => s.modal;
 export const selectSelectedRecipe   = (s: AppState) => s.selectedRecipe;
 export const selectSearchRecipes    = (s: AppState) => s.searchRecipes;
 export const selectSelectRecipe     = (s: AppState) => s.selectRecipe;
-export const selectOpenRecipeModal  = (s: AppState) => s.openRecipeModal; // ← nuevo
+export const selectOpenRecipeModal  = (s: AppState) => s.openRecipeModal;
 export const selectCloseModal       = (s: AppState) => s.closeModal;
 export const selectHasSearched      = (s: AppState) => s.hasSearched;
 
@@ -44,7 +44,6 @@ export const selectGeneratedRecipe      = (s: AppState) => s.generatedRecipe;
 export const selectIsGenerating         = (s: AppState) => s.isGenerating;
 export const selectGenerationError      = (s: AppState) => s.generationError;
 export const selectAiRecipes            = (s: AppState) => s.aiRecipes;
-export const selectShowAiHistory        = (s: AppState) => s.showAiHistory;      // ← nuevo
 
 export const selectAddIngredient        = (s: AppState) => s.addIngredient;
 export const selectRemoveIngredient     = (s: AppState) => s.removeIngredient;
@@ -53,7 +52,6 @@ export const selectGenerateRecipe       = (s: AppState) => s.generateRecipe;
 export const selectClearGeneratedRecipe = (s: AppState) => s.clearGeneratedRecipe;
 export const selectSaveAiRecipe         = (s: AppState) => s.saveAiRecipe;
 export const selectRemoveAiRecipe       = (s: AppState) => s.removeAiRecipe;
-export const selectToggleAiHistory      = (s: AppState) => s.toggleAiHistory;    // ← nuevo
 
 export const selectIsAiRecipeSaved =
   (recipeId: string) => (s: AppState) =>

@@ -16,7 +16,6 @@ export interface AiRecipeSliceType {
   isGenerating: boolean;
   generationError: string | null;
   aiRecipes: GeneratedRecipe[];
-  showAiHistory: boolean;
 
   addIngredient: (ingredient: string) => void;
   removeIngredient: (ingredient: string) => void;
@@ -25,7 +24,6 @@ export interface AiRecipeSliceType {
   clearGeneratedRecipe: () => void;
   saveAiRecipe: (recipe: GeneratedRecipe) => void;
   removeAiRecipe: (recipeId: string) => void;
-  toggleAiHistory: () => void;
 }
 
 // ─── Internal API response shape ─────────────────────────────────────────────
@@ -124,7 +122,6 @@ export const createGenerateAISlice: StateCreator<
   isGenerating: false,
   generationError: null,
   aiRecipes: [],
-  showAiHistory: false,
 
   addIngredient: (ingredient) => {
     const { aiIngredients } = get();
@@ -171,9 +168,5 @@ export const createGenerateAISlice: StateCreator<
 
   removeAiRecipe: (recipeId) => {
     set({ aiRecipes: get().aiRecipes.filter((r) => r.idDrink !== recipeId) }, false, "ai/removeRecipe");
-  },
-
-  toggleAiHistory: () => {
-    set({ showAiHistory: !get().showAiHistory }, false, "ai/toggleHistory");
   },
 });

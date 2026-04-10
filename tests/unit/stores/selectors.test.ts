@@ -125,7 +125,6 @@ const mockState = {
   isGenerating:     false,
   generationError:  null,
   aiRecipes:        [mockAiRecipe],
-  showAiHistory:    false,
 
   addIngredient:        vi.fn(),
   removeIngredient:     vi.fn(),
@@ -134,7 +133,6 @@ const mockState = {
   clearGeneratedRecipe: vi.fn(),
   saveAiRecipe:         vi.fn(),
   removeAiRecipe:       vi.fn(),
-  toggleAiHistory:      vi.fn(),
 } satisfies AppState;
 
 /* ================================================== */
