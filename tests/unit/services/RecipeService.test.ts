@@ -78,7 +78,6 @@ const invalidFilters: SearchFilters = {
 
 // ─────────────────────────────────────────────
 // fetch mock helpers
-// recipeService uses native fetch — we spy on globalThis.fetch
 // ─────────────────────────────────────────────
 
 function makeFetchResponse(data: unknown, ok = true): Response {
