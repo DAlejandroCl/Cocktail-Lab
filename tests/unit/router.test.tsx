@@ -7,9 +7,6 @@ import { AppRoutes } from "@/router";
 /*                     Mocks                          */
 /* -------------------------------------------------- */
 
-// AppRoutes now includes its own <Suspense> internally — no need to wrap it
-// here. The store mock covers all selectors used by Layout + views.
-
 vi.mock("@/stores/useAppStore", () => ({
   useAppStore: vi.fn((selector: (s: object) => unknown) =>
     selector({
