@@ -1,12 +1,14 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { Suspense } from "react";
 import { AppRoutes } from "@/router";
 
 /* -------------------------------------------------- */
 /*                     Mocks                          */
 /* -------------------------------------------------- */
+
+// AppRoutes now includes its own <Suspense> internally — no need to wrap it
+// here. The store mock covers all selectors used by Layout + views.
 
 vi.mock("@/stores/useAppStore", () => ({
   useAppStore: vi.fn((selector: (s: object) => unknown) =>
@@ -22,6 +24,7 @@ vi.mock("@/stores/useAppStore", () => ({
       fetchCategories: vi.fn(),
       searchRecipes: vi.fn(),
       selectRecipe: vi.fn(),
+      openRecipeModal: vi.fn(),
       closeModal: vi.fn(),
       addFavorite: vi.fn(),
       removeFavorite: vi.fn(),
@@ -40,9 +43,7 @@ describe("AppRoutes", () => {
   it("renders IndexPage on '/'", async () => {
     render(
       <MemoryRouter initialEntries={["/"]}>
-        <Suspense fallback={<div>Loading...</div>}>
-          <AppRoutes />
-        </Suspense>
+        <AppRoutes />
       </MemoryRouter>
     );
 
@@ -55,14 +56,25 @@ describe("AppRoutes", () => {
   it("renders FavoritesPage on '/favorites'", async () => {
     render(
       <MemoryRouter initialEntries={["/favorites"]}>
-        <Suspense fallback={<div>Loading...</div>}>
-          <AppRoutes />
-        </Suspense>
+        <AppRoutes />
       </MemoryRouter>
     );
 
     expect(
       await screen.findByRole("heading", { name: /my favorites/i })
+    ).toBeInTheDocument();
+  });
+
+  it("renders NotFoundPage on an unknown route", async () => {
+    render(
+      <MemoryRouter initialEntries={["/this-does-not-exist"]}>
+        <AppRoutes />
+      </MemoryRouter>
+    );
+
+    // NotFoundPage renders an h1 with "Recipe Not Found"
+    expect(
+      await screen.findByRole("heading", { name: /recipe not found/i })
     ).toBeInTheDocument();
   });
 });
