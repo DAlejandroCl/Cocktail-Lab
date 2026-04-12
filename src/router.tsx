@@ -19,7 +19,7 @@ function PageSkeleton() {
   return (
     <div
       role="status"
-      aria-label="Loading page"
+      aria-label="Loading page" aria-live="polite"
       className="min-h-screen flex items-center justify-center"
       style={{ background: "var(--bg-base)" }}
     >
