@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { Transition } from "@headlessui/react";
 import {
   CheckCircleIcon,
@@ -13,6 +13,31 @@ import {
 } from "../stores/selectors";
 
 /* ─────────────────────────────────────────────────────────────
+   HOOK — prefersReducedMotion
+   Reads the OS "reduce motion" preference and re-renders if
+   the user changes it mid-session (e.g. via System Preferences).
+   Previously this was a plain variable computed on every render,
+   which: (a) called matchMedia() repeatedly, (b) never reacted
+   to changes made while the app was open.
+───────────────────────────────────────────────────────────── */
+
+function usePrefersReducedMotion(): boolean {
+  const [prefersReduced, setPrefersReduced] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  });
+
+  useEffect(() => {
+    const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const handler = (e: MediaQueryListEvent) => setPrefersReduced(e.matches);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, []);
+
+  return prefersReduced;
+}
+
+/* ─────────────────────────────────────────────────────────────
    NOTIFICATION TOAST COMPONENT
 ───────────────────────────────────────────────────────────── */
 
@@ -22,10 +47,7 @@ export default function Notification() {
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isError = notification?.type === "error";
-
-  const prefersReducedMotion =
-    typeof window !== "undefined" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   const stopTimer = () => {
     if (timerRef.current) {
