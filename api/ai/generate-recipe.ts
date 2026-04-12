@@ -313,11 +313,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     ingredients.length === 0 ||
     ingredients.length > 15 ||
     (ingredients as unknown[]).some(
-      (i) => typeof i !== "string" || !(i as string).trim(),
+      (i) => typeof i !== "string" || !(i as string).trim() || (i as string).trim().length > 100,
     )
   ) {
     return res.status(400).json({
-      error: "Provide between 1 and 15 non-empty ingredient strings.",
+      error: "Provide between 1 and 15 ingredient strings, each under 100 characters.",
     });
   }
 
