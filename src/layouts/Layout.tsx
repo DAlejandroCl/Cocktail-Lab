@@ -1,5 +1,5 @@
 import { Outlet } from "react-router-dom";
-import { Suspense, useEffect } from "react";
+import { useEffect } from "react";
 import Header from "../components/Header";
 import Modal from "../components/Modal";
 import Notification from "../components/Notification";
@@ -42,17 +42,17 @@ export default function Layout() {
 
       <Header />
 
-      <Suspense fallback={null}>
-        <ErrorBoundary>
-          <main
-            id="main-content"
-            tabIndex={-1}
-            className="flex-1 focus:outline-none"
-          >
-            <Outlet />
-          </main>
-        </ErrorBoundary>
-      </Suspense>
+      {/* Suspense for lazy-loaded routes lives in router.tsx.
+          ErrorBoundary here catches rendering errors inside any view. */}
+      <ErrorBoundary>
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className="flex-1 focus:outline-none"
+        >
+          <Outlet />
+        </main>
+      </ErrorBoundary>
 
       <Modal />
       <Notification />
