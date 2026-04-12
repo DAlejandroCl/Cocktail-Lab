@@ -9,7 +9,6 @@ export type FavoritesSliceType = {
   favoriteOrder: FavoriteOrder;
   addFavorite: (recipe: RecipeDetail) => void;
   removeFavorite: (id: RecipeDetail["idDrink"]) => void;
-  isFavorite: (id: RecipeDetail["idDrink"]) => boolean;
 };
 
 export const createFavoritesSlice: StateCreator<
@@ -17,7 +16,7 @@ export const createFavoritesSlice: StateCreator<
   [],
   [],
   FavoritesSliceType
-> = (set, get) => ({
+> = (set) => ({
   favorites: {},
   favoriteOrder: {},
 
@@ -41,6 +40,4 @@ export const createFavoritesSlice: StateCreator<
       delete updatedOrder[id];
       return { favorites: updatedFavorites, favoriteOrder: updatedOrder };
     }),
-
-  isFavorite: (id) => !!get().favorites[id],
 });
