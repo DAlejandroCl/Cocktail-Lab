@@ -2,7 +2,7 @@
 
 > **Stack:** React 19.2 · TypeScript 5.9 · Vite 7.2 · Zustand 5.0 · React Router DOM 7.12  
 > **Test runner:** Vitest 4.0 · Playwright 1.58  
-> **Status:** All 5 stages passing — 702 tests total
+> **Status:** All 5 stages passing — 1003 tests total
 
 ---
 
@@ -26,7 +26,8 @@
 8. [Running the Suite](#8-running-the-suite)
 9. [Where to Put a New Test](#9-where-to-put-a-new-test)
 10. [Coverage Targets](#10-coverage-targets)
-11. [Lessons Learned](#11-lessons-learned)
+11. [Key Invariants](#11-key-invariants)
+12. [Lessons Learned](#12-lessons-learned)
 
 ---
 
@@ -37,8 +38,6 @@ Seven principles guide every test in this project. They are not aspirational —
 ### 1.1 Test behavior, not implementation
 
 Tests assert what users see and experience. They do not assert which internal functions were called, what shape the Zustand state holds, or what CSS classes are applied. A test that breaks when you rename a private state field is testing implementation; a test that breaks when the UI stops showing the right data is testing behavior.
-
-**What this means in practice:**
 
 ```typescript
 // ❌ Tests implementation — breaks on any internal rename
@@ -51,8 +50,6 @@ expect(screen.getByText("Mojito")).toBeInTheDocument()
 ### 1.2 Prefer accessibility-first queries
 
 `getByRole`, `getByLabelText`, and `getByText` are used wherever possible. `getByTestId` appears only when no semantic alternative exists. This approach enforces correct ARIA semantics as a side effect of writing tests: if a role-based query fails, it usually indicates an accessibility problem, not just a hard-to-select element.
-
-**Query priority applied in this project:**
 
 | Priority | Query | Used for |
 |----------|-------|----------|
@@ -78,7 +75,7 @@ Each test layer has a defined mocking boundary. Nothing is mocked below that bou
 
 ### 1.6 Balance speed against confidence
 
-The Vitest stages complete in under 25 seconds combined. E2E tests run separately and exercise the real server. This separation allows fast feedback during development without sacrificing coverage of critical user flows.
+The Vitest stages complete in under 25 seconds combined. E2E tests run separately and exercise the real browser stack. This separation allows fast feedback during development without sacrificing coverage of critical user flows.
 
 ### 1.7 Write tests that survive refactors
 
@@ -88,36 +85,19 @@ Tests are written against public-facing behavior, not internal structure. Intern
 
 ## 2. Test Suite at a Glance
 
-### Suite summary
+| Stage | Tool | Files | Tests |
+|-------|------|:-----:|:-----:|
+| Unit — Stores | Vitest | 6 | 104 |
+| Unit — Components, Services & Utils | Vitest + Testing Library | 15 | 172 |
+| Accessibility | Vitest + jest-axe | 9 | 82 |
+| Integration | Vitest + MSW | 8 | 145 |
+| E2E | Playwright (5 browsers) | 4 | 500 |
+| **Total** | | **42** | **1003** |
 
-| Stage | Tool | Files | Tests | Duration |
-|-------|------|-------|-------|----------|
-| Unit — Stores | Vitest | 4 | 44 | ~13.9s ¹ |
-| Unit — Components, Services & Utils | Vitest | 10 | 102 | ~4.1s |
-| Accessibility | Vitest + jest-axe | 9 | 87 | ~2.9s |
-| Integration | Vitest + MSW | 7 | 129 | ~2.9s |
-| E2E | Playwright | 3 | 340 | ~2m32s |
-| **Total** | | **33** | **702** | **~2m56s** |
-
-### Confirmed passing output
-
+```bash
+npm run test:all   # runs all 5 stages in sequence, prints this table
+npm run test:ci    # same with --bail (stops on first failure)
 ```
-════════════════════════════════════════════════════════════
-  TEST SUITE SUMMARY
-════════════════════════════════════════════════════════════
-  ✔ PASSED   Unit — Stores                           13.9s
-  ✔ PASSED   Unit — Components, Services & Utils      4.1s
-  ✔ PASSED   Accessibility (axe-core)                 2.9s
-  ✔ PASSED   Integration                              2.9s
-  ✔ PASSED   E2E (Playwright)                       2m32s
-────────────────────────────────────────────────────────────
-  5 passed   total 2m56s
-  Reports saved to: reports/
-  All stages passed.
-════════════════════════════════════════════════════════════
-```
-
-> ¹ The Stores stage accounts for most of the Vitest setup time (~13.9s) — `happy-dom` environment initialization, `setupFiles` execution, and the MSW server lifecycle. The 44 tests themselves run in under 1s. This overhead is fixed per Vitest invocation regardless of test count; it would be amortized by merging all Vitest stages into a single run, at the cost of losing granular stage-level pass/fail reporting in the summary.
 
 ### File tree
 
@@ -137,9 +117,11 @@ tests/
 │   ├── fixtures/
 │   │   └── test-fixtures.ts
 │   ├── pages/
+│   │   ├── AIGeneratorPage.ts
 │   │   ├── FavoritesPage.ts
 │   │   ├── HomePage.ts
 │   │   └── RecipeModal.ts
+│   ├── ai-generator.spec.ts
 │   ├── browse-and-favorite.spec.ts
 │   ├── navigation.spec.ts
 │   └── search-flow.spec.ts
@@ -147,6 +129,7 @@ tests/
 │   ├── ErrorBoundary.test.tsx
 │   ├── FavoritesFlow.test.tsx
 │   ├── FavoritesPage.test.tsx
+│   ├── GenerateAI.test.tsx
 │   ├── Header.test.tsx
 │   ├── IndexPage.test.tsx
 │   ├── Modal.test.tsx
@@ -163,20 +146,27 @@ tests/
     │   ├── DrinkCard.test.tsx
     │   ├── ErrorBoundary.test.tsx
     │   ├── Header.test.tsx
+    │   ├── HeroSection.test.tsx
     │   ├── Modal.test.tsx
     │   ├── Notification.test.tsx
-    │   └── SkeletonDrinkCard.test.tsx
+    │   ├── SearchForm.test.tsx
+    │   ├── SkeletonDrinkCard.test.tsx
+    │   ├── SortSelector.test.tsx
+    │   └── ThemeToggle.test.tsx
     ├── layouts/
     │   └── Layout.test.tsx
     ├── services/
     │   └── RecipeService.test.ts
     ├── stores/
     │   ├── favoritesSlice.test.ts
+    │   ├── generateAISlice.test.ts
     │   ├── notificationSlice.test.ts
     │   ├── recipeSlice.test.ts
-    │   └── selectors.test.ts
+    │   ├── selectors.test.ts
+    │   └── useThemeStore.test.ts
     ├── utils/
-    │   └── recipes-schemas.test.ts
+    │   ├── recipes-schemas.test.ts
+    │   └── sortRecipes.test.ts
     └── router.test.tsx
 ```
 
@@ -185,15 +175,15 @@ tests/
 ## 3. Tooling
 
 | Tool | Role | Version |
-|------|------|---------|
-| Vitest | Unit, component, accessibility, and integration test runner | 4.0.18 |
-| @testing-library/react | Component rendering and DOM querying | 16.3.2 |
-| @testing-library/user-event | High-fidelity async user interaction simulation | 14.6.1 |
-| MSW | Network-level request interception for integration tests | 2.12.10 |
-| jest-axe | Automated axe-core accessibility audits in Vitest | 10.0.0 |
-| happy-dom | DOM environment for Vitest | 20.6.3 |
-| Playwright | Real-browser end-to-end testing | 1.58.2 |
-| zustand/vanilla | Isolated store creation for slice unit tests | 5.0.10 |
+|------|------|---------| 
+| Vitest | Unit, component, accessibility, and integration test runner | 4.0 |
+| @testing-library/react | Component rendering and DOM querying | 16.3 |
+| @testing-library/user-event | High-fidelity async user interaction simulation | 14.6 |
+| MSW | Network-level request interception for integration tests | 2.12 |
+| jest-axe | Automated axe-core accessibility audits in Vitest | 10.0 |
+| happy-dom | DOM environment for Vitest | 20.6 |
+| Playwright | Real-browser end-to-end testing (5 engines) | 1.58 |
+| zustand/vanilla | Isolated store creation for slice unit tests | 5.0 |
 
 ---
 
@@ -207,9 +197,9 @@ Each Zustand slice is tested in isolation using `createStore` from `zustand/vani
 
 - Initial state shape for every field
 - Every synchronous action and its effect on state
-- Async actions (`fetchCategories`, `searchRecipes`, `selectRecipe`) with mocked service calls
-- Error paths — service rejections leave state consistent
-- The `isFavorite` selector
+- Async actions (`fetchCategories`, `searchRecipes`, `selectRecipe`, `generateRecipe`) with mocked service calls
+- Error paths — service rejections leave state consistent and set user-friendly error messages
+- Selector correctness (`selectIsFavorite`, `selectIsAiRecipeSaved`)
 
 **Pattern:**
 
@@ -219,56 +209,64 @@ const createTestStore = () => createStore(createFavoritesSlice);
 describe("favoritesSlice", () => {
   let store: ReturnType<typeof createTestStore>;
 
-  beforeEach(() => {
-    store = createTestStore();
-  });
+  beforeEach(() => { store = createTestStore(); });
 
   it("adds a favorite", () => {
     store.getState().addFavorite(mockRecipe);
     expect(store.getState().favorites["1"]).toEqual(mockRecipe);
   });
-
-  it("isFavorite returns false for unknown id", () => {
-    expect(store.getState().isFavorite("999")).toBe(false);
-  });
 });
 ```
 
-**Slices covered:** `favoritesSlice`, `notificationSlice`, `recipeSlice`, `selectors`
+**Slices covered:** `favoritesSlice`, `generateAISlice`, `notificationSlice`, `recipeSlice`, `selectors`, `useThemeStore`
+
+> **Note on `isFavorite`:** The `isFavorite(id)` method was removed from `FavoritesSliceType` in a refactor. All tests now check `!!store.getState().favorites[id]` directly. The `selectIsFavorite(id)` selector in `selectors.ts` provides the same functionality for components.
+
+**Error message invariant for `generateAISlice`:**
+
+The slice converts raw API errors into two specific user-friendly strings. Tests assert exact strings — do not change these without updating the tests:
+
+```typescript
+// Network errors:
+"Network error. Check your connection and try again."
+
+// All other errors:
+"Failed to generate recipe. Please try again."
+```
 
 ---
 
 ### 4.2 Unit — Services
 
-`RecipeService` is tested with Axios mocked via `vi.mock("axios")`. The mock must resolve with `{ data: { drinks: [...] } }` — the shape that `axios.get(url)` actually returns and that `safeGet` unwraps internally.
+`RecipeService` is tested with `vi.spyOn(globalThis, "fetch")`. The mock resolves with a `Response`-compatible object that includes `ok`, `status`, and `json()`.
 
 **Critical constraint — Zod validation in `safeGet`:**
 
-All API responses are parsed through Zod schemas inside `safeGet`. A mock fixture that doesn't satisfy the schema causes `safeParse` to fail silently, returning an empty array with no visible error. Every fixture used in these tests includes all required fields (`strDrinkThumb` as a URL or non-empty string, `idDrink`, `strDrink`).
+All API responses are parsed through Zod schemas inside `safeGet`. A mock fixture that doesn't satisfy the schema causes `safeParse` to fail silently, returning an empty array. Every fixture used in these tests includes all required fields (`strDrinkThumb` as a URL, `idDrink`, `strDrink`).
 
 ```typescript
-// ✅ Fixture that passes DrinkAPIResponse schema
-const validDrink = {
-  idDrink: "1",
-  strDrink: "Mojito",
-  strDrinkThumb: "https://image.com/mojito.jpg",
-  strCategory: "Cocktail",
-};
+// Helper used throughout RecipeService.test.ts
+function makeFetchResponse(data: unknown, ok = true): Response {
+  return {
+    ok,
+    status: ok ? 200 : 500,
+    json: async () => data,
+  } as Response;
+}
 
-// ✅ axios.get resolves with { data: payload }, not the payload directly
-mockedAxios.get.mockResolvedValue({ data: { drinks: [validDrink] } });
+function mockFetchOnce(data: unknown, ok = true) {
+  vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(makeFetchResponse(data, ok));
+}
 ```
 
-**Subtlety — `getRecipes` with `category` filter:**
-
-`filter.php` does not return `strCategory`. The service injects `strCategory` from the filter argument into each result. Tests assert on `idDrink` and the injected `strCategory`, not on a raw API field.
+**Key difference from previous Axios-based tests:** The `safeGet` helper now checks `response.ok` before calling `.json()`. Tests for error cases use `makeFetchResponse({}, false)` (ok = false) instead of `mockResolvedValue(null)`.
 
 **Cases covered:**
 
-- `getCategories` — success and network failure
-- `getRecipeById` — success, recipe not found, schema rejection
-- `getRecipes` — by category, by ingredient (with deduplication), no filters throws
-- `getRandomRecipes` — sorted unique results, skips invalid responses
+- `getCategories` — success, network failure, not-ok response, schema rejection
+- `getRecipeById` — success, recipe not found, schema rejection, network error
+- `getRecipes` — by category, by ingredient (with deduplication and enrichment), combined filters, no filters throws
+- `getBrowseRecipes` — parallel fetches, 12/category cap, deduplication, Fisher-Yates shuffle
 
 ---
 
@@ -288,28 +286,7 @@ const nullableString = z
   .transform((val) => (val && val.length > 0 ? val : null));
 ```
 
-`.min(1)` executes before `.nullable()`. An empty string `""` is therefore rejected outright — it does not reach the transform and does not become `null`. Only `undefined` (field absent) and explicit `null` pass through and produce `null` output. This is documented by tests explicitly:
-
-```typescript
-it("transforms undefined ingredient into null", () => {
-  // field absent → passes .optional() → transform returns null
-  const result = RecipeAPIResponseSchema.parse(baseRecipe);
-  expect(result.strIngredient1).toBeNull();
-});
-
-it("transforms null ingredient into null", () => {
-  const result = RecipeAPIResponseSchema.parse({ ...baseRecipe, strIngredient1: null });
-  expect(result.strIngredient1).toBeNull();
-});
-
-it("rejects an empty string ingredient", () => {
-  // "" fails .min(1) before reaching .nullable()
-  const result = RecipeAPIResponseSchema.safeParse({ ...baseRecipe, strIngredient1: "" });
-  expect(result.success).toBe(false);
-});
-```
-
-> The CocktailDB API sends `null` or omits ingredient fields — it never sends `""`. The schema behaves correctly for real API data. The empty string rejection is a real constraint worth testing because incorrect schema changes could introduce a silent bug.
+`.min(1)` executes before `.nullable()`. An empty string `""` is rejected outright — it does not become `null`. Only `undefined` (field absent) and explicit `null` pass through and produce `null` output.
 
 **Schemas covered:** `CategoriesAPIResponseSchema`, `SearchFiltersSchema`, `DrinkAPIResponse`, `DrinksAPIResponse`, `RecipeAPIResponseSchema`
 
@@ -317,7 +294,7 @@ it("rejects an empty string ingredient", () => {
 
 ### 4.4 Unit — Components
 
-Components are rendered in isolation with `useAppStore` mocked via `vi.mock`. The mock intercepts the selector pattern by running the selector against a controlled state object, eliminating the need for any Provider or store setup.
+Components are rendered in isolation with `useAppStore` mocked via `vi.mock`. The mock intercepts the selector pattern by running the selector against a controlled state object.
 
 **The selector mock pattern:**
 
@@ -332,63 +309,63 @@ function setupStore(overrides?: Partial<AppState>) {
 }
 ```
 
-This pattern works because `useAppStore` is always called with a selector in this codebase — never as a hook without arguments. The mock faithfully reproduces the selector behavior.
+> **Note:** `isFavorite` was removed from `AppState`. Do not include it in `baseState` mock objects — it will cause TS2561 errors. Use `favorites: {}` or `favorites: { "id": recipe }` to control the favorite state. The `selectIsFavorite(id)` selector reads `!!state.favorites[id]` directly.
 
 **HeadlessUI v2 — inert attribute on Listbox:**
 
-When the category Listbox is open, HeadlessUI v2 applies `inert=""` and `aria-hidden="true"` to the surrounding layout container. Testing Library respects these attributes and cannot find `role="option"` elements through accessibility-tree queries. The workaround is a direct DOM query:
+When the category Listbox is open, HeadlessUI v2 applies `inert=""` and `aria-hidden="true"` to the surrounding layout container. Testing Library respects these attributes and cannot find `role="option"` elements. The workaround is a direct DOM query:
 
 ```typescript
-// ❌ Blocked by inert — Testing Library respects the accessibility tree
+// ❌ Blocked by inert
 screen.getByRole("option", { name: /cocktail/i })
 
 // ✅ Raw DOM query bypasses inert
 document.querySelectorAll('[role="option"]')
 ```
 
-**Components covered:** `DrinkCard`, `ErrorBoundary`, `Header`, `Modal`, `Notification`, `SkeletonDrinkCard`, `Layout`
+**Components covered:** `DrinkCard`, `ErrorBoundary`, `Header`, `HeroSection`, `Modal`, `Notification`, `SearchForm`, `SkeletonDrinkCard`, `SortSelector`, `ThemeToggle`, `Layout`
 
 ---
 
 ### 4.5 Unit — Router
 
-`AppRoutes` uses `React.lazy()` to load `IndexPage` and `FavoritesPage`. These views are imported with bare relative paths (`./views/IndexPage`), not the `@/` alias. `vi.mock("@/views/IndexPage")` resolves through the alias at module-system level and does **not** intercept the lazy import at runtime. Mocking the views is therefore not possible through `vi.mock` alone.
+`AppRoutes` uses `React.lazy()` for all four views. Since `router.tsx` now includes its own `<Suspense fallback={<PageSkeleton />}>`, tests do **not** wrap `<AppRoutes />` in an additional `<Suspense>` — it would be redundant.
 
-**Solution:** Let the real views load. Mock `useAppStore` to prevent `Header`, `Modal`, and `Notification` from crashing, then assert on unique content from each page's actual rendered output.
+`vi.mock("@/views/IndexPage")` does not intercept `React.lazy(() => import("./views/IndexPage"))` because lazy imports use bare relative paths at runtime. The fix is to let the real views load and assert on unique content.
 
 ```typescript
 it("renders IndexPage on '/'", async () => {
   render(
     <MemoryRouter initialEntries={["/"]}>
-      <Suspense fallback={null}>
-        <AppRoutes />
-      </Suspense>
+      <AppRoutes />
     </MemoryRouter>
   );
-  // "Your Perfect Mix Awaits" is IndexPage's empty-state heading — unique to that view
   expect(
     await screen.findByRole("heading", { name: /your perfect mix awaits/i })
   ).toBeInTheDocument();
 });
+
+it("renders NotFoundPage on an unknown route", async () => {
+  render(
+    <MemoryRouter initialEntries={["/this-does-not-exist"]}>
+      <AppRoutes />
+    </MemoryRouter>
+  );
+  expect(
+    await screen.findByRole("heading", { name: /recipe not found/i })
+  ).toBeInTheDocument();
+});
 ```
 
-`findByRole` waits internally via `waitFor`, giving `React.lazy` time to resolve and Suspense time to commit before the assertion runs.
+The store mock must include `openRecipeModal: vi.fn()` — it is required by `RecipesSliceType` and consumed by `Layout` and `DrinkCard`.
 
 ---
 
 ### 4.6 Accessibility (axe-core)
 
-Every component and page has a dedicated `.a11y.test.tsx` file. Tests run two categories of checks: automated axe-core audits and targeted behavioral assertions for things axe cannot detect automatically.
-
-**Setup:**
+Every component and page has a dedicated `.a11y.test.tsx` file. Tests run automated axe-core audits and targeted behavioral assertions for things axe cannot detect.
 
 ```typescript
-// tests/setup/jest-axe-setup.ts
-import { expect } from "vitest";
-import { toHaveNoViolations } from "jest-axe";
-expect.extend(toHaveNoViolations);
-
-// Every a11y test file
 it("has no axe violations", async () => {
   const { container } = render(<Component />);
   expect(await axe(container)).toHaveNoViolations();
@@ -410,161 +387,106 @@ it("has no axe violations", async () => {
 | Notification | ✓ | ✓ | ✓ | — |
 | SkeletonDrinkCard | ✓ | ✓ | — | — |
 
-**jsdom limitations and their workarounds:**
+**FavoritesPage heading hierarchy invariant:**
 
-`focus()` on `tabIndex="-1"` is silently ignored by jsdom unless the document is active. Call `document.body.focus()` in `beforeEach` for any test that asserts `toHaveFocus()`. This affects `ErrorBoundary` (which calls `errorRef.current.focus()` from `componentDidUpdate`) and any component that programmatically focuses a non-interactive element.
-
-`waitFor` polls via `setInterval`. With fake timers active that interval never advances — `waitFor` hangs indefinitely. Read Zustand store state directly after `act(() => { vi.advanceTimersByTime(N); })` instead.
+The axe audit enforces a strict heading order: `h2` (My Favorites) → `h3` (My Creations) → `h3` (individual card titles). Any change to this hierarchy breaks the `FavoritesPage.a11y.test.tsx` audit.
 
 ---
 
 ### 4.7 Integration
 
-The integration test folder contains two distinct subtypes. Both use the real composed `useAppStore` — no store is mocked — but they differ in whether they also involve the network layer.
+The integration folder contains two subtypes. Both use the real composed `useAppStore` — no store is mocked.
 
 **Subtype A — Store + MSW (true integration):**
 
-These files render full page components against the real store and intercept API calls via MSW. No application code is mocked. They give the highest confidence of any Vitest layer.
+Full page components rendered against the real store with MSW intercepting API calls.
 
 | File | Network layer |
 |------|--------------|
-| `IndexPage.test.tsx` | MSW — `random.php`, `filter.php`, `search.php` |
+| `IndexPage.test.tsx` | MSW — `filter.php`, `search.php`, `lookup.php` |
 | `FavoritesPage.test.tsx` | MSW — `lookup.php` |
 | `FavoritesFlow.test.tsx` | MSW — full multi-endpoint flow |
 | `Header.test.tsx` | MSW — `list.php` for `fetchCategories` |
+| `GenerateAI.test.tsx` | MSW — `POST /api/ai/generate-recipe` |
 
-**Subtype B — Store only (advanced component tests):**
+**Subtype B — Store only:**
 
-These files render isolated components against the real store, controlling state directly via `useAppStore.setState()`. No network calls are made and MSW is not involved. The distinction from unit component tests is that the real store runs — including selectors, derived state, and side effects — rather than a mocked selector intercept.
+Isolated components against the real store, controlling state via `useAppStore.setState()`.
 
 | File | State control |
 |------|--------------|
 | `Modal.test.tsx` | `useAppStore.setState({ modal, selectedRecipe, favorites })` |
 | `Notification.test.tsx` | `useAppStore.setState({ notification })` + fake timers |
-| `ErrorBoundary.test.tsx` | No store — pure component behavior with `BrokenComponent` |
+| `ErrorBoundary.test.tsx` | No store — pure component behavior |
+
+**`GenerateAI.test.tsx` — AI Generator integration tests:**
+
+The AI Generator flow is tested with MSW intercepting the Vercel serverless function endpoint. The handler at `POST /api/ai/generate-recipe` returns a fixture recipe. Key scenarios covered:
+
+- Ingredient add/remove via the autocomplete input
+- Generate button triggers the API call and renders the recipe card
+- "Save Creation" button calls `saveAiRecipe()` and disables after saving
+- "Re-craft" button regenerates with the same ingredient list
+- Error state renders the error banner when the API returns a failure
 
 **What MSW intercepts:**
 
 ```
-tests/mocks/handlers.ts  →  5 CocktailDB endpoints
+tests/mocks/handlers.ts  →  TheCocktailDB + AI API
   filter.php             →  category and ingredient search
   search.php             →  name search
   lookup.php             →  recipe detail
   list.php               →  category list
-  random.php             →  random drink
+  POST /api/ai/...       →  AI recipe generation
 ```
 
-All handlers support a `{ drinks: null }` response for testing empty-state UI, and individual tests override handlers via `server.use(http.get(...))` for error and slow-response scenarios.
+**FavoritesPage heading hierarchy — test invariant:**
 
-**Race condition — notification overwrite in FavoritesPage:**
-
-When the last favorite is removed, two notifications are dispatched in rapid succession:
-
-1. `removeFavorite()` → `"Removed from favorites"`
-2. `FavoritesPage` `useEffect` detects empty favorites → `"Your favorites list is empty"`
-
-In jsdom's synchronous rendering environment, the `useEffect` fires immediately after the state update. The second notification overwrites the first before any assertion can observe it. Integration tests assert on `"Your favorites list is empty"` — the final settled state — not the transient message.
-
-**HeadlessUI v2 in integration tests:**
-
-The same `inert` issue from component tests applies. Category dropdown options are queried with `document.querySelectorAll('[role="option"]')` inside `waitFor`.
-
-**Integration test files:**
-
-| File | What it covers |
-|------|---------------|
-| `ErrorBoundary.test.tsx` | Error rendering, fallback UI, reload action, focus on error heading |
-| `Header.test.tsx` | Category fetch via MSW, search by ingredient, search by category, loading state |
-| `IndexPage.test.tsx` | Search by ingredient, search by category, loading state, empty state, error notification |
-| `Modal.test.tsx` | Recipe detail rendering, add/remove favorite from modal, close behavior |
-| `Notification.test.tsx` | Render conditions, auto-dismiss by type, close button, hover pause |
-| `FavoritesPage.test.tsx` | Add favorite, remove favorite, empty state, notification on remove |
-| `FavoritesFlow.test.tsx` | Full add → navigate → view → remove flow |
+`FavoritesPage.test.tsx` and `FavoritesPage.a11y.test.tsx` assert on heading levels `h2` (My Favorites) and `h3` (My Creations). The `drinkCards` locator in the E2E page object covers both `aria-labelledby="drink-title-*"` and `aria-labelledby="creation-title-*"` to match cards from both sections.
 
 ---
 
 ### 4.8 End-to-End (Playwright)
 
-Three spec files cover the critical user paths. Tests run against the real Vite dev server on `localhost:5173`. The full stack — React, Zustand, Axios, CocktailDB API — is exercised, with network calls intercepted via `page.route()` to guarantee predictable, deterministic responses without depending on the live API.
+Four spec files cover the critical user paths. Tests run against the Vite dev server on `localhost:5173`. Network calls are intercepted via `page.route()` for predictable, deterministic responses.
 
-**340 tests, all passing.**
+**500 tests: 100 scenarios × 5 browser engines (Chromium, Firefox, WebKit, Mobile Chrome, Mobile Safari).**
 
-**Page Object Model:**
-
-E2E tests use the Page Object Model pattern. Each page object encapsulates all locators and action helpers for a specific view or component. Spec files import from the custom fixture and receive page objects as typed parameters — no manual instantiation.
+**Page Object Models:**
 
 ```
-e2e/
-├── fixtures/
-│   └── test-fixtures.ts     Extends Playwright's base test with page objects
-│                            and API mock helpers (mockDefaultApi, mockEmptyResults,
-│                            mockLookupError). Also exports shared fixture data:
-│                            DRINK, DRINK_2, RECIPE_DETAIL, CATEGORIES.
-└── pages/
-    ├── HomePage.ts          Locators for nav, search form, results grid, empty
-    │                        state, and notifications. Action helpers: goto(),
-    │                        searchByIngredient(), searchByCategory(), browseAll(),
-    │                        firstCard(), cardByName(), favoriteButton().
-    ├── FavoritesPage.ts     Locators for favorites grid and empty state. Action
-    │                        helpers: goto(), removeButton(), expectCardCount(),
-    │                        expectEmptyState(), expectInfoNotification().
-    └── RecipeModal.ts       Locators for dialog, title, image, ingredients/
-                             instructions sections, close buttons, and favorite
-                             toggle. Action helpers: closeViaTopButton(),
-                             closeViaBottomButton(), closeViaEscape(),
-                             closeViaBackdrop() (handles mobile touchscreen.tap).
+e2e/pages/
+├── AIGeneratorPage.ts   Locators: ingredient input, suggestions, generate button,
+│                        saveCreationButton, reCraftButton, recipeCard, errorBanner.
+│                        Actions: addIngredient(), generateRecipe(), saveCreation().
+├── FavoritesPage.ts     Locators: drinkCards (matches both drink-title-* and
+│                        creation-title-* articles), emptyState, removeButtons.
+│                        Note: { timeout: 10_000 } on expectResultsVisible() for Firefox.
+├── HomePage.ts          Locators: nav, search form, results grid, empty state,
+│                        notifications. Actions: goto(), searchByIngredient(),
+│                        searchByCategory(), browseAll(), firstCard().
+└── RecipeModal.ts       Locators: dialog, title, image, ingredients/instructions,
+                         close buttons, favorite toggle.
+                         closeViaBackdrop() uses touchscreen.tap() on mobile viewports.
 ```
 
-**API mocking in E2E:**
-
-Unlike Vitest integration tests (which use MSW at the Node level), E2E tests intercept requests at the browser level via `page.route()` with `RegExp` patterns. The fixture exports reusable helpers that register all five endpoints in a single call:
+**API mocking helpers (test-fixtures.ts):**
 
 ```typescript
-// test-fixtures.ts — used at the start of most E2E tests
-await mockDefaultApi(page);   // all 5 endpoints → predictable fixture data
-await mockEmptyResults(page); // overrides random/filter/search → { drinks: null }
-await mockLookupError(page);  // overrides lookup → 500 error
+await mockDefaultApi(page);    // all endpoints → predictable fixture data
+await mockEmptyResults(page);  // overrides search → { drinks: null }
+await mockLookupError(page);   // overrides lookup → 500 error
+await mockAIRecipe(page);      // overrides POST /api/ai/... → fixture recipe
 ```
 
-**Fixture data is co-located with the fixture** — `DRINK`, `DRINK_2`, `RECIPE_DETAIL`, and `CATEGORIES` are defined in `test-fixtures.ts` and mirrored by the MSW handlers in `tests/mocks/handlers.ts`, ensuring E2E and integration tests assert against identical data shapes.
+**Spec files:**
 
-**How spec files use the fixture:**
-
-```typescript
-// browse-and-favorite.spec.ts
-import { test, expect, mockDefaultApi } from "../fixtures/test-fixtures";
-
-test("adds a drink to favorites and persists across navigation", async ({
-  page,
-  homePage,
-  favoritesPage,
-  recipeModal,
-}) => {
-  await mockDefaultApi(page);
-  await homePage.goto();
-  await homePage.browseAll();
-
-  await homePage.viewRecipeButton(homePage.firstCard()).click();
-  await recipeModal.expectVisible();
-  await recipeModal.toggleFavorite();
-  await recipeModal.closeViaTopButton();
-
-  await homePage.goToFavorites();
-  await favoritesPage.expectCardCount(1);
-});
-```
-
-**`closeViaBackdrop()` — mobile-aware implementation:**
-
-The modal backdrop click has a non-obvious implementation. HeadlessUI's dialog panel has variable `y` positioning across viewport sizes. `RecipeModal.closeViaBackdrop()` reads the panel's bounding box at runtime and clicks above it; on viewports narrower than 768px it uses `page.touchscreen.tap()` instead of `page.mouse.click()` because mobile browsers require a touch event to dismiss the dialog.
-
-| Spec | Scenarios covered |
-|------|-------------------|
-| `navigation.spec.ts` | Route rendering, nav link behavior, page titles, 404 handling |
-| `search-flow.spec.ts` | Search by ingredient, search by category, empty results, error state |
-| `browse-and-favorite.spec.ts` | Add to favorites, remove from favorites, persistence across navigation |
-
-Playwright is configured with a single browser (Chromium) for CI speed. The `webServer` config starts the Vite dev server automatically before the suite runs.
+| Spec | Scenarios |
+|------|-----------|
+| `navigation.spec.ts` | Route rendering, nav links, 404 page, aria-current |
+| `search-flow.spec.ts` | Search by ingredient, by category, empty results, error state |
+| `browse-and-favorite.spec.ts` | Add/remove favorites, persistence across navigation |
+| `ai-generator.spec.ts` | Full ingredient → generate → save → view in Favorites flow |
 
 ---
 
@@ -572,58 +494,42 @@ Playwright is configured with a single browser (Chromium) for CI speed. The `web
 
 > Mock as little as possible, but as much as necessary.
 
-| Layer | Boundary | What is mocked | How |
-|-------|----------|---------------|-----|
-| Unit — slices | None | Nothing | Pure store in isolation |
-| Unit — services | HTTP client | `axios` | `vi.mock("axios")` |
-| Unit — schemas | None | Nothing | Pure Zod functions |
-| Unit — components | Global state | `useAppStore` | `vi.mock` + selector intercept |
-| Accessibility | Global state (where needed) | `useAppStore` | Same as above |
-| Integration | Network | HTTP requests | MSW `setupServer` |
-| E2E | Network (browser) | HTTP requests | `page.route()` with RegExp |
+| Layer | What is mocked | How |
+|-------|---------------|-----|
+| Unit — slices | Nothing | Pure store in isolation |
+| Unit — services | `fetch` | `vi.spyOn(globalThis, "fetch")` + `vi.restoreAllMocks()` |
+| Unit — schemas | Nothing | Pure Zod functions |
+| Unit — components | `useAppStore` | `vi.mock` + selector intercept pattern |
+| Accessibility | `useAppStore` (where needed) | Same as above |
+| Integration | HTTP requests | MSW `setupServer` |
+| E2E | HTTP requests (browser) | `page.route()` with RegExp |
 
-**Why MSW over mocking Axios in integration tests:**
+**Why `vi.spyOn(fetch)` over `vi.mock("axios")` in service tests:**
 
-MSW intercepts at the network layer, decoupling tests from the HTTP client implementation. If the project switches from Axios to `fetch`, integration tests continue to pass without modification. MSW also makes per-test overrides clean and isolated:
+The service was migrated from Axios to native `fetch`. `vi.spyOn(globalThis, "fetch")` is used with `vi.restoreAllMocks()` in `beforeEach` — this ensures spies are reset between tests without leaking across the suite. The `makeFetchResponse()` helper builds a `Response`-compatible object that mirrors the real `fetch` API.
 
-```typescript
-// Override for a specific test only — resets automatically via afterEach
-server.use(
-  http.get(/filter\.php/, () =>
-    HttpResponse.json({ drinks: null })
-  )
-);
-```
+**Why MSW over mocking `fetch` in integration tests:**
 
-`onUnhandledRequest: "error"` is set in `server.listen()`. Any API call not covered by a handler fails loudly, catching accidental real network calls in tests.
-
-**Why `page.route()` in E2E instead of a live API:**
-
-E2E tests intercept requests at the browser level via Playwright's `page.route()` rather than hitting the real CocktailDB API. This keeps test data predictable and deterministic — a live API can return different drinks, change response shapes, or be unavailable. The `test-fixtures.ts` exports three helpers (`mockDefaultApi`, `mockEmptyResults`, `mockLookupError`) that register route intercepts with RegExp patterns for all five endpoints.
+MSW intercepts at the network layer, decoupling tests from the HTTP client implementation. Integration tests pass unchanged regardless of whether the service uses `fetch`, Axios, or any other client. `onUnhandledRequest: "error"` is set globally — any API call not covered by a handler fails loudly.
 
 ---
 
 ## 6. Fake Timer Cookbook
 
-Fake timers interact with Testing Library and Vitest in non-obvious ways. The table below captures every pattern used in this project.
-
 | Scenario | Problem | Solution |
 |----------|---------|----------|
 | Assert store state after timer fires | `waitFor` polls via `setInterval` → hangs | Read `store.getState()` directly after `act(() => vi.advanceTimersByTime(N))` |
-| Click a button during fake timers | `userEvent` uses internal delays → broken | `fireEvent.click()` — synchronous, no timer dependency |
+| Click a button during fake timers | `userEvent` uses internal delays → broken | `fireEvent.click()` — synchronous |
 | Hover / mouseEnter during fake timers | Same as above | `act(() => fireEvent.mouseEnter(el))` |
-| `userEvent.setup({ advanceTimers })` | Binding evaluated at collect phase, before `beforeEach` runs → `STACK_TRACE_ERROR` | Use `fireEvent` instead |
-| Stale renders across tests | RTL's auto-cleanup uses `setTimeout` → never fires with fake timers → old renders accumulate | Call `cleanup()` in `afterEach` **before** `vi.runAllTimers()` |
-| `vi.useRealTimers()` inline in a test | `afterEach` then calls `vi.runAllTimers()` on real timers → error | Let `afterEach` handle the switch; use `vi.useRealTimers()` only in tests that switch back for `userEvent` and restore in their own `afterEach` |
-| `act` import | `act` does not exist in Vitest | Always import `act` from `@testing-library/react` |
+| `userEvent.setup({ advanceTimers })` | Binding evaluated at collect phase → `STACK_TRACE_ERROR` | Use `fireEvent` instead |
+| Stale renders across tests | RTL auto-cleanup uses `setTimeout` → never fires | Call `cleanup()` in `afterEach` **before** `vi.runAllTimers()` |
+| `act` import | `act` does not exist in Vitest | Always import from `@testing-library/react` |
 
 ---
 
 ## 7. Test Infrastructure
 
 ### 7.1 Global setup — `tests/setup/test-setup.ts`
-
-Applied to all Vitest test files via `setupFiles` in `vitest.config.ts`.
 
 ```typescript
 beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
@@ -635,8 +541,6 @@ afterEach(() => {
 afterAll(() => server.close());
 ```
 
-`onUnhandledRequest: "error"` is the strictest setting — it catches any API call not covered by a registered handler, preventing silent real network calls in tests.
-
 ### 7.2 Accessibility setup — `tests/setup/jest-axe-setup.ts`
 
 ```typescript
@@ -647,162 +551,120 @@ expect.extend(toHaveNoViolations);
 
 ### 7.3 MSW handlers — `tests/mocks/handlers.ts`
 
-Five CocktailDB endpoints are handled. Each endpoint matches by `RegExp` against the full URL to remain compatible with any base URL configuration, and handles both the happy path and the `drinks: null` case (API returns null when no results exist).
+Six endpoints are handled: five TheCocktailDB endpoints plus the AI recipe generation endpoint. Each matches by `RegExp` against the full URL. The AI handler returns `DEFAULT_AI_RECIPE_RESPONSE` — a fixture that mirrors the shape returned by the real Vercel function.
 
 ### 7.4 Factories — `tests/mocks/factories.ts`
-
-Deterministic test data factories with incrementing counters:
 
 ```typescript
 makeDrink(overrides?)         // → Drink
 makeRecipeDetail(overrides?)  // → RecipeDetail
+makeGeneratedRecipe(overrides?) // → GeneratedRecipe
 makeDrinks(count)             // → Drink[]
 toFavoritesMap(drinks)        // → Record<string, RecipeDetail>
 resetFactoryCounters()        // call in beforeEach for stable IDs
 ```
 
-Call `resetFactoryCounters()` in `beforeEach` in any test file that uses the factories to guarantee stable, predictable IDs across test runs.
-
 ---
 
 ## 8. Running the Suite
 
-### All stages
-
 ```bash
+# All stages (recommended)
 npm run test:all
-```
 
-Runs all five stages in sequence and prints the summary table. Reports are saved to `reports/`.
+# Individual stages
+npm run test:unit         # stores + components + services + utils
+npm run test:a11y         # accessibility audits
+npm run test:integration  # integration with MSW
+npm run test:e2e          # Playwright (5 browsers)
 
-This command delegates to `run-tests.mjs` — a Node script at the project root that orchestrates the stages. It creates the `reports/vitest/` and `reports/playwright/` directories, runs each stage as a child process in sequence, captures exit codes, and prints the formatted summary table shown in Section 2. If any stage exits with a non-zero code, the script marks it as `✖ FAILED` in the summary and exits with code 1, which causes CI to fail. Stages are not parallelized — each runs to completion before the next starts, so a failure in an earlier stage does not skip later ones.
+# Development
+npm run test              # Vitest watch mode
+npm run test:e2e:ui       # Playwright interactive UI
+npm run test:e2e:debug    # Playwright debug mode
 
-### Individual stages
-
-```bash
-npm run test:unit         # Vitest — all unit tests (stores, components, services, utils)
-npm run test:a11y         # Vitest — accessibility
-npm run test:integration  # Vitest — integration with MSW
-npm run test:e2e          # Playwright — real browser
-```
-
-### With coverage
-
-```bash
+# Coverage
 npm run test:coverage
 ```
-
-Generates an HTML coverage report in `coverage/` and prints a summary to the terminal.
-
-### Playwright UI mode
-
-```bash
-npm run test:e2e:ui
-```
-
-Opens the interactive Playwright UI for debugging individual E2E tests with time-travel and trace inspection.
-
-### Playwright debug mode
-
-```bash
-npm run test:e2e:debug
-```
-
-Runs Playwright in headed mode with the debugger attached — useful for stepping through failing E2E scenarios.
 
 ---
 
 ## 9. Where to Put a New Test
 
-When adding a feature or fixing a bug, use this table to decide where the test lives. The goal is to test at the lowest layer that gives meaningful confidence — lower layers are faster, more isolated, and easier to debug.
-
 | What you are testing | Layer | Directory |
 |----------------------|-------|-----------|
 | A Zustand action, selector, or slice behavior | Unit — Stores | `tests/unit/stores/` |
-| A service function (API call, schema validation, transformation) | Unit — Services | `tests/unit/services/` |
+| A service function (API call, schema validation) | Unit — Services | `tests/unit/services/` |
 | A Zod schema shape, transform, or rejection | Unit — Utils | `tests/unit/utils/` |
-| A component's rendering or interaction **in isolation** (store mocked) | Unit — Components | `tests/unit/components/` |
-| A component that uses the **real store** but makes **no API calls** | Integration (Subtype B) | `tests/integration/` |
-| A page or flow that uses the **real store + MSW** for API calls | Integration (Subtype A) | `tests/integration/` |
-| ARIA roles, axe violations, keyboard nav, focus management | Accessibility | `tests/accessibility/` |
-| A complete user flow across pages in a real browser | E2E | `tests/e2e/` |
+| A component in isolation (store mocked) | Unit — Components | `tests/unit/components/` |
+| A component that uses the real store, no API calls | Integration (Subtype B) | `tests/integration/` |
+| A page or flow with real store + MSW | Integration (Subtype A) | `tests/integration/` |
+| ARIA roles, axe violations, keyboard nav, focus | Accessibility | `tests/accessibility/` |
+| A complete user flow in a real browser | E2E | `tests/e2e/` |
 
 **Practical rules:**
 
-- If you are adding a new component, create both a `unit/components/ComponentName.test.tsx` and an `accessibility/ComponentName.a11y.test.tsx`.
-- If the component has no store interaction, the unit test needs no mock at all — render it with plain props.
-- If the component reads from the store, use the selector mock pattern from Section 4.4.
-- If you are fixing a bug triggered by a specific API response shape, the fix belongs in `unit/services/` or `unit/utils/` — not in an integration test. Integration tests verify flows, not edge cases.
-- Only add E2E tests for paths that cross page boundaries or depend on browser-specific behavior (localStorage persistence, touchscreen, navigation history).
+- New component → create both `unit/components/Component.test.tsx` and `accessibility/Component.a11y.test.tsx`
+- New slice action → add to the slice's `.test.ts` and add the action to `selectors.test.ts` `mockState`
+- Any new action added to a slice **must** be added to `selectors.test.ts` `mockState` — it uses `satisfies AppState` which enforces the type at compile time
+- Bug triggered by a specific API response shape → `unit/services/` or `unit/utils/`, not integration
+- Only add E2E tests for paths that cross page boundaries or depend on browser-specific behavior
 
 ---
 
 ## 10. Coverage Targets
 
-Coverage is measured on `src/**/*.{ts,tsx}`, excluding `main.tsx`, type declaration files, and `router.tsx` (the lazy-loading boundary is tested via integration and E2E instead).
+Coverage is measured on `src/**/*.{ts,tsx}`, excluding `main.tsx` and type declaration files.
 
-The thresholds below are enforced by `vitest.config.ts`. Running `npm run test:coverage` fails the run if any threshold is not met — they are not aspirational targets but enforced gates.
+| Code type | Threshold |
+|-----------|:---------:|
+| Zod schemas (`utils/`) | 100% |
+| Zustand slices (`stores/`) | ≥ 95% |
+| Service layer (`services/`) | ≥ 90% lines / ≥ 85% branches |
+| Components (`components/`) | ≥ 75% lines / ≥ 70% branches |
+| Global minimum | ≥ 80% lines / ≥ 75% branches |
 
-| Code type | Configured threshold | Rationale |
-|-----------|:------:|-----------|
-| Zod schemas (`utils/`) | 100% | Validates all external API data; a missed branch can corrupt state silently |
-| Zustand slices (`stores/`) | ≥ 95% | Application state brain — bugs here affect every component |
-| Service layer (`services/`) | ≥ 90% lines / ≥ 85% branches | Every error path and schema rejection must be handled explicitly |
-| Components (`components/`) | ≥ 75% lines / ≥ 70% branches | Core user-facing behavior |
-| Global minimum | ≥ 80% lines / ≥ 75% branches | Baseline across all measured files |
+**Three files have branches below 100% for structural reasons:**
 
-### Current coverage status
+`Layout.tsx` — uncovered branch is a DOM edge case in the skip link handler unreachable in jsdom.
 
-All 702 tests pass (362 Vitest + 340 Playwright). All configured thresholds are met.
+`Notification.tsx` — the `prefersReducedMotion` conditional's `true` branch is unreachable because happy-dom does not implement `window.matchMedia`. The hook correctly uses `useState` + `addEventListener("change")` in production, but the `true` branch (reduced motion active) cannot be exercised without mocking `matchMedia`. The branch controls CSS transition class strings only — no behavioral effect.
 
-| File | Statements | Branches | Functions |
-|------|:----------:|:--------:|:---------:|
-| `stores/favoritesSlice.ts` | 100% | 100% | 100% |
-| `stores/notificationSlice.ts` | 100% | 100% | 100% |
-| `stores/recipeSlice.ts` | 100% | 100% | 100% |
-| `stores/selectors.ts` | 100% | 100% | 100% |
-| `stores/useAppStore.ts` | 100% | 100% | 100% |
-| `utils/recipes-schemas.ts` | 100% | 100% | 100% |
-| `components/DrinkCard.tsx` | 100% | 100% | 100% |
-| `components/Header.tsx` | 100% | 100% | 100% |
-| `components/SkeletonDrinkCard.tsx` | 100% | 100% | 100% |
-| `views/FavoritesPage.tsx` | 100% | 100% | 100% |
-| `views/IndexPage.tsx` | 100% | 100% | 100% |
-| `components/Modal.tsx` | 97% | 97% | 100% |
-| `components/Notification.tsx` | 100% | 82% | 100% |
-| `services/recipeService.ts` | 95% | 87% | 100% |
-| `components/ErrorBoundary.tsx` | 92% | 88% | 100% |
-| `layouts/Layout.tsx` | 100% | 50% | 100% |
-| **Total** | **97.95%** | **91.59%** | **100%** |
-
-**Three files have branches below 100% for structural reasons, not missing tests:**
-
-`Layout.tsx` at 50% branches — the uncovered branch is a DOM edge case in the skip link handler that is unreachable without manipulating document scroll position in jsdom. No test is missing.
-
-`Notification.tsx` at 82% branches — the remaining gap is the `prefersReducedMotion` conditional (lines 69–89, 99, 110). `window.matchMedia` is not implemented in happy-dom and always returns `matches: false`, making the `true` branch structurally unreachable without mocking. The branch controls CSS transition class strings only — it has no behavioral effect. See Lessons Learned §13.
-
-`recipeService.ts` at 87% branches — the remaining gap is the `!data` and `!parsed.success` guards inside the private `searchByIngredient` and `searchByCategory` functions (lines 140–151, 166–167). These helpers are only reachable indirectly through `getRecipes`. All their equivalent paths in `searchByName` and all public API error paths are fully covered.
-
-**Coverage is a signal, not a goal.** A test file reaching 100% by asserting `toBeInTheDocument()` on every element provides far less value than an integration test exercising a complete user flow at 60%. The metrics that matter more:
-
-- **Test flakiness rate** — 0 intermittent failures across all runs
-- **Refactor safety** — internal renames do not break tests
-- **Bug detection** — tests catch regressions before they reach users
-- **Execution time** — Vitest stages under 25s combined; E2E under 3 minutes
+`recipeService.ts` — remaining gap is the `!parsed.success` guards inside private helper functions only reachable indirectly. All equivalent public API paths are covered.
 
 ---
 
-## 11. Lessons Learned
+## 11. Key Invariants
 
-These are the concrete problems encountered during implementation and their permanent fixes. Each entry exists because a test was failing and the root cause was non-obvious.
+These are the contracts that **must** be maintained when changing code, to prevent test failures:
+
+**`selectors.test.ts` mockState must satisfy `AppState`**
+Any new action added to a slice must be added to the `mockState` object in `selectors.test.ts`. The `satisfies AppState` assertion enforces the full type at compile time and will cause TS errors across all selector tests if any field is missing.
+
+**`generateAISlice` error messages are exact strings**
+`generateAISlice.test.ts` asserts exact user-facing error message strings. Do not change the error messages in `generateAISlice.ts` without updating the corresponding test assertions.
+
+**`FavoritesPage` heading hierarchy: `h2` → `h3`**
+`FavoritesPage.a11y.test.tsx` enforces that "My Favorites" is `h2` and "My Creations" is `h3`. axe-core fails on any heading order violation.
+
+**`drinkCards` locator covers both sections**
+`tests/e2e/pages/FavoritesPage.ts` `drinkCards` must match both `aria-labelledby="drink-title-*"` (favorited API drinks) and `aria-labelledby="creation-title-*"` (AI creations). A selector that only matches one prefix breaks the Favorites E2E tests.
+
+**`expectResultsVisible()` uses `{ timeout: 10_000 }`**
+`tests/e2e/pages/HomePage.ts` uses a 10-second timeout on result visibility assertions. This was added specifically to prevent Firefox flakiness. Do not reduce this timeout.
+
+**`isFavorite` does not exist on `AppState`**
+The `isFavorite(id)` method was removed from `FavoritesSliceType`. Do not re-add it as a property to any mock `AppState` object in tests — use `favorites: { [id]: recipe }` to control favorite state, and rely on `selectIsFavorite(id)` for component-level checks.
 
 ---
+
+## 12. Lessons Learned
 
 ### HeadlessUI v2 applies `inert` to Listbox contents
 
-When a HeadlessUI v2 `Listbox` or `Combobox` is open, the library applies `inert=""` and `aria-hidden="true"` to the surrounding layout container. Testing Library respects these attributes and treats the contained elements as invisible. `getByRole("option")` fails even though the options are in the DOM.
+When a HeadlessUI v2 `Listbox` is open, the library applies `inert=""` and `aria-hidden="true"` to the surrounding layout container. Testing Library respects these attributes and treats contained elements as invisible. `getByRole("option")` fails even though the options are in the DOM.
 
-**Fix:** Query the raw DOM directly, bypassing the accessibility tree:
+**Fix:** Query the raw DOM directly:
 
 ```typescript
 await waitFor(() => {
@@ -814,23 +676,21 @@ const option = Array.from(document.querySelectorAll('[role="option"]'))
 await user.click(option!);
 ```
 
-This pattern is used in `Header.test.tsx`, `Header.a11y.test.tsx`, and integration tests involving the category selector.
-
 ---
 
 ### `vi.mock` alias does not intercept `React.lazy` relative imports
 
-`vi.mock("@/views/IndexPage")` is resolved through Vite's `@/` alias at module-system level. `React.lazy(() => import("./views/IndexPage"))` in `router.tsx` uses a bare relative path that bypasses the alias entirely at runtime. The mock is registered but never triggered.
+`vi.mock("@/views/IndexPage")` resolves through the alias at module-system level. `React.lazy(() => import("./views/IndexPage"))` uses a bare relative path at runtime and bypasses the alias. The mock is registered but never triggered.
 
-**Fix:** Do not mock the lazy views. Mock `useAppStore` instead (to prevent `Header`, `Modal`, and `Notification` from crashing), then let the real components render and assert on unique content from each page.
+**Fix:** Do not mock lazy views. Mock `useAppStore` to prevent crashes, then assert on unique content from each page's real output.
 
 ---
 
 ### `waitFor` hangs permanently with fake timers
 
-`waitFor` uses `setInterval` to poll for assertion success. With `vi.useFakeTimers()` active, that interval never advances and `waitFor` waits forever, causing a test timeout.
+`waitFor` uses `setInterval` to poll for assertion success. With `vi.useFakeTimers()` active, that interval never advances.
 
-**Fix:** After firing fake timers with `act(() => vi.advanceTimersByTime(N))`, read Zustand state directly:
+**Fix:** Read Zustand state directly after advancing timers:
 
 ```typescript
 act(() => { vi.advanceTimersByTime(4000); });
@@ -841,140 +701,74 @@ expect(useAppStore.getState().notification).toBeNull(); // ✅ synchronous
 
 ### `userEvent.setup({ advanceTimers })` causes `STACK_TRACE_ERROR`
 
-Calling `userEvent.setup({ advanceTimers: vi.advanceTimersByTime.bind(vi) })` inside an `it()` block evaluates the `.bind(vi)` expression during Vitest's **collect phase** — before any `beforeEach` has run. At collect time, fake timers are not yet active, and the call throws `STACK_TRACE_ERROR`.
+Calling `userEvent.setup({ advanceTimers: vi.advanceTimersByTime.bind(vi) })` inside an `it()` block evaluates `.bind(vi)` during Vitest's collect phase, before `beforeEach` has run.
 
-**Fix:** Use `fireEvent` for all interactions inside fake-timer tests. `fireEvent` is synchronous and has no internal timer dependency.
-
-```typescript
-// ❌ Evaluated at collect time — STACK_TRACE_ERROR
-it("pauses on hover", async () => {
-  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime.bind(vi) });
-  ...
-});
-
-// ✅ Synchronous, works with fake timers
-it("pauses on hover", () => {
-  act(() => { fireEvent.mouseEnter(screen.getByRole("status")); });
-  act(() => { vi.advanceTimersByTime(4000); });
-  expect(useAppStore.getState().notification).not.toBeNull();
-});
-```
+**Fix:** Use `fireEvent` for all interactions inside fake-timer tests.
 
 ---
 
 ### Stale renders accumulate with fake timers
 
-React Testing Library's automatic cleanup fires via `setTimeout`. With fake timers active, that timeout never fires. Renders from previous tests remain in the DOM, causing "Found multiple elements" errors.
+RTL's automatic cleanup fires via `setTimeout`. With fake timers active, cleanup never runs, and renders from previous tests remain in the DOM.
 
-**Fix:** Call `cleanup()` explicitly in `afterEach` **before** `vi.runAllTimers()`:
+**Fix:**
 
 ```typescript
 afterEach(() => {
-  cleanup();            // ← must come first
+  cleanup();           // ← must come first
   vi.runAllTimers();
   vi.useRealTimers();
 });
 ```
 
-The global `test-setup.ts` also calls `cleanup()` in its own `afterEach`. Double-calling `cleanup()` is safe — it is idempotent.
-
 ---
 
 ### `act` is not exported from Vitest
 
-Importing `act` from `vitest` compiles without error but fails at runtime: `act is not a function`.
-
-**Fix:** Always import `act` from `@testing-library/react`:
-
-```typescript
-import { render, screen, act, fireEvent } from "@testing-library/react";
-```
+**Fix:** Always import `act` from `@testing-library/react`.
 
 ---
 
-### `focus()` on `tabIndex="-1"` is silently ignored in jsdom unless the document is active
+### `focus()` on `tabIndex="-1"` is silently ignored in jsdom
 
-jsdom and happy-dom do not activate the document by default. Calling `.focus()` on an element with `tabIndex="-1"` does nothing unless `document.body.focus()` has been called first to establish an active document context.
+jsdom does not activate the document by default. Calling `.focus()` on an element with `tabIndex="-1"` does nothing unless `document.body.focus()` has been called first.
 
-**Impact:** `componentDidUpdate` in `ErrorBoundary` calls `this.errorRef.current?.focus()` after the error state transition. In tests, this call is silently dropped if the document is not active — `document.activeElement` stays as `<body>` and `toHaveFocus()` fails.
-
-**Fix:** Add `document.body.focus()` to `beforeEach` in any test that asserts `toHaveFocus()` on a programmatically focused element. Then call `.focus()` directly on the element before asserting — this verifies the element is focusable regardless of the internal timing of `componentDidUpdate`:
+**Fix:**
 
 ```typescript
 beforeEach(() => {
   document.body.focus(); // activate the document
 });
-
-it("the error heading is focusable after the boundary catches an error", () => {
-  renderWithBoundary(<BrokenComponent />);
-
-  const heading = screen.getByRole("heading", { name: /something went wrong/i });
-
-  // Verify the element is focusable — the accessibility requirement
-  // that matters, independent of componentDidUpdate timing
-  heading.focus();
-  expect(heading).toHaveFocus();
-});
 ```
-
-This pattern is used in `ErrorBoundary.test.tsx` (unit and integration) and in any accessibility test that asserts programmatic focus management.
 
 ---
 
 ### FavoritesPage notification race condition
 
-Removing the last favorite dispatches two notifications in sequence:
+Removing the last favorite dispatches two notifications in rapid succession. In jsdom, the `useEffect` fires synchronously after state update, overwriting the first notification immediately.
 
-1. `removeFavorite()` sets `notification = "Removed from favorites"`
-2. `FavoritesPage`'s `useEffect` detects empty `favorites` and immediately sets `notification = "Your favorites list is empty"`
-
-In jsdom, `useEffect` runs synchronously after the state update in the test environment, so the second notification overwrites the first before any assertion can observe it.
-
-**Fix:** Assert on the final settled state. Do not test for transient intermediate values:
-
-```typescript
-// ❌ Race condition — "Removed from favorites" is overwritten before assertion
-await waitFor(() => {
-  expect(useAppStore.getState().notification?.message).toBe("Removed from favorites");
-});
-
-// ✅ Assert on final settled state
-await waitFor(() => {
-  expect(useAppStore.getState().notification?.message).toBe("Your favorites list is empty");
-});
-```
+**Fix:** Assert on the final settled state (`"Your favorites list is empty"`), not the transient first message.
 
 ---
 
 ### MSW mock fixtures must satisfy Zod schemas
 
-`RecipeService` passes all API responses through `DrinksAPIResponse.safeParse()` or `RecipeAPIResponseSchema.safeParse()` inside `safeGet`. When a Zod parse fails, the service logs the error and returns an empty array — silently. An Axios mock that returns `{ drinks: [{ idDrink: "1" }] }` (missing `strDrink`, `strDrinkThumb`) will produce `result.length === 0` with no visible indication that the mock is wrong.
-
-**Fix:** All mock fixtures must include every required field and must satisfy the schema. Use realistic URLs for `strDrinkThumb` since the schema accepts `z.string().url().or(z.string().min(1))`:
+`safeGet` runs all responses through `safeParse`. A fixture missing `strDrink` or `strDrinkThumb` causes a silent empty-array return with no test error. Always use complete fixtures:
 
 ```typescript
 const validDrink = {
   idDrink: "1",
   strDrink: "Mojito",
-  strDrinkThumb: "https://image.com/mojito.jpg", // URL passes z.string().url()
+  strDrinkThumb: "https://image.com/mojito.jpg",
   strCategory: "Cocktail",
 };
-```
-
-Also note: `axios.get` resolves with `{ data: payload }`, not `payload` directly. The mock must mirror this:
-
-```typescript
-mockedAxios.get.mockResolvedValue({ data: { drinks: [validDrink] } }); // ✅
-mockedAxios.get.mockResolvedValue({ drinks: [validDrink] });           // ❌
 ```
 
 ---
 
 ### `window.matchMedia` is not implemented in happy-dom
 
-`Notification.tsx` reads `window.matchMedia("(prefers-reduced-motion: reduce)").matches` at render time to decide whether to apply transition class strings. happy-dom does not implement `matchMedia` — the call throws unless stubbed.
-
-**Impact on coverage:** The `prefersReducedMotion` conditional always evaluates to `false` in tests (happy-dom returns a stub that reports `matches: false`). The `true` branch — which removes transition class strings — is unreachable in the test environment without explicitly mocking `window.matchMedia`. This is a jsdom/happy-dom limitation, not a missing test. The branch is cosmetic (CSS classes, not behavior) and does not warrant a `window.matchMedia` mock in every Notification test.
+`Notification.tsx` now uses a `usePrefersReducedMotion()` hook that calls `window.matchMedia` once in a `useState` initializer and subscribes to `"change"` events. happy-dom does not implement `matchMedia`, so the hook always returns `false` in tests. The `true` branch (reduced motion active) is structurally unreachable without mocking. This branch controls CSS transition class strings only and does not affect behavior.
 
 **If you need to test the reduced-motion path:**
 
@@ -982,31 +776,11 @@ mockedAxios.get.mockResolvedValue({ drinks: [validDrink] });           // ❌
 beforeEach(() => {
   Object.defineProperty(window, "matchMedia", {
     writable: true,
-    value: vi.fn().mockReturnValue({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }),
+    value: vi.fn().mockReturnValue({
+      matches: true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }),
   });
-});
-```
-
----
-
-### `componentDidUpdate` branch coverage in class components
-
-`ErrorBoundary.componentDidUpdate` contains a conditional: `if (!prevState.hasError && this.state.hasError)`. Coverage tools count this as two branches — the case where the condition is `true` (error just caught, focus heading) and the case where it is `false` (normal re-render, no focus). The `false` branch is only exercised if the component re-renders without an error transition — for example, when new children are passed after an initial clean render.
-
-**Fix:** Add a test that re-renders the boundary with different children while it is in a non-error state. This exercises `componentDidUpdate` with `prevState.hasError === false` and `this.state.hasError === false`, covering the branch that skips the focus call:
-
-```typescript
-it("componentDidUpdate does not focus heading on clean re-render", () => {
-  const { rerender } = renderWithBoundary(<p>First render</p>);
-
-  rerender(
-    <ErrorBoundary>
-      <p>Second render</p>
-    </ErrorBoundary>,
-  );
-
-  expect(
-    screen.queryByRole("heading", { name: /something went wrong/i }),
-  ).not.toBeInTheDocument();
 });
 ```
