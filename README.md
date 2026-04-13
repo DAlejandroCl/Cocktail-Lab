@@ -11,7 +11,7 @@
 
 Multi-page cocktail recipe application built with **React 19 + TypeScript** and **React Router DOM 7**.
 
-Originally developed as a React course project focused on multi-page routing and Zustand's Slice Pattern, the application progressively evolved to incorporate a fully custom design system, modular component architecture, runtime API validation with Zod, client-side sorting, an animated hero section, an AI-powered recipe generator powered by Groq + Llama 3.3, and a comprehensive multi-layer testing strategy (702 tests across 5 stages).
+Originally developed as a React course project focused on multi-page routing and Zustand's Slice Pattern, the application progressively evolved to incorporate a fully custom design system, modular component architecture, runtime API validation with Zod, client-side sorting, an animated hero section, an AI-powered recipe generator powered by Groq + Llama 3.3, and a comprehensive multi-layer testing strategy (1003 tests across 5 stages).
 
 The app consumes the public [TheCocktailDB API](https://www.thecocktaildb.com/api.php) for recipe browsing and the [Groq API](https://console.groq.com) for AI recipe generation.
 
@@ -85,8 +85,10 @@ The app consumes the public [TheCocktailDB API](https://www.thecocktaildb.com/ap
 - Responsive layout — mobile-first, tested across all breakpoints and 5 browser engines
 - Skeleton loading states (20 placeholders during initial fetch)
 - Global notification toasts with auto-dismiss and hover-pause
+- `prefers-reduced-motion` support — reactive hook that responds to OS preference changes mid-session
 - Accessible semantic markup targeting **WCAG 2.1 AA**
-- `prefers-reduced-motion` support — all CSS animations opt out cleanly
+- `<Suspense>` fallback spinner on all lazy-loaded routes — no blank screens during navigation
+- 404 page with branded design for any unknown URL
 
 ---
 
@@ -100,7 +102,7 @@ The app consumes the public [TheCocktailDB API](https://www.thecocktaildb.com/ap
 | 🗂 **React Router DOM** | Multi-page routing with lazy loading | 7.12 |
 | 🧠 **Zustand** | Global state — Slice Pattern | 5.0 |
 | 💾 **Zustand Persist** | Favorites + AI creations persistence | — |
-| 🌐 **Axios** | HTTP client for TheCocktailDB API calls | 1.13 |
+| 🌐 **fetch** | Native HTTP client for TheCocktailDB API | built-in |
 | 🛡 **Zod** | Runtime API response validation | 4.3 |
 | 🤖 **Groq SDK** | AI recipe generation (llama-3.3-70b) | 1.1 |
 | 🎨 **Tailwind CSS v4** | Utility-first styling + `@layer components` | 4.1 |
@@ -132,12 +134,12 @@ GenerateAI view → generateAISlice → /api/ai/generate-recipe (Vercel Function
                                     TheCocktailDB image lookup
 ```
 
-- **Views** — Route-level pages (`IndexPage`, `FavoritesPage`, `GenerateAI`)
-- **Components** — Reusable UI (`HeroSection`, `SearchForm`, `SortSelector`, `DrinkCard`, `Header`, `Modal`, …)
+- **Views** — Route-level pages (`IndexPage`, `FavoritesPage`, `GenerateAI`, `NotFoundPage`)
+- **Components** — Reusable UI (`HeroSection`, `SearchForm`, `SortSelector`, `DrinkCard`, `GeneratedRecipeCard`, `Header`, `Modal`, …)
 - **Store** — Zustand slices: `recipeSlice`, `favoritesSlice`, `notificationSlice`, `generateAISlice`, `useThemeStore`
 - **Selectors** — Centralized typed derived-state functions (prevents unnecessary re-renders)
 - **Sort utilities** — Pure functions in `utils/sortRecipes.ts`, applied at render time via `useMemo`
-- **Services** — Axios HTTP calls with Zod-validated responses
+- **Services** — Native `fetch` HTTP calls with Zod-validated responses
 - **Schemas** — Zod runtime contracts for all TheCocktailDB API responses
 - **Domain types** — TypeScript types inferred from Zod schemas via `z.infer<>`, always in sync
 - **API** — Vercel Serverless Function (`api/ai/generate-recipe.ts`) using Groq SDK natively
@@ -150,12 +152,12 @@ GenerateAI view → generateAISlice → /api/ai/generate-recipe (Vercel Function
 
 | Layer | Tool | Tests |
 |-------|------|:-----:|
-| **Unit — Stores** | Vitest | 44 |
-| **Unit — Components, Services & Utils** | Vitest + Testing Library | 102 |
-| **Accessibility** | Vitest + jest-axe | 87 |
-| **Integration** | Vitest + MSW | 129 |
-| **E2E** | Playwright (5 browsers) | 340 |
-| **Total** | | **702** |
+| **Unit — Stores** | Vitest | 104 |
+| **Unit — Components, Services & Utils** | Vitest + Testing Library | 172 |
+| **Accessibility** | Vitest + jest-axe | 82 |
+| **Integration** | Vitest + MSW | 145 |
+| **E2E** | Playwright (5 browsers) | 500 |
+| **Total** | | **1003** |
 
 📄 Full strategy → [`docs/testing-strategy.md`](docs/testing-strategy.md)
 
@@ -165,11 +167,12 @@ GenerateAI view → generateAISlice → /api/ai/generate-recipe (Vercel Function
 
 ```
 src/
-├── components/    # Header, HeroSection, SearchForm, SortSelector, DrinkCard, Modal, …
+├── components/    # Header, HeroSection, SearchForm, SortSelector, DrinkCard,
+│                  # GeneratedRecipeCard, Modal, Notification, …
 ├── layouts/       # Layout.tsx (root shell: Header + Modal + Notification + ErrorBoundary)
-├── views/         # IndexPage, FavoritesPage, GenerateAI
+├── views/         # IndexPage, FavoritesPage, GenerateAI, NotFoundPage
 ├── stores/        # Zustand slices + selectors + theme store
-├── services/      # recipeService.ts (Axios + Zod)
+├── services/      # recipeService.ts (native fetch + Zod)
 ├── utils/         # recipes-schemas.ts · sortRecipes.ts
 ├── types/         # Domain types (inferred from Zod)
 └── index.css      # Tailwind v4 @theme + @layer components design system
@@ -242,6 +245,8 @@ The AI Generator uses the [Groq API](https://console.groq.com) via a Vercel Serv
 ```
 POST /api/ai/generate-recipe
 Body: { "ingredients": ["Vodka", "Lime juice", "Mint"] }
+
+Validation: 1–15 ingredients, each string under 100 characters
 
 Flow:
   1. Groq SDK → llama-3.3-70b-versatile (json_object response format)
