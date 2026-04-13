@@ -1,5 +1,6 @@
 import type { GeneratedRecipe } from "../stores/generateAISlice";
 
+/* ─────────────────────────────────────────────────────────────
    INGREDIENT ROW
 ───────────────────────────────────────────────────────────── */
 
@@ -46,7 +47,7 @@ function StepRow({ step, index }: { step: string; index: number }) {
    GENERATED RECIPE CARD
 ───────────────────────────────────────────────────────────── */
 
-interface GeneratedRecipeCardProps {
+export interface GeneratedRecipeCardProps {
   recipe: GeneratedRecipe;
   isSaved: boolean;
   onSaveCreation: () => void;
@@ -200,5 +201,3 @@ export default function GeneratedRecipeCard({
     </article>
   );
 }
-
-/* ─────────────────────────────────────────────────────────────
