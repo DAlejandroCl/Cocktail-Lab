@@ -1,24 +1,24 @@
 # 📋 Testing Strategy — Quick Reference
 
-> **702 tests · 5 stages · all passing · CI green ✅**  
+> **1003 tests · 5 stages · all passing · CI green ✅**  
 > Full details → [`docs/testing-strategy.md`](testing-strategy.md)
 
 ---
 
 ## Suite at a Glance
 
-| Stage | Tool | Files | Tests | Duration |
-|-------|------|:-----:|:-----:|:--------:|
-| Unit — Stores | Vitest | 6 | 44 | ~2.6s |
-| Unit — Components, Services & Utils | Vitest + Testing Library | 13 | 162 | ~6.9s |
-| Accessibility | Vitest + jest-axe | 9 | 82 | ~6.2s |
-| Integration | Vitest + MSW | 8 | 145 | ~7.1s |
-| E2E | Playwright (5 browsers) | 4 | 269 | ~13m45s |
-| **Total** | | **40** | **702** | **~14m** |
+| Stage | Tool | Files | Tests |
+|-------|------|:-----:|:-----:|
+| Unit — Stores | Vitest | 6 | 104 |
+| Unit — Components, Services & Utils | Vitest + Testing Library | 15 | 172 |
+| Accessibility | Vitest + jest-axe | 9 | 82 |
+| Integration | Vitest + MSW | 8 | 145 |
+| E2E | Playwright (5 browsers) | 4 | 500 |
+| **Total** | | **42** | **1003** |
 
 ```bash
-npm run test:all   # runs all 5 stages in sequence, prints this table
-npm run test:ci    # same but with --bail (stops on first failure)
+npm run test:all   # all 5 stages in sequence
+npm run test:ci    # same with --bail
 ```
 
 ---
@@ -39,63 +39,53 @@ npm run test:ci    # same but with --bail (stops on first failure)
 
 | Layer | What is mocked | How |
 |-------|---------------|-----|
-| Unit — Stores | Service layer (recipeService) | `vi.mock('@/services/recipeService')` |
-| Unit — Components | Zustand store | `vi.mock('@/stores/useAppStore')` |
-| Accessibility | Zustand store (real state via `setState`) | `useAppStore.setState(...)` |
-| Integration | HTTP (TheCocktailDB + AI API) | MSW `server.use(http.post(...))` |
-| E2E | HTTP (page-level route interception) | `page.route('**/api/**', ...)` |
+| Unit — Stores | Nothing | Pure vanilla store |
+| Unit — Services | `fetch` | `vi.spyOn(globalThis, "fetch")` + `vi.restoreAllMocks()` |
+| Unit — Components | `useAppStore` | `vi.mock` + selector intercept |
+| Accessibility | `useAppStore` (where needed) | Same as above |
+| Integration | HTTP requests | MSW `setupServer` |
+| E2E | HTTP requests (browser) | `page.route()` with RegExp |
 
 ---
 
 ## Layer Summary
 
 ### Unit — Stores
-Tests each Zustand slice in isolation using `createStore` from `zustand/vanilla`. Verifies all actions, initial state, and edge cases. `selectors.test.ts` uses `mockState satisfies AppState` for compile-time type coverage.
+Tests each Zustand slice in isolation via `createStore` from `zustand/vanilla`. Covers all actions, initial state, and error paths. `selectors.test.ts` uses `mockState satisfies AppState` for compile-time type coverage.
+
+**Slices:** `favoritesSlice`, `generateAISlice`, `notificationSlice`, `recipeSlice`, `selectors`, `useThemeStore`
 
 ### Unit — Components
-`vi.mock('@/stores/useAppStore')` returns a selector-based mock. Tests assert visible output and accessible behavior (role queries, aria attributes). No CSS or className assertions.
+`vi.mock("@/stores/useAppStore")` + selector intercept pattern. Tests assert visible output and accessible behavior only. No CSS or className assertions. Use `favorites: { [id]: recipe }` to control favorite state — `isFavorite` no longer exists on `AppState`.
+
+**Components:** `DrinkCard`, `ErrorBoundary`, `Header`, `HeroSection`, `Modal`, `Notification`, `SearchForm`, `SkeletonDrinkCard`, `SortSelector`, `ThemeToggle`, `Layout`
 
 ### Accessibility
-`jest-axe` audits run on every component and full page. Catches: missing labels, heading hierarchy violations, invalid ARIA, contrast issues. FavoritesPage tests verify `h2 My Favorites → h3 My Creations → h3 DrinkCard` heading order.
+`jest-axe` audits on every component and full page. Catches: missing labels, heading hierarchy violations, invalid ARIA. `FavoritesPage` enforces `h2 My Favorites → h3 My Creations → h3 card titles`.
 
 ### Integration
-MSW intercepts all HTTP. Real Zustand store (reset in `beforeEach`). Tests full user flows: search → results → open modal → add to favorites → notification appears.
+Real Zustand store (reset in `beforeEach`). MSW intercepts all HTTP. Tests full user flows including the AI Generator: add ingredients → generate → save creation → verify in store.
 
-**AI Generator integration tests:**
-- `shows 'Save Creation' and 'Re-craft Recipe' buttons after generation`
-- `saves the recipe to favorites via the store directly after generation`
-- `saves the recipe to My Creations and disables the button`
+**Files:** `ErrorBoundary`, `FavoritesFlow`, `FavoritesPage`, `GenerateAI`, `Header`, `IndexPage`, `Modal`, `Notification`
 
 ### E2E (Playwright)
-5 browser engines: Chromium, Firefox, WebKit, Mobile Chrome, Mobile Safari. 1 retry on CI. Page Object Models in `tests/e2e/pages/`. API mocked via `page.route()` with `AI_RECIPE_RESPONSE` fixture.
+5 browser engines: Chromium, Firefox, WebKit, Mobile Chrome (Pixel 5), Mobile Safari (iPhone 13). 1 retry on CI. Page Object Models in `tests/e2e/pages/`. API mocked via `page.route()`.
 
-**Key E2E flows:**
-- Full ingredient → generate → save creation → navigate to Favorites → card visible
-- Search by ingredient/category → results → open modal → add/remove favorite
-- Keyboard navigation through the AI ingredient autocomplete
-- Modal focus trap and Escape close behavior
+**Specs:** `navigation`, `search-flow`, `browse-and-favorite`, `ai-generator`
 
 ---
 
 ## Running the Suite
 
 ```bash
-# All stages
-npm run test:all
-
-# Individual stages
+npm run test:all          # all stages
 npm run test:unit         # stores + components + services + utils
 npm run test:a11y         # accessibility audits
 npm run test:integration  # integration with MSW
 npm run test:e2e          # Playwright (5 browsers)
-
-# Development
 npm run test              # Vitest watch mode
 npm run test:e2e:ui       # Playwright interactive UI
-npm run test:e2e:debug    # Playwright debug mode
-
-# Coverage
-npm run test:coverage
+npm run test:coverage     # coverage report
 ```
 
 ---
@@ -109,15 +99,19 @@ npm run test:coverage
 | React component behavior | `tests/unit/components/{Component}.test.tsx` |
 | Component accessibility | `tests/accessibility/{Component}.a11y.test.tsx` |
 | Multi-component user flow | `tests/integration/{Feature}.test.tsx` |
-| New E2E user journey | `tests/e2e/{feature}.spec.ts` (+ page object if needed) |
-| New page object locator | `tests/e2e/pages/{Page}.ts` |
+| New E2E user journey | `tests/e2e/{feature}.spec.ts` + page object if needed |
 
 ---
 
 ## Key Invariants
 
-- `selectors.test.ts` `mockState` must satisfy `AppState` — any new action added to a slice must be added here too
-- Error messages in `generateAISlice.ts` are user-friendly strings — tests assert exact strings, not raw error messages
-- `FavoritesPage` heading hierarchy: `h2` → `h3` — axe tests enforce this
-- `drinkCards` locator in `FavoritesPage.ts` must match both `drink-title-*` AND `creation-title-*` articles
-- `expectResultsVisible()` in `HomePage.ts` uses `{ timeout: 10_000 }` to prevent Firefox flakiness
+These contracts must be maintained when changing production code:
+
+| Invariant | Where enforced |
+|-----------|---------------|
+| `selectors.test.ts` `mockState` must `satisfies AppState` — any new slice action must be added here | `selectors.test.ts` compile-time |
+| `generateAISlice` error messages are exact strings — tests assert `toBe(...)` not `toMatch(...)` | `generateAISlice.test.ts` |
+| `FavoritesPage` heading order: `h2` (My Favorites) → `h3` (My Creations) | `FavoritesPage.a11y.test.tsx` |
+| `drinkCards` E2E locator matches both `drink-title-*` AND `creation-title-*` articles | `tests/e2e/pages/FavoritesPage.ts` |
+| `expectResultsVisible()` uses `{ timeout: 10_000 }` (Firefox flakiness fix) | `tests/e2e/pages/HomePage.ts` |
+| `isFavorite` does not exist on `AppState` — use `favorites: { [id]: recipe }` in mocks | All component/integration test mocks |
