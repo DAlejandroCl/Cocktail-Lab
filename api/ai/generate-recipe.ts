@@ -151,12 +151,45 @@ Return ONLY the JSON object.`;
 
 // ─── Groq API Call using object mode ──────────────────────────────
 
-async function callGroq(ingredients: string[], attempt = 0): Promise<RecipeOutput> {
-  const userPrompt =
-    `A customer has these ingredients available:\n\n` +
-    `${ingredients.join(", ")}\n\n` +
-    `Create a balanced, professional, and original cocktail recipe following ALL rules.\n` +
-    `Return ONLY the JSON object — no markdown, no backticks, no extra text.`;
+async function callGroq(ingredients: string[], attempt = 0, previousRecipe: Record<string, unknown> | null = null): Promise<RecipeOutput> {
+  let userPrompt: string;
+
+  if (previousRecipe) {
+    const prevIngredients: string[] = [];
+    for (let n = 1; n <= 15; n++) {
+      const ing = previousRecipe[`strIngredient${n}`];
+      const msr = previousRecipe[`strMeasure${n}`];
+      if (typeof ing === "string" && ing.trim()) {
+        prevIngredients.push(
+          typeof msr === "string" && msr.trim() ? `${ing} (${msr.trim()})` : ing,
+        );
+      }
+    }
+    const prevName = typeof previousRecipe.strDrink === "string" ? previousRecipe.strDrink : "the previous cocktail";
+    const prevInstructions = typeof previousRecipe.strInstructions === "string"
+      ? previousRecipe.strInstructions.slice(0, 300)
+      : "";
+
+    userPrompt =
+      `A customer wants a variation of their previous cocktail.\n\n` +
+      `PREVIOUS RECIPE — "${prevName}":\n` +
+      `Ingredients: ${prevIngredients.join(", ")}\n` +
+      (prevInstructions ? `Technique summary: ${prevInstructions}\n` : "") +
+      `\nCUSTOMER'S AVAILABLE INGREDIENTS: ${ingredients.join(", ")}\n\n` +
+      `CREATE A VARIATION following ALL rules AND these extra directives:\n` +
+      `- Use the same base spirit(s) from the customer's list BUT build a distinctly different flavour profile.\n` +
+      `- Add AT LEAST ONE new balancing ingredient not in the previous recipe (e.g. a different acid, bitter, or sweetener).\n` +
+      `- Change the technique (shaken → stirred, or vice versa; consider dry shake if egg white is present).\n` +
+      `- Adjust measures: if the previous recipe had a dominant spirit, shift balance toward acid or bitter.\n` +
+      `- Invent a completely different name — never reuse or rephrase the previous name.\n` +
+      `Return ONLY the JSON object — no markdown, no backticks, no extra text.`;
+  } else {
+    userPrompt =
+      `A customer has these ingredients available:\n\n` +
+      `${ingredients.join(", ")}\n\n` +
+      `Create a balanced, professional, and original cocktail recipe following ALL rules.\n` +
+      `Return ONLY the JSON object — no markdown, no backticks, no extra text.`;
+  }
 
   let rawContent = "";
 
@@ -217,7 +250,7 @@ async function callGroq(ingredients: string[], attempt = 0): Promise<RecipeOutpu
       const backoff = 1500 * Math.pow(2, attempt);
       console.warn(`[generate-recipe] Rate limited — retrying in ${backoff}ms`);
       await new Promise((r) => setTimeout(r, backoff));
-      return callGroq(ingredients, attempt + 1);
+      return callGroq(ingredients, attempt + 1, previousRecipe);
     }
 
     if (
@@ -227,7 +260,7 @@ async function callGroq(ingredients: string[], attempt = 0): Promise<RecipeOutpu
     ) {
       if (attempt < 1) {
         console.warn("[generate-recipe] Parse/validation error — retrying once");
-        return callGroq(ingredients, attempt + 1);
+        return callGroq(ingredients, attempt + 1, previousRecipe);
       }
     }
 
@@ -306,7 +339,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: "Server misconfiguration" });
   }
 
-  const { ingredients } = (req.body ?? {}) as { ingredients?: unknown };
+  const body = (req.body ?? {}) as { ingredients?: unknown; previousRecipe?: unknown };
+  const { ingredients, previousRecipe } = body;
 
   if (
     !Array.isArray(ingredients) ||
@@ -323,8 +357,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const sanitized = (ingredients as string[]).map((i) => i.trim());
 
+  const prev = (previousRecipe && typeof previousRecipe === "object")
+    ? previousRecipe as Record<string, unknown>
+    : null;
+
   try {
-    const recipe = await callGroq(sanitized);
+    const recipe = await callGroq(sanitized, 0, prev);
     const strDrinkThumb = await resolveImageFromCocktailDB(recipe.imageSlug);
 
     const payload: AIRecipeResponse = {
