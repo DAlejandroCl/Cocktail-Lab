@@ -49,6 +49,7 @@ export const selectAddIngredient        = (s: AppState) => s.addIngredient;
 export const selectRemoveIngredient     = (s: AppState) => s.removeIngredient;
 export const selectClearIngredients     = (s: AppState) => s.clearIngredients;
 export const selectGenerateRecipe       = (s: AppState) => s.generateRecipe;
+export const selectReCraftRecipe        = (s: AppState) => s.reCraftRecipe;
 export const selectClearGeneratedRecipe = (s: AppState) => s.clearGeneratedRecipe;
 export const selectSaveAiRecipe         = (s: AppState) => s.saveAiRecipe;
 export const selectRemoveAiRecipe       = (s: AppState) => s.removeAiRecipe;

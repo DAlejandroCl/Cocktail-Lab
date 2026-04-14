@@ -21,6 +21,7 @@ export interface AiRecipeSliceType {
   removeIngredient: (ingredient: string) => void;
   clearIngredients: () => void;
   generateRecipe: () => Promise<void>;
+  reCraftRecipe: () => Promise<void>;
   clearGeneratedRecipe: () => void;
   saveAiRecipe: (recipe: GeneratedRecipe) => void;
   removeAiRecipe: (recipeId: string) => void;
@@ -93,11 +94,14 @@ function mapToGeneratedRecipe(
 
 // ─── API call ─────────────────────────────────────────────────────────────────
 
-async function callAIRecipeAPI(ingredients: string[]): Promise<GeneratedRecipe> {
+async function callAIRecipeAPI(ingredients: string[], previousRecipe?: GeneratedRecipe): Promise<GeneratedRecipe> {
   const response = await fetch("/api/ai/generate-recipe", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ingredients }),
+    body: JSON.stringify({
+      ingredients,
+      ...(previousRecipe ? { previousRecipe } : {}),
+    }),
   });
 
   if (!response.ok) {
@@ -126,7 +130,7 @@ export const createGenerateAISlice: StateCreator<
   addIngredient: (ingredient) => {
     const { aiIngredients } = get();
     const normalized = ingredient.trim().toLowerCase();
-    if (!normalized || aiIngredients.some((i) => i.toLowerCase() === normalized)) return;
+    if (!normalized || aiIngredients.map((i) => i.toLowerCase()).includes(normalized)) return;
     set({ aiIngredients: [...aiIngredients, ingredient.trim()] }, false, "ai/addIngredient");
   },
 
@@ -153,6 +157,24 @@ export const createGenerateAISlice: StateCreator<
         ? "Network error. Check your connection and try again."
         : "Failed to generate recipe. Please try again.";
       set({ generationError: userMessage, isGenerating: false }, false, "ai/generateRecipe/error");
+    }
+  },
+
+  reCraftRecipe: async () => {
+    const { aiIngredients, isGenerating, generatedRecipe } = get();
+    if (aiIngredients.length === 0 || isGenerating) return;
+
+    set({ isGenerating: true, generationError: null, generatedRecipe: null }, false, "ai/reCraftRecipe/start");
+
+    try {
+      const recipe = await callAIRecipeAPI(aiIngredients, generatedRecipe ?? undefined);
+      set({ generatedRecipe: recipe, isGenerating: false }, false, "ai/reCraftRecipe/success");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unexpected error";
+      const userMessage = message.toLowerCase().includes("network")
+        ? "Network error. Check your connection and try again."
+        : "Failed to generate recipe. Please try again.";
+      set({ generationError: userMessage, isGenerating: false }, false, "ai/reCraftRecipe/error");
     }
   },
 
