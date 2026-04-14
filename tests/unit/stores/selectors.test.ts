@@ -112,6 +112,7 @@ const mockState = {
   favoriteOrder:  { "1": 1700000000000 },
   addFavorite:    vi.fn(),
   removeFavorite: vi.fn(),
+  isFavorite:     vi.fn((id: string) => id === "1"),
 
   /* ── NotificationSlice ── */
   notification: { message: "Saved successfully", type: "success" as const },
@@ -132,6 +133,7 @@ const mockState = {
   clearGeneratedRecipe: vi.fn(),
   saveAiRecipe:         vi.fn(),
   removeAiRecipe:       vi.fn(),
+  reCraftRecipe:        vi.fn(),
 } satisfies AppState;
 
 /* ================================================== */
