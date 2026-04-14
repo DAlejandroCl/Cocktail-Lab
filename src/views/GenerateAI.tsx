@@ -21,7 +21,6 @@ import {
   selectIsAiRecipeSaved,
   selectSetNotification,
 } from "../stores/selectors";
-import type { GeneratedRecipe } from "../stores/generateAISlice";
 import GeneratedRecipeCard from "../components/GeneratedRecipeCard";
 
 /* ─────────────────────────────────────────────────────────────
