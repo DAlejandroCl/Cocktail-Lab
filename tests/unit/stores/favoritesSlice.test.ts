@@ -101,16 +101,16 @@ describe("favoritesSlice", () => {
 
   it("isFavorite returns true when the recipe is saved", () => {
     store.getState().addFavorite(mockRecipe("1"));
-    expect(store.getState().isFavorite("1")).toBe(true);
+    expect(!!store.getState().favorites["1"]).toBe(true);
   });
 
   it("isFavorite returns false when the recipe is not saved", () => {
-    expect(store.getState().isFavorite("999")).toBe(false);
+    expect(!!store.getState().favorites["999"]).toBe(false);
   });
 
   it("isFavorite returns false after removing a previously added recipe", () => {
     store.getState().addFavorite(mockRecipe("1"));
     store.getState().removeFavorite("1");
-    expect(store.getState().isFavorite("1")).toBe(false);
+    expect(!!store.getState().favorites["1"]).toBe(false);
   });
 });

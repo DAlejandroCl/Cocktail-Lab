@@ -82,12 +82,6 @@ function setupStore(overrides?: Partial<AppState>) {
     removeFavorite: mockRemoveFavorite,
     setNotification: mockSetNotification,
     favorites: {},
-    // selectIsFavorite = (id) => (state) => !!state.favorites[id]
-    // The mock intercepts the full selector call, so it reads baseState.favorites.
-    // isFavorite is still required here to satisfy the AppState type shape.
-    isFavorite: (id: string) => Boolean(
-      ({ ...baseState, ...overrides } as AppState).favorites?.[id],
-    ),
   };
 
   mockedUseAppStore.mockImplementation(

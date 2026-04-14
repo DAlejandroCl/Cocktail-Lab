@@ -406,11 +406,11 @@ describe("Favorites Flow — Integration", () => {
     it("isFavorite selector returns true for a saved drink", () => {
       seedFavorite(mockRecipeDetail);
 
-      expect(useAppStore.getState().isFavorite("1")).toBe(true);
+      expect(!!useAppStore.getState().favorites["1"]).toBe(true);
     });
 
     it("isFavorite selector returns false for a drink not in favorites", () => {
-      expect(useAppStore.getState().isFavorite("999")).toBe(false);
+      expect(!!useAppStore.getState().favorites["999"]).toBe(false);
     });
   });
 });

@@ -77,11 +77,6 @@ function setupStore(overrides?: Partial<AppState>) {
     removeFavorite: mockRemoveFavorite,
     setNotification: mockSetNotification,
     favorites: {},
-    // isFavorite is required by AppState; selectIsFavorite reads state.favorites
-    // directly, so the favorites override drives the actual boolean value.
-    isFavorite: (id: string) => Boolean(
-      ({ ...baseState, ...overrides } as AppState).favorites?.[id],
-    ),
   };
 
   mockedUseAppStore.mockImplementation(
