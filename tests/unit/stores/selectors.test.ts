@@ -19,6 +19,7 @@ import {
   selectSetNotification,
   selectClearNotification,
   selectHasSearched,
+  // AI selectors
   selectAiIngredients,
   selectGeneratedRecipe,
   selectIsGenerating,
@@ -31,6 +32,7 @@ import {
   selectClearGeneratedRecipe,
   selectSaveAiRecipe,
   selectRemoveAiRecipe,
+  selectReCraftRecipe,
   selectIsAiRecipeSaved,
 } from "@/stores/selectors";
 import { makeGeneratedRecipe } from "../../mocks/factories";
@@ -112,7 +114,6 @@ const mockState = {
   favoriteOrder:  { "1": 1700000000000 },
   addFavorite:    vi.fn(),
   removeFavorite: vi.fn(),
-  isFavorite:     vi.fn((id: string) => id === "1"),
 
   /* ── NotificationSlice ── */
   notification: { message: "Saved successfully", type: "success" as const },
@@ -252,6 +253,10 @@ describe("Selectors", () => {
 
   it("selectGenerateRecipe returns generateRecipe function", () => {
     expect(selectGenerateRecipe(mockState)).toBe(mockState.generateRecipe);
+  });
+
+  it("selectReCraftRecipe returns reCraftRecipe function", () => {
+    expect(selectReCraftRecipe(mockState)).toBe(mockState.reCraftRecipe);
   });
 
   it("selectClearGeneratedRecipe returns clearGeneratedRecipe function", () => {
