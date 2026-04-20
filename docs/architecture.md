@@ -29,7 +29,7 @@ Cocktail Lab follows a **modular, layered architecture** designed to keep respon
 │          ▼               ▼               ▼          │
 │   ┌─────────────┐  ┌──────────┐  ┌───────────────┐  │
 │   │  Selectors  │  │  Store   │  │   Services    │  │
-│   │  (derived   │  │ (Zustand │  │  (Axios+Zod)  │  │
+│   │  (derived   │  │ (Zustand │  │ (fetch+Zod)   │  │
 │   │   state)    │  │  Slices) │  └───────┬───────┘  │
 │   └─────────────┘  └──────────┘          │          │
 │                                   ┌──────▼──────┐   │
@@ -129,10 +129,11 @@ Volatile state (`isLoading`, `generatedRecipe`, `isGenerating`, etc.) is intenti
 
 **`generateAISlice` — key behaviors:**
 
-- `generateRecipe()` — calls `POST /api/ai/generate-recipe` with the current `aiIngredients`, maps the response to a `GeneratedRecipe` shape
+- `generateRecipe()` — calls `POST /api/ai/generate-recipe` with the current `aiIngredients`, maps the response to a `GeneratedRecipe` shape. Clears the previous recipe before fetching.
+- `reCraftRecipe()` — same as `generateRecipe()` but captures the current `generatedRecipe` from state before clearing, then passes it as `previousRecipe` context to the API. The endpoint uses this to build a conscious variation: different flavour profile, at least one new balancing ingredient, adjusted technique and measures, completely new name.
 - `saveAiRecipe(recipe)` — prepends to `aiRecipes[]` (persisted). No duplicates (checked by `idDrink`)
 - `removeAiRecipe(recipeId)` — removes from `aiRecipes[]`
-- `generateRecipe` maps raw API ingredients to `strIngredient1..N` / `strMeasure1..N` fields so `GeneratedRecipe` extends `RecipeDetail` directly and can be used anywhere `RecipeDetail` is expected
+- `generateRecipe` and `reCraftRecipe` both map raw API ingredients to `strIngredient1..N` / `strMeasure1..N` fields so `GeneratedRecipe` extends `RecipeDetail` directly and can be used anywhere `RecipeDetail` is expected
 
 ### 2.4 Selectors Layer
 
@@ -169,10 +170,11 @@ sortFavorites<T>(drinks: T[], option: SortOptionFavorites, order: FavoriteOrder)
 
 Located in `src/services/recipeService.ts`
 
-Services handle all HTTP communication with TheCocktailDB. They use **Axios** and validate all responses through **Zod schemas**.
+Services handle all HTTP communication with TheCocktailDB. They use the **native `fetch` API** and validate all responses through **Zod schemas**.
 
 **Key functions:**
 
+- `safeGet<T>(url)` — private helper: calls `fetch`, checks `response.ok`, returns parsed JSON or `null` on any error
 - `getCategories()` — `list.php?c=list`, returns `string[]`
 - `getRecipes(filters)` — routes to `searchByName`, `searchByIngredient`, `searchByCategory`, or a combination, deduplicates, optionally enriches with categories
 - `getBrowseRecipes(categories)` — parallel `filter.php?c=` calls per category, cap 12/category, deduplicate, Fisher-Yates shuffle
@@ -268,7 +270,7 @@ User Interaction
       │
       ▼
   Service / API
-  (HTTP call via Axios or fetch)
+  (HTTP call via native fetch)
       │
       ▼
   Zod Schema Validation
@@ -287,12 +289,13 @@ User Interaction
 
 ## 5. Routing Architecture
 
-React Router DOM v7 with **layout-based** structure. `IndexPage` and `FavoritesPage` are lazy-loaded with `React.lazy()`.
+React Router DOM v7 with **layout-based** structure. All four views are lazy-loaded with `React.lazy()` and wrapped in a single `<Suspense fallback={<PageSkeleton />}>` in `router.tsx`.
 
 ```
 /            →  IndexPage      (hero + search + drink grid)
 /favorites   →  FavoritesPage  (My Favorites + My Creations with sort)
 /ai          →  GenerateAI     (AI ingredient list + recipe generator)
+*            →  NotFoundPage   (branded 404 catch-all)
 ```
 
 Recipe detail renders as a `<Modal>` overlay — there is no `/cocktail/:id` route. All routes share `<Layout>` which renders `<Header>`, `<Modal>`, `<Notification>`, and `<ErrorBoundary>`.
@@ -353,7 +356,7 @@ Built on **Tailwind CSS v4** with a custom `@layer components` block. All custom
 
 | Layer | Error Handling |
 |-------|----------------|
-| **Service** | Zod `safeParse` used for validation; Axios errors caught in slice actions |
+| **Service** | Zod `safeParse` used for validation; `fetch` errors caught in slice actions |
 | **Store slice** | try/catch wraps async actions; errors dispatched as user-friendly messages |
 | **AI API function** | Retry logic for 429 + parse errors; `buildFallback()` as last resort |
 | **Notification slice** | Centralized toast queue with auto-dismiss |
@@ -383,3 +386,6 @@ AI-created recipes have IDs like `ai-1234567-abc` that don't exist in TheCocktai
 
 **Why Groq SDK native instead of `@ai-sdk/groq` + `Output.object`?**
 The Vercel AI SDK v6 `Output.object({ schema })` internally sends `response_format: { type: "json_schema" }`, which `llama-3.3-70b-versatile` does not support on Groq (400 error). The native SDK allows `response_format: { type: "json_object" }`, which is supported.
+
+**Why `reCraftRecipe` is a separate action from `generateRecipe`?**
+Re-craft requires passing the previous recipe as context to the API so the model can build a conscious variation. `generateRecipe` is intentionally kept context-free — it is the "blank slate" action for first generation. Separating them avoids conditional logic inside a single action and makes each path independently testable.
