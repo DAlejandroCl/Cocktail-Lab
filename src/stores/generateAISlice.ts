@@ -130,7 +130,7 @@ export const createGenerateAISlice: StateCreator<
   addIngredient: (ingredient) => {
     const { aiIngredients } = get();
     const normalized = ingredient.trim().toLowerCase();
-    if (!normalized || aiIngredients.map((i) => i.toLowerCase()).includes(normalized)) return;
+    if (!normalized || aiIngredients.some((i) => i.toLowerCase() === normalized)) return;
     set({ aiIngredients: [...aiIngredients, ingredient.trim()] }, false, "ai/addIngredient");
   },
 
