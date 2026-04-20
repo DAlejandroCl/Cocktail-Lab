@@ -115,3 +115,4 @@ These contracts must be maintained when changing production code:
 | `drinkCards` E2E locator matches both `drink-title-*` AND `creation-title-*` articles | `tests/e2e/pages/FavoritesPage.ts` |
 | `expectResultsVisible()` uses `{ timeout: 10_000 }` (Firefox flakiness fix) | `tests/e2e/pages/HomePage.ts` |
 | `isFavorite` does not exist on `AppState` — use `favorites: { [id]: recipe }` in mocks | All component/integration test mocks |
+| `reCraftRecipe: vi.fn()` must be in `selectors.test.ts` `mockState` — added to `AiRecipeSliceType` | `selectors.test.ts` compile-time |
