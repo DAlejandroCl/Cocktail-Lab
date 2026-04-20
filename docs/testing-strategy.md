@@ -426,7 +426,7 @@ The AI Generator flow is tested with MSW intercepting the Vercel serverless func
 - Ingredient add/remove via the autocomplete input
 - Generate button triggers the API call and renders the recipe card
 - "Save Creation" button calls `saveAiRecipe()` and disables after saving
-- "Re-craft" button regenerates with the same ingredient list
+- "Re-craft" button calls `reCraftRecipe()` which passes the previous recipe as context, generating a conscious variation (different flavour profile, new balancing ingredient, adjusted technique)
 - Error state renders the error banner when the API returns a failure
 
 **What MSW intercepts:**
@@ -655,6 +655,9 @@ Any new action added to a slice must be added to the `mockState` object in `sele
 
 **`isFavorite` does not exist on `AppState`**
 The `isFavorite(id)` method was removed from `FavoritesSliceType`. Do not re-add it as a property to any mock `AppState` object in tests — use `favorites: { [id]: recipe }` to control favorite state, and rely on `selectIsFavorite(id)` for component-level checks.
+
+**`reCraftRecipe: vi.fn()` must be in `selectors.test.ts` mockState**
+`reCraftRecipe` was added to `AiRecipeSliceType`. The `mockState` uses `satisfies AppState` which enforces the full type at compile time — omitting any slice action causes TS1360 errors across all selector tests.
 
 ---
 
