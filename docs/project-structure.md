@@ -53,7 +53,7 @@ Cocktail-Lab/
 │   │                                    #   Renders Outlet for route content
 │   │
 │   ├── services/
-│   │   └── recipeService.ts             # All TheCocktailDB API calls (Axios + Zod)
+│   │   └── recipeService.ts             # All TheCocktailDB API calls (native fetch + Zod)
 │   │                                    #   getCategories()         → list.php?c=list
 │   │                                    #   getRecipes(filters)     → search/filter endpoints
 │   │                                    #   getBrowseRecipes(cats)  → parallel filter.php?c=
@@ -66,7 +66,8 @@ Cocktail-Lab/
 │   │   ├── generateAISlice.ts           # AI recipe generation state:
 │   │   │                                #   aiIngredients[], generatedRecipe, isGenerating
 │   │   │                                #   aiRecipes[] (persisted — "My Creations")
-│   │   │                                #   generateRecipe() → POST /api/ai/generate-recipe
+│   │   │                                #   generateRecipe() → POST /api/ai/generate-recipe (no prior context)
+│   │   │                                #   reCraftRecipe() → same endpoint + previousRecipe context
 │   │   │                                #   saveAiRecipe(), removeAiRecipe()
 │   │   ├── notificationSlice.ts         # Global toast queue (message, type, auto-dismiss)
 │   │   ├── recipeSlice.ts               # Recipe search, browsing, loading, modal state
@@ -75,8 +76,9 @@ Cocktail-Lab/
 │   │   │                                #   selectRecipe(id) → API fetch + open modal
 │   │   │                                #   hasSearched flag for first-run UX
 │   │   ├── selectors.ts                 # All typed derived-state selectors (AppState → T)
-│   │   │                                #   selectIsFavorite(id) → curried selector
+│   │   │                                #   selectIsFavorite(id) → curried selector (reads !!state.favorites[id])
 │   │   │                                #   selectIsAiRecipeSaved(id) → curried selector
+│   │   │                                #   selectReCraftRecipe → action ref
 │   │   │                                #   selectOpenRecipeModal → action ref
 │   │   ├── useAppStore.ts               # Composed Zustand store:
 │   │   │                                #   devtools + persist middleware
@@ -106,7 +108,7 @@ Cocktail-Lab/
 │   │   │                                #   GeneratingLoader — animated phases loader
 │   │   │                                #   GeneratedRecipeCard — full recipe display
 │   │   │                                #   Save Creation button → saveAiRecipe()
-│   │   │                                #   Re-craft button → generateRecipe() again
+│   │   │                                #   Re-craft button → reCraftRecipe() (passes previousRecipe context)
 │   │   └── IndexPage.tsx                # Home page:
 │   │                                    #   HeroSection (full viewport)
 │   │                                    #   ResultsHeader (count + sort)
@@ -224,7 +226,7 @@ Cocktail-Lab/
 | `api/ai/generate-recipe.ts` | Groq SDK + Zod: generates recipe from ingredients. Uses `json_object` mode (not `json_schema`) |
 | `src/stores/recipeSlice.ts` | `openRecipeModal(recipe)` for AI recipes (no fetch), `selectRecipe(id)` for API recipes |
 | `src/stores/generateAISlice.ts` | `generateRecipe()` → API → `mapToGeneratedRecipe()` → `strIngredient1..N` mapping |
-| `src/stores/selectors.ts` | All `useAppStore` subscriptions — curried selectors for `isFavorite` and `isAiRecipeSaved` |
+| `src/stores/selectors.ts` | All `useAppStore` subscriptions — curried selectors for `selectIsFavorite` and `selectIsAiRecipeSaved`; includes `selectReCraftRecipe` |
 | `src/components/DrinkCard.tsx` | Polymorphic: `fullRecipe` prop → local modal; otherwise → API fetch modal |
 | `src/components/Modal.tsx` | Detects `isAiCreation` to show trash instead of heart button |
 | `src/views/FavoritesPage.tsx` | Two sections: My Favorites (`drink-title-*`) + My Creations (`creation-title-*`) |
