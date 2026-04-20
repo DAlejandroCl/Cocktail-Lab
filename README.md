@@ -76,7 +76,7 @@ The app consumes the public [TheCocktailDB API](https://www.thecocktaildb.com/ap
 - **"Don Aurelio"** system persona — 50-year master mixologist with creative naming and professional technique
 - Recipe card with image (fetched from TheCocktailDB by visual color match), ingredients, and step-by-step instructions
 - **Save Creation** — save any AI recipe to "My Creations" on the Favorites page
-- **Re-craft** — regenerate a new recipe with the same ingredient list
+- **Re-craft** — generate a conscious variation: same base spirit, different flavour profile, at least one new balancing ingredient, adjusted technique and measures, completely different name
 - Ingredient autocomplete with keyboard navigation (arrow keys, Enter, Escape)
 
 ### 🎨 UI & Experience
