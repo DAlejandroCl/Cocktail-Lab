@@ -1,6 +1,8 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import Groq from "groq-sdk";
 import { z } from "zod";
+import { createRateLimiter } from "../_lib/rateLimit";
+import { RequestBodySchema } from "../_lib/recipeRequest";
 
 // ─── Groq client ───────────────────────────────────────────────────────
 
@@ -276,6 +278,8 @@ interface AIIngredient {
 }
 
 interface AIRecipeResponse {
+  /** true when the model failed and a canned house recipe is returned instead */
+  fallback?: boolean;
   recipe: {
     strDrink: string;
     strDrinkThumb: string;
@@ -303,6 +307,7 @@ function smartMeasure(ingredient: string): string {
 
 function buildFallback(ingredients: string[]): AIRecipeResponse {
   return {
+    fallback: true,
     recipe: {
       strDrink: "Solsticio Improvisado",
       strDrinkThumb:
@@ -327,10 +332,26 @@ function buildFallback(ingredients: string[]): AIRecipeResponse {
   };
 }
 
+// ─── Rate limit ───────────────────────────────────────────────────────────────
+
+// Best-effort, per serverless instance (see api/_lib/rateLimit.ts).
+const checkRateLimit = createRateLimiter({ limit: 6, windowMs: 60_000 });
+
+function clientKey(req: VercelRequest): string {
+  const header = (name: string): string | undefined => {
+    const v = req.headers[name];
+    return Array.isArray(v) ? v[0] : v;
+  };
+  const forwarded =
+    header("x-vercel-forwarded-for") ?? header("x-forwarded-for") ?? "";
+  return forwarded.split(",")[0]?.trim() || req.socket?.remoteAddress || "unknown";
+}
+
 // ─── Handler ──────────────────────────────────────────────────────────────────
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
+    res.setHeader("Allow", "POST");
     return res.status(405).json({ error: "Method not allowed" });
   }
 
@@ -339,30 +360,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: "Server misconfiguration" });
   }
 
-  const body = (req.body ?? {}) as { ingredients?: unknown; previousRecipe?: unknown };
-  const { ingredients, previousRecipe } = body;
-
-  if (
-    !Array.isArray(ingredients) ||
-    ingredients.length === 0 ||
-    ingredients.length > 15 ||
-    (ingredients as unknown[]).some(
-      (i) => typeof i !== "string" || !(i as string).trim() || (i as string).trim().length > 100,
-    )
-  ) {
-    return res.status(400).json({
-      error: "Provide between 1 and 15 ingredient strings, each under 100 characters.",
+  const limit = checkRateLimit(clientKey(req));
+  if (!limit.allowed) {
+    res.setHeader("Retry-After", String(limit.retryAfterSec));
+    return res.status(429).json({
+      error: `Too many requests. Try again in ${limit.retryAfterSec} seconds.`,
     });
   }
 
-  const sanitized = (ingredients as string[]).map((i) => i.trim());
+  const parsedBody = RequestBodySchema.safeParse(req.body ?? {});
+  if (!parsedBody.success) {
+    return res.status(400).json({
+      error:
+        "Provide between 1 and 15 ingredient strings, each under 100 characters, and a valid previousRecipe if sent.",
+    });
+  }
 
-  const prev = (previousRecipe && typeof previousRecipe === "object")
-    ? previousRecipe as Record<string, unknown>
-    : null;
+  const { ingredients: sanitized, previousRecipe } = parsedBody.data;
 
   try {
-    const recipe = await callGroq(sanitized, 0, prev);
+    const recipe = await callGroq(sanitized, 0, previousRecipe ?? null);
     const strDrinkThumb = await resolveImageFromCocktailDB(recipe.imageSlug);
 
     const payload: AIRecipeResponse = {
@@ -382,6 +399,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       "[generate-recipe] Unrecoverable — using fallback:",
       err instanceof Error ? err.message : err,
     );
+    res.setHeader("Cache-Control", "no-store");
     return res.status(200).json(buildFallback(sanitized));
   }
 }
