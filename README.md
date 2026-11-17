@@ -244,16 +244,34 @@ The AI Generator uses the [Groq API](https://console.groq.com) via a Vercel Serv
 
 ```
 POST /api/ai/generate-recipe
-Body: { "ingredients": ["Vodka", "Lime juice", "Mint"] }
+Body: { "ingredients": ["Vodka", "Lime juice", "Mint"], "previousRecipe"?: {...} }
 
-Validation: 1–15 ingredients, each string under 100 characters
+Validation (Zod): 1–15 ingredients, each a non-blank string under 100 characters;
+previousRecipe is optional and only its drink name, instructions and
+strIngredientN / strMeasureN fields (each under 100 chars) are kept.
 
 Flow:
-  1. Groq SDK → llama-3.3-70b-versatile (json_object response format)
-  2. JSON.parse() + Zod safeParse() validation
-  3. TheCocktailDB image lookup by visual color slug
-  4. Returns: { recipe: { strDrink, strDrinkThumb, strCategory, strInstructions, ingredients[] } }
+  1. Method check (405 + Allow: POST) and per-IP rate limit (429 + Retry-After)
+  2. Groq SDK → llama-3.3-70b-versatile (json_object response format)
+  3. JSON.parse() + Zod safeParse() validation
+  4. TheCocktailDB image lookup by visual color slug
+  5. Returns: { recipe: { strDrink, strDrinkThumb, strCategory, strInstructions, ingredients[] } }
+
+If Groq fails after retries, the endpoint answers 200 with a canned house recipe
+and "fallback": true; the client shows a notification so it is never presented
+as an AI-generated result.
 ```
+
+**Rate limit:** 6 requests per minute per IP, kept in memory inside each serverless
+instance. It is best-effort: instances do not share counters and a cold start resets
+them, so it protects the Groq quota from casual abuse but is not a hard guarantee.
+A global limit would need a platform-level rule (for example a Vercel Firewall rate-limit
+rule) or a shared store.
+
+**Security headers** (`vercel.json`): `Content-Security-Policy` (same-origin scripts,
+TheCocktailDB for data/images, Google Fonts), `X-Frame-Options`, `X-Content-Type-Options`,
+`Referrer-Policy` and `Permissions-Policy`. `style-src` keeps `'unsafe-inline'` because
+components use inline `style` attributes.
 
 > `json_schema` response format is **not** used because `llama-3.3-70b-versatile` does not support it on Groq. `json_object` mode guarantees valid JSON; Zod provides schema enforcement.
 

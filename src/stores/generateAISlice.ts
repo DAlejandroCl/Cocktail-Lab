@@ -35,6 +35,7 @@ interface AIIngredient {
 }
 
 interface AIRecipeResponse {
+  fallback?: boolean;
   recipe: {
     strDrink: string;
     strDrinkThumb: string;
@@ -94,7 +95,19 @@ function mapToGeneratedRecipe(
 
 // ─── API call ─────────────────────────────────────────────────────────────────
 
-async function callAIRecipeAPI(ingredients: string[], previousRecipe?: GeneratedRecipe): Promise<GeneratedRecipe> {
+class RateLimitError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "RateLimitError";
+  }
+}
+
+interface AIResult {
+  recipe: GeneratedRecipe;
+  isFallback: boolean;
+}
+
+async function callAIRecipeAPI(ingredients: string[], previousRecipe?: GeneratedRecipe): Promise<AIResult> {
   const response = await fetch("/api/ai/generate-recipe", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -104,13 +117,33 @@ async function callAIRecipeAPI(ingredients: string[], previousRecipe?: Generated
     }),
   });
 
+  if (response.status === 429) {
+    throw new RateLimitError("rate limited");
+  }
+
   if (!response.ok) {
     const err = (await response.json().catch(() => ({}))) as { error?: string };
     throw new Error(err.error ?? `API Error: ${response.statusText}`);
   }
 
   const data: AIRecipeResponse = await response.json();
-  return mapToGeneratedRecipe(data, ingredients);
+  return {
+    recipe: mapToGeneratedRecipe(data, ingredients),
+    isFallback: data.fallback === true,
+  };
+}
+
+const FALLBACK_NOTICE =
+  "Our AI bartender is unavailable right now. Showing a house recipe instead.";
+
+function errorMessageFor(error: unknown): string {
+  if (error instanceof RateLimitError) {
+    return "You're making recipes too fast. Please wait a minute and try again.";
+  }
+  const message = error instanceof Error ? error.message : "Unexpected error";
+  return message.toLowerCase().includes("network")
+    ? "Network error. Check your connection and try again."
+    : "Failed to generate recipe. Please try again.";
 }
 
 // ─── Slice ────────────────────────────────────────────────────────────────────
@@ -149,13 +182,11 @@ export const createGenerateAISlice: StateCreator<
     set({ isGenerating: true, generationError: null, generatedRecipe: null }, false, "ai/generateRecipe/start");
 
     try {
-      const recipe = await callAIRecipeAPI(aiIngredients);
+      const { recipe, isFallback } = await callAIRecipeAPI(aiIngredients);
       set({ generatedRecipe: recipe, isGenerating: false }, false, "ai/generateRecipe/success");
+      if (isFallback) get().setNotification(FALLBACK_NOTICE, "info");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unexpected error";
-      const userMessage = message.toLowerCase().includes("network")
-        ? "Network error. Check your connection and try again."
-        : "Failed to generate recipe. Please try again.";
+      const userMessage = errorMessageFor(error);
       set({ generationError: userMessage, isGenerating: false }, false, "ai/generateRecipe/error");
     }
   },
@@ -167,13 +198,11 @@ export const createGenerateAISlice: StateCreator<
     set({ isGenerating: true, generationError: null, generatedRecipe: null }, false, "ai/reCraftRecipe/start");
 
     try {
-      const recipe = await callAIRecipeAPI(aiIngredients, generatedRecipe ?? undefined);
+      const { recipe, isFallback } = await callAIRecipeAPI(aiIngredients, generatedRecipe ?? undefined);
       set({ generatedRecipe: recipe, isGenerating: false }, false, "ai/reCraftRecipe/success");
+      if (isFallback) get().setNotification(FALLBACK_NOTICE, "info");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unexpected error";
-      const userMessage = message.toLowerCase().includes("network")
-        ? "Network error. Check your connection and try again."
-        : "Failed to generate recipe. Please try again.";
+      const userMessage = errorMessageFor(error);
       set({ generationError: userMessage, isGenerating: false }, false, "ai/reCraftRecipe/error");
     }
   },

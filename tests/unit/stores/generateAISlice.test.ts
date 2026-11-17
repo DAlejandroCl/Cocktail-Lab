@@ -240,4 +240,60 @@ describe("generateAISlice", () => {
     await store.getState().generateRecipe();
     expect(store.getState().generationError).toBeNull();
   });
+
+  // ── Rate limit and fallback ──────────────────────────────────────────────
+
+  it("shows a wait-a-minute error on HTTP 429", async () => {
+    store.getState().addIngredient("Rum");
+
+    vi.spyOn(window, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: "Too many requests." }), {
+        status: 429,
+        headers: { "Content-Type": "application/json", "Retry-After": "30" },
+      }),
+    );
+
+    await store.getState().generateRecipe();
+
+    expect(store.getState().generationError).toBe(
+      "You're making recipes too fast. Please wait a minute and try again.",
+    );
+    expect(store.getState().isGenerating).toBe(false);
+  });
+
+  it("notifies the user when the server returns a fallback recipe", async () => {
+    const setNotification = vi.fn();
+    store.setState({ aiIngredients: ["Vodka"], setNotification } as never);
+
+    vi.spyOn(window, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify({ ...DEFAULT_AI_RECIPE_RESPONSE, fallback: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    await store.getState().generateRecipe();
+
+    expect(store.getState().generatedRecipe).not.toBeNull();
+    expect(setNotification).toHaveBeenCalledWith(
+      "Our AI bartender is unavailable right now. Showing a house recipe instead.",
+      "info",
+    );
+  });
+
+  it("does not notify for a normal AI recipe", async () => {
+    const setNotification = vi.fn();
+    store.setState({ aiIngredients: ["Vodka"], setNotification } as never);
+
+    vi.spyOn(window, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify(DEFAULT_AI_RECIPE_RESPONSE), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    await store.getState().generateRecipe();
+
+    expect(setNotification).not.toHaveBeenCalled();
+  });
 });
